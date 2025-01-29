@@ -1,0 +1,56 @@
+name: build_and_test
+
+on: [push, pull_request]
+
+env:
+  CMAKE_GENERATOR: Ninja
+
+jobs:
+
+  build:
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        platform: 
+          - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
+          - { name: Ubuntu with clang, os: ubuntu-latest, pkg: clang, compiler: clang++, version: 18 }
+          - { name: Windows with MSVC, os: windows-latest }
+        buildType: ["Release"]
+
+    name: ${{ matrix.platform.name }} - ${{ matrix.buildType }}
+
+    runs-on: ${{ matrix.platform.os }}
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+      
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+    
+      - name: Install MSVC
+        if: contains(matrix.platform.name, 'MSVC')
+        uses: ilammy/msvc-dev-cmd@v1
+      
+      - name: Install compiler (Linux)
+        if: contains(matrix.platform.name, 'ubuntu')
+        run: |
+          sudo apt update
+          sudo apt install -y ${{ matrix.platform.pkg }}-${{ matrix.platform.version }}
+          echo "CXX=${{ matrix.platform.compiler }}-${{ matrix.platform.version }}" >> "$GITHUB_ENV"
+
+      - name: Configure
+        run: |
+          git submodule update --init --recursive --remote
+          cmake -S . -B build -Dstay3_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=${{ matrix.buildType }}
+    
+      - name: Build
+        run: cmake --build build -j4
+    
+      - name: Test
+        run: echo "Use CTest to run tests"
