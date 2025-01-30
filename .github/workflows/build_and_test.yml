@@ -19,7 +19,7 @@ jobs:
           - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
           - { name: Ubuntu with clang, os: ubuntu-latest, pkg: clang, compiler: clang++, version: 18 }
           - { name: Windows with MSVC, os: windows-latest }
-        buildType: ["Release"]
+        buildType: ["Debug"]
 
     name: ${{ matrix.platform.name }} - ${{ matrix.buildType }}
 
@@ -47,10 +47,10 @@ jobs:
       - name: Configure
         run: |
           git submodule update --init --recursive --remote
-          cmake -S . -B build -Dstay3_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=${{ matrix.buildType }}
+          cmake -S . -B build -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=${{ matrix.buildType }}
     
       - name: Build
         run: cmake --build build -j4
     
       - name: Test
-        run: cd build && ctest
+        run: ctest --test-dir build/test --output-on-failure

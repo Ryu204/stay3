@@ -14,4 +14,4 @@ function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} ${ARGS})
 endfunction()
 
-add_custom_test(main-test main.test.cpp "" "")
+add_custom_test(core-time core/time.test.cpp "" "")
