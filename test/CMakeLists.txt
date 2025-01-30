@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(main-test main.test.cpp)
+include(CTest)
 
-target_link_libraries(main-test PRIVATE stay3)
+function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
+    add_executable(${TEST_NAME} ${SOURCE_FILE})
+    target_link_libraries(${TEST_NAME} PRIVATE stay3 ${LIBS})
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} ${ARGS})
+endfunction()
+
+add_custom_test(main-test main.test.cpp "" "")

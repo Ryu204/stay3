@@ -53,4 +53,4 @@ jobs:
         run: cmake --build build -j4
     
       - name: Test
-        run: echo "Use CTest to run tests"
+        run: cd build && ctest
