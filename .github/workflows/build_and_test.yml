@@ -30,6 +30,10 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
       
+      - name: Install build dependencies (Linux)
+        if: contains(matrix.platform.os, 'ubuntu')
+        run: sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm
+
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
     
@@ -46,7 +50,7 @@ jobs:
 
       - name: Configure
         run: |
-          git submodule update --init --recursive --remote
+          git submodule update --init --remote --depth=1
           cmake -S . -B build -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=${{ matrix.buildType }}
     
       - name: Build
