@@ -1,0 +1,41 @@
+name: web_build
+
+on: [push, pull_request]
+
+env:
+  CMAKE_GENERATOR: Ninja
+
+jobs:
+  web-build:
+    defaults:
+      run:
+        shell: bash
+
+    name: WebAssembly Build (Emscripten)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.2
+
+      - name: Install clang-tools
+        run: sudo apt install clang-tools-19 && ln -s /usr/bin/clang-scan-deps-19 /usr/local/bin/clang-scan-deps
+
+      - name: Configure
+        run: |
+          emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON
+
+      - name: Build
+        run: cmake --build build -j4
+
+      - name: Test
+        run: ctest --test-dir build/test --output-on-failure
