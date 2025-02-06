@@ -27,9 +27,17 @@ target_sources(${PROJECT_NAME}
     src/core/time.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    dawn::webgpu_dawn
-)
+if (EMSCRIPTEN)
+    target_link_options(${PROJECT_NAME} PRIVATE
+        # -sUSE_GLFW=3 # Use Emscripten-provided GLFW
+        -sUSE_WEBGPU # Handle WebGPU symbols
+        # -sASYNCIFY # Required by WebGPU-C++
+    )
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        dawn::webgpu_dawn
+    )
+endif()
 
 if (${PROJECT_NAME}_BUILD_TESTS)
     add_subdirectory(test)

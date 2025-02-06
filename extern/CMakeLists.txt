@@ -1,2 +1,4 @@
-set(DAWN_FETCH_DEPENDENCIES ON)
-add_subdirectory(dawn)
+if (NOT EMSCRIPTEN)
+    set(DAWN_FETCH_DEPENDENCIES ON)
+    add_subdirectory(dawn)
+endif()
