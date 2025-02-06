@@ -1,0 +1,4 @@
+[submodule "extern/dawn"]
+	path = extern/dawn
+	url = https://dawn.googlesource.com/dawn
+	branch = main
