@@ -17,21 +17,34 @@ target_sources(${PROJECT_NAME}
     PUBLIC FILE_SET my_modules_source TYPE CXX_MODULES FILES
     
     src/main.cppm
+
     src/core/mod.cppm
     src/core/app.cppm
     src/core/time.cppm
+    
+    src/graphics/mod.cppm
+    src/graphics/error.cppm
+    src/graphics/glfw_window.cppm
+
+    src/system/mod.cppm
+    src/system/error.cppm
+    
+    src/window/mod.cppm
+    src/window/event.cppm
+    src/window/base_window.cppm
 
     PRIVATE
 
     src/core/app.cpp
     src/core/time.cpp
+
+    src/graphics/glfw_window.cpp
 )
 
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 if (EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PRIVATE
-        # -sUSE_GLFW=3 # Use Emscripten-provided GLFW
-        -sUSE_WEBGPU # Handle WebGPU symbols
-        # -sASYNCIFY # Required by WebGPU-C++
+        -sUSE_WEBGPU
     )
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE
