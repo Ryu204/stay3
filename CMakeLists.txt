@@ -44,7 +44,7 @@ target_sources(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 if (EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PRIVATE
-        -sUSE_WEBGPU
+        -sUSE_GLFW=3
     )
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE

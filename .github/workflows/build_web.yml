@@ -28,7 +28,7 @@ jobs:
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
-          version: 4.0.2
+          version: tot
 
       - name: Install clang-tools
         run: sudo apt install clang-tools-19 && ln -s /usr/bin/clang-scan-deps-19 /usr/local/bin/clang-scan-deps

@@ -5,4 +5,4 @@
 [submodule "extern/glfw"]
 	path = extern/glfw
 	url = https://github.com/glfw/glfw
-	branch = latest
+	branch = master
