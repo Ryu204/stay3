@@ -16,9 +16,12 @@ Requirements: C++ toolchains capable of compiling C++20 and CMake version 3.31 o
 * pkg-config
 * nodejs
 * npm
+* libwayland-dev
+* libxkbcommon-dev
+* xorg-dev
 
 ```
-sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm
+sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm libwayland-dev libxkbcommon-dev xorg-dev
 ```
 
 ```sh

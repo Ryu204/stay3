@@ -32,7 +32,7 @@ jobs:
       
       - name: Install build dependencies (Linux)
         if: contains(matrix.platform.os, 'ubuntu')
-        run: sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm
+        run: sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm libwayland-dev libxkbcommon-dev xorg-dev
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
