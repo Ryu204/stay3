@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   CMAKE_GENERATOR: Ninja
+  DISPLAY: :99
 
 jobs:
 
@@ -37,7 +38,7 @@ jobs:
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
     
-      - name: Install MSVC
+      - name: Install MSVC (Windows)
         if: contains(matrix.platform.name, 'MSVC')
         uses: ilammy/msvc-dev-cmd@v1
       
@@ -63,8 +64,6 @@ jobs:
           sleep 5
           fluxbox > /dev/null 2>&1 &
           sleep 5
-        env:
-          DISPLAY: :99
 
       - name: Test
         run: ctest --test-dir build/test --output-on-failure

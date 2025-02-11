@@ -13,7 +13,7 @@ import :error;
 namespace st {
 struct glfw_context {
     glfw_context() {
-        if(!glfwInit()) {
+        if(glfwInit() == 0) {
             throw graphics_error{"Failed to init glfw."};
         }
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -59,7 +59,7 @@ glfw_window::glfw_window(glfw_window &&other) noexcept {
     other.m_window = nullptr;
     m_window = other_handle;
 
-    if(m_window) {
+    if(m_window != nullptr) {
         own_glfw_user_pointer();
     }
 }
@@ -69,14 +69,14 @@ glfw_window &glfw_window::operator=(glfw_window &&other) noexcept {
     other.m_window = nullptr;
     m_window = other_handle;
 
-    if(m_window) {
+    if(m_window != nullptr) {
         own_glfw_user_pointer();
     }
     return *this;
 }
 
 glfw_window::~glfw_window() {
-    if(m_window) {
+    if(m_window != nullptr) {
         glfwDestroyWindow(m_window);
     }
 }
@@ -105,9 +105,9 @@ event glfw_window::poll_event() {
     if(m_event_queue.empty()) {
         return event::none{};
     }
-    auto a = m_event_queue.front();
+    auto result = m_event_queue.front();
     m_event_queue.pop();
-    return a;
+    return result;
 }
 
 void glfw_window::set_window_callbacks() {
