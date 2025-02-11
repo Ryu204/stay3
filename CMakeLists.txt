@@ -47,9 +47,9 @@ if (EMSCRIPTEN)
         -sUSE_GLFW=3
     )
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        dawn::webgpu_dawn
-    )
+    # target_link_libraries(${PROJECT_NAME} PRIVATE
+    #     dawn::webgpu_dawn
+    # )
 endif()
 
 if (${PROJECT_NAME}_BUILD_TESTS)
