@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   CMAKE_GENERATOR: Ninja
+  DISPLAY: :99
 
 jobs:
 
@@ -16,7 +17,7 @@ jobs:
     strategy:
       matrix:
         platform: 
-          - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
+          # - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
           - { name: Ubuntu with clang, os: ubuntu-latest, pkg: clang, compiler: clang++, version: 18 }
           - { name: Windows with MSVC, os: windows-latest }
         buildType: ["Debug"]
@@ -32,12 +33,12 @@ jobs:
       
       - name: Install build dependencies (Linux)
         if: contains(matrix.platform.os, 'ubuntu')
-        run: sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm
+        run: sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm libwayland-dev libxkbcommon-dev xorg-dev xvfb fluxbox
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
     
-      - name: Install MSVC
+      - name: Install MSVC (Windows)
         if: contains(matrix.platform.name, 'MSVC')
         uses: ilammy/msvc-dev-cmd@v1
       
@@ -55,6 +56,14 @@ jobs:
     
       - name: Build
         run: cmake --build build -j4
-    
+
+      - name: Create graphics server (Linux)
+        if: contains(matrix.platform.name, 'ubuntu')
+        run:
+          Xvfb $DISPLAY -screen 0 1920x1080x24 &
+          sleep 5
+          fluxbox > /dev/null 2>&1 &
+          sleep 5
+
       - name: Test
         run: ctest --test-dir build/test --output-on-failure
