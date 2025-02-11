@@ -20,9 +20,7 @@ export class event {
 public:
     struct none {};
 
-    struct close_requested {
-        int foo{};
-    };
+    struct close_requested {};
 
     struct event_b {
         int foo{};

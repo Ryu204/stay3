@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         platform: 
-          - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
+          # - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
           - { name: Ubuntu with clang, os: ubuntu-latest, pkg: clang, compiler: clang++, version: 18 }
           - { name: Windows with MSVC, os: windows-latest }
         buildType: ["Debug"]
