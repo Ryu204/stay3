@@ -32,6 +32,6 @@ function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
     endif()
 endfunction()
 
-add_custom_test(core-time core/time.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(system-time system/time.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(window-event window/event.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(graphics-glfw-window graphics/glfw_window.test.cpp "Catch2::Catch2WithMain" "")

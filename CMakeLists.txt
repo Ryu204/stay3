@@ -20,7 +20,6 @@ target_sources(${PROJECT_NAME}
 
     src/core/mod.cppm
     src/core/app.cppm
-    src/core/time.cppm
     
     src/graphics/mod.cppm
     src/graphics/error.cppm
@@ -28,6 +27,7 @@ target_sources(${PROJECT_NAME}
 
     src/system/mod.cppm
     src/system/error.cppm
+    src/system/time.cppm
     
     src/window/mod.cppm
     src/window/event.cppm
@@ -36,9 +36,10 @@ target_sources(${PROJECT_NAME}
     PRIVATE
 
     src/core/app.cpp
-    src/core/time.cpp
 
     src/graphics/glfw_window.cpp
+
+    src/system/time.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
