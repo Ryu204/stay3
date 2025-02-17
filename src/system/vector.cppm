@@ -12,11 +12,17 @@ struct base_vec: public glm::vec<length, type> {
     using base_glm = glm::vec<length, type>;
 
     using base_glm::base_glm;
+    constexpr base_vec()
+        : base_glm{0.F} {}
     constexpr base_vec(const base_glm &vec)
-        : base_glm{vec} {};
+        : base_glm{vec} {}
 
     [[nodiscard]] constexpr type magnitude() const {
         return glm::length<length, type>(*this);
+    }
+
+    [[nodiscard]] constexpr bool is_normalized() const {
+        return glm::length2<length, type>(*this) == 1.F;
     }
 
     [[nodiscard]] constexpr type magnitude_squared() const {
@@ -49,11 +55,6 @@ using vec3f = vec3<float>;
 using vec3i = vec3<int>;
 using vec4f = vec4<float>;
 using vec4i = vec4<int>;
-
-using glm::operator+;
-using glm::operator-;
-using glm::operator*;
-using glm::operator/;
 
 /*        Y+
               |

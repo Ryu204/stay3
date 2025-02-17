@@ -10,7 +10,7 @@ constexpr float epsilon = 0.0001f;
 
 TEST_CASE("vec2f - construction and initialization") {
     SECTION("Default constructor initializes to zero") {
-        constexpr vec2f vec{};
+        constexpr vec2f vec;
         REQUIRE(vec.x == 0.0f);
         REQUIRE(vec.y == 0.0f);
     }

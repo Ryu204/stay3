@@ -15,12 +15,12 @@ add_library(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME}
     PUBLIC FILE_SET my_modules_source TYPE CXX_MODULES FILES
-    
+
     src/main.cppm
 
     src/core/mod.cppm
     src/core/app.cppm
-    
+
     src/graphics/mod.cppm
     src/graphics/error.cppm
     src/graphics/glfw_window.cppm
@@ -29,7 +29,12 @@ target_sources(${PROJECT_NAME}
     src/system/error.cppm
     src/system/time.cppm
     src/system/vector.cppm
-    
+    src/system/quaternion.cppm
+    src/system/transform.cppm
+    src/system/matrix.cppm
+    src/system/math_ops.cppm
+    src/system/math.cppm
+
     src/window/mod.cppm
     src/window/event.cppm
     src/window/base_window.cppm
@@ -41,10 +46,11 @@ target_sources(${PROJECT_NAME}
     src/graphics/glfw_window.cpp
 
     src/system/time.cpp
+    src/system/transform.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm)
-if (EMSCRIPTEN)
+if(EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PRIVATE
         -sUSE_GLFW=3
     )
@@ -54,10 +60,10 @@ else()
     # )
 endif()
 
-if (${PROJECT_NAME}_BUILD_TESTS)
+if(${PROJECT_NAME}_BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-if (${PROJECT_NAME}_BUILD_EXAMPLES)
+if(${PROJECT_NAME}_BUILD_EXAMPLES)
     add_subdirectory(example)
 endif()
