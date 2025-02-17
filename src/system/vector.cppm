@@ -12,26 +12,26 @@ struct base_vec: public glm::vec<length, type> {
     using base_glm = glm::vec<length, type>;
 
     using base_glm::base_glm;
-    base_vec(const base_glm &vec)
+    constexpr base_vec(const base_glm &vec)
         : base_glm{vec} {};
 
-    type magnitude() const {
+    [[nodiscard]] constexpr type magnitude() const {
         return glm::length<length, type>(*this);
     }
 
-    type magnitude_squared() const {
+    [[nodiscard]] constexpr type magnitude_squared() const {
         return glm::length2<length, type>(*this);
     }
 
-    type dot(const base_glm &other) const {
+    [[nodiscard]] constexpr type dot(const base_glm &other) const {
         return glm::dot(*this, other);
     }
 
-    base_vec normalized() const {
+    [[nodiscard]] constexpr base_vec normalized() const {
         return glm::normalize(*this);
     }
 
-    base_vec cross(const base_glm &other) const {
+    [[nodiscard]] constexpr base_vec cross(const base_glm &other) const {
         return glm::cross(*this, other);
     }
 };
@@ -54,5 +54,23 @@ using glm::operator+;
 using glm::operator-;
 using glm::operator*;
 using glm::operator/;
+
+/*        Y+
+              |
+              |     SCREEN
+              |
+              |
+              /------------------ X+
+            /
+          /
+        /
+      Z- <-- (PLAYER)
+    */
+inline constexpr vec3f vec_up{0.F, 1.F, 0.F};
+inline constexpr vec3f vec_down{0.F, -1.F, 0.F};
+inline constexpr vec3f vec_left{-1.F, 0.F, 0.F};
+inline constexpr vec3f vec_right{1.F, 0.F, 0.F};
+inline constexpr vec3f vec_back{0.F, 0.F, -1.F};
+inline constexpr vec3f vec_forward{0.F, 0.F, 1.F};
 
 } // namespace st
