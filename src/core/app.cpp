@@ -3,11 +3,11 @@ module;
 #ifdef __EMSCRIPTEN__
 #    include <emscripten.h>
 #endif
+
 module stay3.core;
 
 import stay3.window;
-
-import :time;
+import stay3.system;
 
 constexpr auto temp_fps = 60.F;
 

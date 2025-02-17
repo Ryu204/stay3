@@ -1,8 +1,7 @@
 export module stay3.core:app;
 
 import stay3.graphics;
-
-import :time;
+import stay3.system;
 
 export namespace st {
 class app {

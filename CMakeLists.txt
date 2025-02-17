@@ -28,6 +28,7 @@ target_sources(${PROJECT_NAME}
     src/system/mod.cppm
     src/system/error.cppm
     src/system/time.cppm
+    src/system/vector.cppm
     
     src/window/mod.cppm
     src/window/event.cppm
@@ -42,7 +43,7 @@ target_sources(${PROJECT_NAME}
     src/system/time.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm)
 if (EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PRIVATE
         -sUSE_GLFW=3
