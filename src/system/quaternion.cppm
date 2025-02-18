@@ -11,8 +11,6 @@ import :matrix;
 
 export namespace st {
 
-using radians = float;
-
 template<typename type>
 struct quaternion: public glm::qua<type> {
     using base_glm = glm::qua<type>;

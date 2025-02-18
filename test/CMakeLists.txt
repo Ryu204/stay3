@@ -19,9 +19,17 @@ FetchContent_MakeAvailable(Catch2)
 
 include(CTest)
 
+
+add_library(test-helper)
+target_link_libraries(test-helper PRIVATE stay3)
+target_sources(test-helper
+    PUBLIC FILE_SET my_modules_source TYPE CXX_MODULES FILES
+    system/test_helper.cppm
+)
+
 function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
     add_executable(${TEST_NAME} ${SOURCE_FILE})
-    target_link_libraries(${TEST_NAME} PRIVATE stay3 ${LIBS})
+    target_link_libraries(${TEST_NAME} PRIVATE stay3 test-helper ${LIBS})
     if(EMSCRIPTEN)
         set(TEST_SHELL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/web/test-shell.html)
         set_target_properties(${TEST_NAME} PROPERTIES SUFFIX ".html" LINK_DEPENDS ${TEST_SHELL_FILE})
