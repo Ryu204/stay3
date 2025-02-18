@@ -7,6 +7,7 @@ export module stay3.system:math;
 export namespace st {
 
 inline constexpr auto PI = std::numbers::pi_v<float>;
+inline constexpr float EPS = 1e-6F;
 using radians = float;
 
 } // namespace st

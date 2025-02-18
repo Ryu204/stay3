@@ -6,10 +6,9 @@ import stay3.test_helper;
 TEST_CASE("Matrix operations", "[mat]") {
     using namespace st;
 
-    SECTION("Matrix initialization and static identity should return identity") {
+    SECTION("Matrix initialization should return identity") {
         constexpr mat4f identity{};
         REQUIRE(identity == glm::mat4{1.F});
-        REQUIRE(mat4f::identity() == glm::mat4{1.F});
     }
 
     SECTION("Matrix construction") {

@@ -4,6 +4,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 import stay3.system;
+import stay3.test_helper;
 using namespace st;
 using Catch::Approx;
 
@@ -27,17 +28,21 @@ TEST_CASE("Quaternion operations", "[quaternion]") {
     }
 
     SECTION("Rotation application") {
-        quaternionf q1{glm::angleAxis(glm::radians(45.F), vec3f(0.F, 1.F, 0.F))};
-        quaternionf q2{glm::angleAxis(glm::radians(45.F), vec3f(0.F, 1.F, 0.F))};
+        quaternionf q1{vec3f{2.F, 1.F, 0.F}.normalized(), 1.F};
+        quaternionf q2{vec3f{-3.F, 1.F, 1.F}.normalized(), 2.F};
 
-        quaternionf result = q1;
-        result.rotate(q2);
+        quaternionf result1 = q1;
+        result1.rotate(q2);
 
-        REQUIRE(result == q1 * q2);
+        quaternionf result2 = q1;
+        result2.rotate(q2.axis(), q2.angle());
+
+        REQUIRE(result1 == (q2 * q1));
+        REQUIRE(approx_equal(result2, q2 * q1));
     }
 
     SECTION("Quaternion to matrix conversion") {
-        quaternionf quat{glm::angleAxis(glm::radians(90.F), vec3f(0.F, 1.F, 0.F))};
+        quaternionf quat{vec3f{0.F, 1.F, 0.F}, 9.F};
         const auto mat = quat.matrix();
         REQUIRE(mat == glm::mat4_cast(quat));
     }

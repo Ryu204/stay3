@@ -1,9 +1,9 @@
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/catch_all.hpp>
 
 import stay3;
 
 using namespace st;
+using Catch::Approx;
 using Catch::Matchers::WithinAbs;
 
 constexpr float epsilon = 0.0001f;
@@ -96,4 +96,10 @@ TEST_CASE("vec4f - dot product") {
     SECTION("Dot product is calculated correctly") {
         REQUIRE(v1.dot(v2) == 20.0f);
     }
+}
+
+TEST_CASE("vec3f - normalization") {
+    constexpr vec3f v1{3.F, -8989.F, 1000.F};
+    REQUIRE(v1.normalized().magnitude() == Approx{1.F});
+    REQUIRE(v1.normalized().is_normalized());
 }

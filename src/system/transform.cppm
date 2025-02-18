@@ -5,6 +5,7 @@ export module stay3.system:transform;
 import :vector;
 import :quaternion;
 import :matrix;
+import :math;
 
 export namespace st {
 /**
@@ -16,7 +17,7 @@ public:
     /**
      * @brief Rotates the transform around `axis` by `angle`
      * @param axis Rotation axis
-     * @param angle Rotation amount, counter-clockwise when looking at origin along `axis`
+     * @param angle Rotation amount, clockwise when looking at origin from `axis`
      */
     transform &rotate(const vec3f &axis, radians angle);
     transform &rotate(const quaternionf &quat);
@@ -29,6 +30,7 @@ public:
     transform &set_position(const vec3f &pos);
     transform &set_scale(const vec3f &scale);
     transform &set_scale(float scale);
+    transform &set_matrix(const mat4f &mat);
 
     const mat4f &matrix() const;
     const mat4f &inv_matrix() const;

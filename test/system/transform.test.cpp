@@ -1,44 +1,8 @@
-#include <iostream>
 #include <catch2/catch_all.hpp>
 import stay3;
-
+import stay3.test_helper;
 using namespace st;
 using Catch::Approx;
-
-namespace {
-bool approx_equal(const vec3f &first, const vec3f &second, float epsilon = 1e-6F) {
-    return (std::abs(first.x - second.x) < epsilon) && (std::abs(first.y - second.y) < epsilon) && (std::abs(first.z - second.z) < epsilon);
-}
-
-bool approx_equal(const quaternionf &first, const quaternionf &second, float epsilon = 1e-6F) {
-    return (std::abs(first.angle() - second.angle()) < epsilon) && approx_equal(first.axis(), second.axis(), epsilon);
-}
-
-bool approx_equal(const mat4f &first, const mat4f &second, float epsilon = 1e-6f) {
-    for(int i = 0; i < 4; ++i) {
-        for(int j = 0; j < 4; ++j) {
-            std::cout << first[i][j] << ' ';
-        }
-        std::cout << '\n';
-    }
-    std::cout << '\n';
-    for(int i = 0; i < 4; ++i) {
-        for(int j = 0; j < 4; ++j) {
-            std::cout << second[i][j] << ' ';
-        }
-        std::cout << '\n';
-    }
-
-    for(int i = 0; i < 4; ++i) {
-        for(int j = 0; j < 4; ++j) {
-            if(std::abs(first[i][j] - second[i][j]) > epsilon) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-} // namespace
 
 TEST_CASE("Transform - Default initialization") {
     transform tf;
@@ -127,5 +91,60 @@ TEST_CASE("Transform - Matrix operations") {
 
         // Test that M * M^-1 = I
         REQUIRE(approx_equal(matrix * inv_matrix, mat4f{}));
+    }
+}
+
+TEST_CASE("Matrix setter") {
+    transform tf;
+    mat4f mat;
+
+    constexpr vec3f offset{0.5F, -3.F, 4.5F};
+    constexpr vec3f axis{9.F, 0.5F, 1.F};
+    constexpr radians angle{1.F};
+    constexpr vec3f scale{0.5F, 1.F, 8.F};
+
+    mat.scale(scale).rotate(axis, angle).translate(offset);
+
+    tf.set_matrix(mat);
+
+    REQUIRE(approx_equal(tf.position(), offset));
+    REQUIRE(approx_equal(tf.scale(), scale));
+    REQUIRE(approx_equal(tf.rotation(), quaternionf{axis.normalized(), angle}));
+}
+
+TEST_CASE("Combined transform") {
+    transform tf;
+    mat4f mat;
+    constexpr vec3f offset{0.5F, -3.F, 4.5F};
+    constexpr vec3f axis{9.F, 0.5F, 1.F};
+    constexpr radians angle{5.F};
+    constexpr vec3f scale{0.5F, 1.F, 8.F};
+
+    SECTION("Matrix arbitrary transform") {
+        mat.translate(vec_right).rotate(vec_up, PI / 2);
+        tf.set_matrix(mat);
+        constexpr vec3f final_pos{0.F, 0.F, -1.F};
+        constexpr vec3f final_axis{vec_up};
+        constexpr radians final_rot = PI / 2;
+        REQUIRE(approx_equal(tf.position(), final_pos));
+        REQUIRE(approx_equal(tf.rotation(), quaternionf{final_axis, final_rot}));
+    }
+
+    SECTION("Matrix arbitrary transform with multiple operations") {
+        mat.translate(vec_right)
+            .rotate(vec_up, PI / 2)
+            .scale(vec3f{2.F, 2.F, 2.F})
+            .rotate(vec_forward, -PI / 4)
+            .translate(vec_up);
+
+        tf.set_matrix(mat);
+
+        constexpr vec3f final_pos{0.F, 1.F, -2.F};
+        const vec3f final_axis = vec3f{0.F, 1.F, 1.F}.normalized();
+        constexpr radians final_rot = 3 * PI / 4;
+
+        REQUIRE(approx_equal(tf.position(), final_pos));
+        REQUIRE(same_orientation(tf.rotation(), quaternionf{vec_up, PI / 2}.rotate(vec_forward, -PI / 4)));
+        REQUIRE(approx_equal(tf.scale(), vec3f{2.F, 2.F, 2.F}));
     }
 }

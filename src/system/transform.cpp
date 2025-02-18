@@ -2,6 +2,7 @@ module;
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 module stay3.system;
 
@@ -10,7 +11,7 @@ import :math_ops;
 namespace st {
 
 transform &transform::rotate(const vec3f &axis, radians angle) {
-    auto quat = quaternionf{axis, angle};
+    auto quat = quaternionf{axis.normalized(), angle};
 
     return rotate(quat);
 }
@@ -47,7 +48,7 @@ transform &transform::scale(float scale) {
 }
 
 transform &transform::set_rotation(const vec3f &axis, radians angle) {
-    m_rotation = quaternionf{axis, angle};
+    m_rotation = quaternionf{axis.normalized(), angle};
 
     m_transform_mat_ok = false;
     m_inv_transform_mat_ok = false;
@@ -81,6 +82,16 @@ transform &transform::set_scale(const vec3f &scale) {
 
 transform &transform::set_scale(float scale) {
     return set_scale({scale, scale, scale});
+}
+
+transform &transform::set_matrix(const mat4f &mat) {
+    vec3f skew;
+    vec4f perspective;
+    glm::decompose<float>(mat, m_scale, m_rotation, m_position, skew, perspective);
+    m_transform_mat = mat;
+    m_transform_mat_ok = true;
+    m_inv_transform_mat_ok = false;
+    return *this;
 }
 
 const mat4f &transform::matrix() const {

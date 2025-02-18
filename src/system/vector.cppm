@@ -5,6 +5,8 @@ module;
 
 export module stay3.system:vector;
 
+import :math;
+
 export namespace st {
 
 template<std::size_t length, typename type>
@@ -21,8 +23,9 @@ struct base_vec: public glm::vec<length, type> {
         return glm::length<length, type>(*this);
     }
 
-    [[nodiscard]] constexpr bool is_normalized() const {
-        return glm::length2<length, type>(*this) == 1.F;
+    [[nodiscard]] constexpr bool is_normalized(type tolerance = static_cast<type>(EPS)) const {
+        const auto len = glm::length2<length, type>(*this);
+        return static_cast<type>(1.0) - tolerance <= len && len <= static_cast<type>(1.0) + tolerance;
     }
 
     [[nodiscard]] constexpr type magnitude_squared() const {
@@ -56,7 +59,8 @@ using vec3i = vec3<int>;
 using vec4f = vec4<float>;
 using vec4i = vec4<int>;
 
-/*        Y+
+/* Left handed coordinate system
+          Y+
               |
               |     SCREEN
               |
