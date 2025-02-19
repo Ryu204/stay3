@@ -71,11 +71,11 @@ using vec4i = vec4<int>;
         /
       Z- <-- (PLAYER)
     */
-inline constexpr vec3f vec_up{0.F, 1.F, 0.F};
-inline constexpr vec3f vec_down{0.F, -1.F, 0.F};
-inline constexpr vec3f vec_left{-1.F, 0.F, 0.F};
-inline constexpr vec3f vec_right{1.F, 0.F, 0.F};
-inline constexpr vec3f vec_back{0.F, 0.F, -1.F};
-inline constexpr vec3f vec_forward{0.F, 0.F, 1.F};
+constexpr vec3f vec_up{0.F, 1.F, 0.F};
+constexpr vec3f vec_down{0.F, -1.F, 0.F};
+constexpr vec3f vec_left{-1.F, 0.F, 0.F};
+constexpr vec3f vec_right{1.F, 0.F, 0.F};
+constexpr vec3f vec_back{0.F, 0.F, -1.F};
+constexpr vec3f vec_forward{0.F, 0.F, 1.F};
 
 } // namespace st

@@ -123,7 +123,7 @@ TEST_CASE("Combined transform") {
         mat.translate(vec_right).rotate(vec_up, PI / 2);
         tf.set_matrix(mat);
         constexpr vec3f final_pos{0.F, 0.F, -1.F};
-        constexpr vec3f final_axis{vec_up};
+        const vec3f final_axis{vec_up};
         constexpr radians final_rot = PI / 2;
         REQUIRE(approx_equal(tf.position(), final_pos));
         REQUIRE(approx_equal(tf.orientation(), quaternionf{final_axis, final_rot}));
