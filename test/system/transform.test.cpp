@@ -117,7 +117,6 @@ TEST_CASE("Combined transform") {
     mat4f mat;
     constexpr vec3f offset{0.5F, -3.F, 4.5F};
     constexpr vec3f axis{9.F, 0.5F, 1.F};
-    constexpr radians angle{5.F};
     constexpr vec3f scale{0.5F, 1.F, 8.F};
 
     SECTION("Matrix arbitrary transform") {
@@ -140,8 +139,6 @@ TEST_CASE("Combined transform") {
         tf.set_matrix(mat);
 
         constexpr vec3f final_pos{0.F, 1.F, -2.F};
-        const vec3f final_axis = vec3f{0.F, 1.F, 1.F}.normalized();
-        constexpr radians final_rot = 3 * PI / 4;
 
         REQUIRE(approx_equal(tf.position(), final_pos));
         REQUIRE(same_orientation(tf.rotation(), quaternionf{vec_up, PI / 2}.rotate(vec_forward, -PI / 4)));

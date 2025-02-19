@@ -30,6 +30,13 @@ target_sources(test-helper
 function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
     add_executable(${TEST_NAME} ${SOURCE_FILE})
     target_link_libraries(${TEST_NAME} PRIVATE stay3 test-helper ${LIBS})
+
+    if (MSVC)
+        target_compile_options(${TEST_NAME} PRIVATE /W4 /bigobj)
+    else()
+        target_compile_options(${TEST_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+
     if(EMSCRIPTEN)
         set(TEST_SHELL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/web/test-shell.html)
         set_target_properties(${TEST_NAME} PROPERTIES SUFFIX ".html" LINK_DEPENDS ${TEST_SHELL_FILE})

@@ -8,6 +8,7 @@ export module stay3.system:quaternion;
 
 import :vector;
 import :matrix;
+import :math_ops;
 
 export namespace st {
 
