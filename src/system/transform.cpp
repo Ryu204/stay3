@@ -17,7 +17,7 @@ transform &transform::rotate(const vec3f &axis, radians angle) {
 }
 
 transform &transform::rotate(const quaternionf &quat) {
-    m_rotation.rotate(quat);
+    m_orientation.rotate(quat);
 
     m_transform_mat_ok = false;
     m_inv_transform_mat_ok = false;
@@ -47,8 +47,8 @@ transform &transform::scale(float scale) {
     return this->scale({scale, scale, scale});
 }
 
-transform &transform::set_rotation(const vec3f &axis, radians angle) {
-    m_rotation = quaternionf{axis.normalized(), angle};
+transform &transform::set_orientation(const vec3f &axis, radians angle) {
+    m_orientation = quaternionf{axis.normalized(), angle};
 
     m_transform_mat_ok = false;
     m_inv_transform_mat_ok = false;
@@ -56,8 +56,8 @@ transform &transform::set_rotation(const vec3f &axis, radians angle) {
     return *this;
 }
 
-transform &transform::set_rotation(const quaternionf &quat) {
-    m_rotation = quat;
+transform &transform::set_orientation(const quaternionf &quat) {
+    m_orientation = quat;
 
     m_transform_mat_ok = false;
     m_inv_transform_mat_ok = false;
@@ -87,7 +87,7 @@ transform &transform::set_scale(float scale) {
 transform &transform::set_matrix(const mat4f &mat) {
     vec3f skew;
     vec4f perspective;
-    glm::decompose<float>(mat, m_scale, m_rotation, m_position, skew, perspective);
+    glm::decompose<float>(mat, m_scale, m_orientation, m_position, skew, perspective);
     m_transform_mat = mat;
     m_transform_mat_ok = true;
     m_inv_transform_mat_ok = false;
@@ -97,7 +97,7 @@ transform &transform::set_matrix(const mat4f &mat) {
 const mat4f &transform::matrix() const {
     if(!m_transform_mat_ok) {
         m_transform_mat = glm::translate(glm::mat4{1.F}, m_position);
-        m_transform_mat *= m_rotation.matrix();
+        m_transform_mat *= m_orientation.matrix();
         m_transform_mat = glm::scale(m_transform_mat, m_scale);
         m_transform_mat_ok = true;
     }
@@ -114,8 +114,8 @@ const mat4f &transform::inv_matrix() const {
     return m_inv_transform_mat;
 }
 
-const quaternionf &transform::rotation() {
-    return m_rotation;
+const quaternionf &transform::orientation() {
+    return m_orientation;
 }
 
 const vec3f &transform::position() {

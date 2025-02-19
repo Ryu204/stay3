@@ -9,7 +9,7 @@ TEST_CASE("Transform - Default initialization") {
 
     SECTION("Default values") {
         const auto &pos = tf.position();
-        const auto &rot = tf.rotation();
+        const auto &rot = tf.orientation();
         const auto &scale = tf.scale();
 
         REQUIRE(approx_equal(pos, vec3f{0.F}));
@@ -43,13 +43,13 @@ TEST_CASE("Transform - Basic operations") {
 
     SECTION("Rotation") {
         tf.rotate(axis, angle);
-        REQUIRE(approx_equal(tf.rotation().axis(), axis));
-        REQUIRE(tf.rotation().angle() == Approx(angle));
+        REQUIRE(approx_equal(tf.orientation().axis(), axis));
+        REQUIRE(tf.orientation().angle() == Approx(angle));
 
         // Test quaternion rotation
         const quaternionf quat(axis, angle);
-        tf.set_rotation(quat);
-        REQUIRE(approx_equal(tf.rotation(), quat));
+        tf.set_orientation(quat);
+        REQUIRE(approx_equal(tf.orientation(), quat));
     }
 
     SECTION("Scale") {
@@ -109,7 +109,7 @@ TEST_CASE("Matrix setter") {
 
     REQUIRE(approx_equal(tf.position(), offset));
     REQUIRE(approx_equal(tf.scale(), scale));
-    REQUIRE(approx_equal(tf.rotation(), quaternionf{axis.normalized(), angle}));
+    REQUIRE(approx_equal(tf.orientation(), quaternionf{axis.normalized(), angle}));
 }
 
 TEST_CASE("Combined transform") {
@@ -126,7 +126,7 @@ TEST_CASE("Combined transform") {
         constexpr vec3f final_axis{vec_up};
         constexpr radians final_rot = PI / 2;
         REQUIRE(approx_equal(tf.position(), final_pos));
-        REQUIRE(approx_equal(tf.rotation(), quaternionf{final_axis, final_rot}));
+        REQUIRE(approx_equal(tf.orientation(), quaternionf{final_axis, final_rot}));
     }
 
     SECTION("Matrix arbitrary transform with multiple operations") {
@@ -141,7 +141,7 @@ TEST_CASE("Combined transform") {
         constexpr vec3f final_pos{0.F, 1.F, -2.F};
 
         REQUIRE(approx_equal(tf.position(), final_pos));
-        REQUIRE(same_orientation(tf.rotation(), quaternionf{vec_up, PI / 2}.rotate(vec_forward, -PI / 4)));
+        REQUIRE(same_orientation(tf.orientation(), quaternionf{vec_up, PI / 2}.rotate(vec_forward, -PI / 4)));
         REQUIRE(approx_equal(tf.scale(), vec3f{2.F, 2.F, 2.F}));
     }
 }

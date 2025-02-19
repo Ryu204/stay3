@@ -25,8 +25,8 @@ public:
     transform &scale(const vec3f &scale);
     transform &scale(float scale);
 
-    transform &set_rotation(const vec3f &axis, radians angle);
-    transform &set_rotation(const quaternionf &quat);
+    transform &set_orientation(const vec3f &axis, radians angle);
+    transform &set_orientation(const quaternionf &quat);
     transform &set_position(const vec3f &pos);
     transform &set_scale(const vec3f &scale);
     transform &set_scale(float scale);
@@ -35,13 +35,13 @@ public:
     const mat4f &matrix() const;
     const mat4f &inv_matrix() const;
 
-    const quaternionf &rotation();
+    const quaternionf &orientation();
     const vec3f &position();
     const vec3f &scale();
 
 private:
     vec3f m_position{0.F};
-    quaternionf m_rotation;
+    quaternionf m_orientation;
     vec3f m_scale{1.F};
 
     mutable mat4f m_transform_mat;
