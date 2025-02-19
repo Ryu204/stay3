@@ -115,9 +115,6 @@ TEST_CASE("Matrix setter") {
 TEST_CASE("Combined transform") {
     transform tf;
     mat4f mat;
-    constexpr vec3f offset{0.5F, -3.F, 4.5F};
-    constexpr vec3f axis{9.F, 0.5F, 1.F};
-    constexpr vec3f scale{0.5F, 1.F, 8.F};
 
     SECTION("Matrix arbitrary transform") {
         mat.translate(vec_right).rotate(vec_up, PI / 2);
