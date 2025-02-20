@@ -1,0 +1,39 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 31
+    },
+    "configurePresets": [
+        {
+            "name": "dev",
+            "binaryDir": "build/dev",
+            "cacheVariables": {
+                "stay3_BUILD_TESTS": true,
+                "stay3_BUILD_EXAMPLES": true
+            }
+        },
+        {
+            "name": "msvc",
+            "inherits": [
+                "dev"
+            ],
+            "binaryDir": "build/msvc",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl"
+            }
+        },
+        {
+            "name": "clang",
+            "inherits": [
+                "dev"
+            ],
+            "binaryDir": "build/clang",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        }
+    ]
+}

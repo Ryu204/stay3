@@ -2,3 +2,5 @@ build/
 .vscode/
 .cache/
 .ccache/
+
+CMakeUserPresets.json
