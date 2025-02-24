@@ -52,5 +52,7 @@ add_custom_test(system-vector system/vector.test.cpp "Catch2::Catch2WithMain" ""
 add_custom_test(system-matrix system/matrix.test.cpp "Catch2::Catch2WithMain;glm" "")
 add_custom_test(system-quaternion system/quaternion.test.cpp "Catch2::Catch2WithMain;glm" "")
 add_custom_test(system-transform system/transform.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(system-id-generator system/id_generator.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(node-node node/node.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(window-event window/event.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(graphics-glfw-window graphics/glfw_window.test.cpp "Catch2::Catch2WithMain" "")
