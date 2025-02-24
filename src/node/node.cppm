@@ -15,19 +15,21 @@ public:
 
     node(node_registry &registry);
     ~node();
-    node(node &&other) noexcept = delete;
+    node(node &&) noexcept = delete;
     node(const node &) = delete;
-    node &operator=(node &&other) noexcept = delete;
-    node &operator=(const node &other) = delete;
+    node &operator=(node &&) noexcept = delete;
+    node &operator=(const node &) = delete;
 
     node &add_child();
-    node *parent();
+    [[nodiscard]] node &parent() const;
     void reparent(node &other);
-    node &child(const id_type &id);
-    const node &child(const id_type &id) const;
+    [[nodiscard]] bool is_ancestor_of(const node &other) const;
+    [[nodiscard]] node &child(const id_type &id) const;
     void destroy_child(const id_type &id);
 
-    static std::unique_ptr<node> create();
+    [[nodiscard]] id_type id() const;
+
+    [[nodiscard]] static std::unique_ptr<node> create_root(node_registry &registry);
 
 private:
     id_type m_id{};
