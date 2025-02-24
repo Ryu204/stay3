@@ -34,10 +34,15 @@ target_sources(${PROJECT_NAME}
     src/system/matrix.cppm
     src/system/math_ops.cppm
     src/system/math.cppm
+    src/system/id_generator.cppm
 
     src/window/mod.cppm
     src/window/event.cppm
     src/window/base_window.cppm
+
+    src/node/mod.cppm
+    src/node/node.cppm
+    src/node/node_registry.cppm
 
     PRIVATE
 
@@ -47,6 +52,8 @@ target_sources(${PROJECT_NAME}
 
     src/system/time.cpp
     src/system/transform.cpp
+
+    src/node/node.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm)
