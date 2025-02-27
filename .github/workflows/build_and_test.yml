@@ -17,9 +17,11 @@ jobs:
     strategy:
       matrix:
         platform: 
-          # - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
           - { name: Ubuntu with clang, os: ubuntu-latest, pkg: clang, compiler: clang++, version: 18 }
-          - { name: Windows with MSVC, os: windows-latest }
+          # MSVC does not compile EnTT with module yet. Ref: https://github.com/skypjack/entt/issues/1216
+          # - { name: Windows with MSVC, os: windows-latest }
+          # I do not know how to build with gcc yet
+          # - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
         buildType: ["Debug"]
 
     name: ${{ matrix.platform.name }} - ${{ matrix.buildType }}
