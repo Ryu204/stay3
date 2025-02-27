@@ -16,6 +16,8 @@ export namespace st {
 
 class node_registry {
 public:
+    virtual ~node_registry() = default;
+
     [[nodiscard]] const node &get_node(const node::id_type &id) const {
         assert(m_id_to_node.contains(id) && "Unregistered id");
         return m_id_to_node.at(id);
@@ -33,7 +35,7 @@ public:
         assert(m_id_to_node.contains(node.id()) && "Node was not registered");
         m_root_id = node.id();
     }
-    node::id_type register_node(node &node) {
+    virtual node::id_type register_node(node &node) {
         const auto new_id = m_id_generator.create();
         m_id_to_node.emplace(new_id, node);
         return new_id;

@@ -2,23 +2,27 @@ module;
 
 #include <cassert>
 #include <memory>
+#include <utility>
 
 module stay3.node;
 
-import :node_registry;
+import stay3.ecs;
+import :tree_context;
 
 namespace st {
-node::node(node_registry &registry)
-    : m_registry{registry} {
-    m_id = m_registry.get().register_node(*this);
+node::node(tree_context &context)
+    : m_tree_context{context}, m_entities{context.ecs()} {
+    m_id = m_tree_context.get().register_node(*this);
+    m_entities.on_create().connect<&node::entity_created_handler>(*this);
+    m_entities.on_destroy().connect<&node::entity_destroyed_handler>(*this);
 }
 
 node::~node() {
-    m_registry.get().unregister_node(m_id);
+    m_tree_context.get().unregister_node(m_id);
 }
 
 node &node::add_child() {
-    auto child_ptr = std::make_unique<node>(m_registry);
+    auto child_ptr = std::make_unique<node>(m_tree_context);
     auto &result = *child_ptr;
     child_ptr->m_parent = this;
     const auto id = child_ptr->m_id;
@@ -35,7 +39,7 @@ void node::reparent(node &other) {
     assert(this != &other && "Parent to self");
     assert(!is_ancestor_of(other) && "Cyclic relationship");
     assert(m_parent != nullptr && "Node does not have parent");
-    assert(std::addressof(m_registry.get()) == std::addressof(other.m_registry.get())
+    assert(std::addressof(m_tree_context.get()) == std::addressof(other.m_tree_context.get())
            && "Nodes from 2 different trees");
     // Remove from old parent
     auto this_unique_ptr = std::move(m_parent->m_children[m_id]);
@@ -68,10 +72,26 @@ node::id_type node::id() const {
     return m_id;
 }
 
-std::unique_ptr<node> node::create_root(node_registry &registry) {
-    auto result = std::make_unique<node>(registry);
-    registry.register_root(*result);
+std::unique_ptr<node> node::create_root(tree_context &context) {
+    auto result = std::make_unique<node>(context);
+    context.register_root(*result);
     return result;
+}
+
+const entities_holder &node::entities() const {
+    return m_entities;
+}
+
+entities_holder &node::entities() {
+    return const_cast<entities_holder &>(std::as_const(*this).entities());
+}
+
+void node::entity_created_handler(entity en) {
+    m_entity_created.publish(*this, en);
+}
+
+void node::entity_destroyed_handler(entity en) {
+    m_entity_destroyed.publish(*this, en);
 }
 
 } // namespace st

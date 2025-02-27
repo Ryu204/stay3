@@ -35,6 +35,7 @@ target_sources(${PROJECT_NAME}
     src/system/math_ops.cppm
     src/system/math.cppm
     src/system/id_generator.cppm
+    src/system/signal.cppm
 
     src/window/mod.cppm
     src/window/event.cppm
@@ -43,6 +44,12 @@ target_sources(${PROJECT_NAME}
     src/node/mod.cppm
     src/node/node.cppm
     src/node/node_registry.cppm
+    src/node/tree_context.cppm
+
+    src/ecs/mod.cppm
+    src/ecs/entity.cppm
+    src/ecs/ecs_registry.cppm
+    src/ecs/entities_holder.cppm
 
     PRIVATE
 
@@ -56,7 +63,7 @@ target_sources(${PROJECT_NAME}
     src/node/node.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT)
 if(EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PRIVATE
         -sUSE_GLFW=3

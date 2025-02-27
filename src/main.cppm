@@ -5,3 +5,4 @@ export import stay3.graphics;
 export import stay3.system;
 export import stay3.window;
 export import stay3.node;
+export import stay3.ecs;

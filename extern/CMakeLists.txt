@@ -9,3 +9,5 @@ endif()
 
 add_subdirectory(glm)
 target_compile_definitions(glm PUBLIC GLM_ENABLE_EXPERIMENTAL)
+
+add_subdirectory(entt)
