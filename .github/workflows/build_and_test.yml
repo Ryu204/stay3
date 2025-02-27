@@ -36,8 +36,11 @@ jobs:
       
       - name: Install build dependencies (Linux)
         if: contains(matrix.platform.os, 'ubuntu')
-        run: sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm libwayland-dev libxkbcommon-dev xorg-dev xvfb fluxbox
-
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev \
+                                  mesa-common-dev libx11-xcb-dev pkg-config nodejs npm \
+                                  libwayland-dev libxkbcommon-dev xorg-dev xvfb fluxbox
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
     
@@ -57,13 +60,12 @@ jobs:
         run: |
           echo "CXX=clang++" >> "$GITHUB_ENV"
           echo "PATH=${{ runner.temp }}/llvm/bin:$PATH" >> "$GITHUB_ENV"
-
-      - name: Install compiler (Linux)
-        if: contains(matrix.platform.name, 'ubuntu')
+        
+      - name: Setup Clang scan deps (Linux)
+        if: contains(matrix.platform.name, 'Ubuntu with Clang')
         run: |
           sudo apt update
-          sudo apt install -y ${{ matrix.platform.pkg }}-${{ matrix.platform.version }}
-          echo "CXX=${{ matrix.platform.compiler }}-${{ matrix.platform.version }}" >> "$GITHUB_ENV"
+          sudo apt install -y clang-tools-${{ matrix.platform.version }}
 
       - name: Configure
         run: |
