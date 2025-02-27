@@ -17,7 +17,6 @@ class node {
 public:
     using id_type = std::uint32_t;
 
-    node(tree_context &context);
     ~node();
     node(node &&) noexcept = delete;
     node(const node &) = delete;
@@ -33,8 +32,6 @@ public:
 
     [[nodiscard]] id_type id() const;
 
-    [[nodiscard]] static std::unique_ptr<node> create_root(tree_context &context);
-
     [[nodiscard]] entities_holder &entities();
     [[nodiscard]] const entities_holder &entities() const;
     decltype(auto) on_entity_created() {
@@ -45,6 +42,9 @@ public:
     }
 
 private:
+    friend class tree_context;
+
+    node(tree_context &context);
     void entity_created_handler(entity en);
     void entity_destroyed_handler(entity en);
 

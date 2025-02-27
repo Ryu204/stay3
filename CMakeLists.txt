@@ -43,7 +43,6 @@ target_sources(${PROJECT_NAME}
 
     src/node/mod.cppm
     src/node/node.cppm
-    src/node/node_registry.cppm
     src/node/tree_context.cppm
 
     src/ecs/mod.cppm

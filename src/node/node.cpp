@@ -22,7 +22,8 @@ node::~node() {
 }
 
 node &node::add_child() {
-    auto child_ptr = std::make_unique<node>(m_tree_context);
+    // Constructor is private so no `std::make_unique`
+    auto child_ptr = std::unique_ptr<node>{new node{m_tree_context}};
     auto &result = *child_ptr;
     child_ptr->m_parent = this;
     const auto id = child_ptr->m_id;
@@ -70,12 +71,6 @@ void node::destroy_child(const id_type &id) {
 
 node::id_type node::id() const {
     return m_id;
-}
-
-std::unique_ptr<node> node::create_root(tree_context &context) {
-    auto result = std::make_unique<node>(context);
-    context.register_root(*result);
-    return result;
 }
 
 const entities_holder &node::entities() const {

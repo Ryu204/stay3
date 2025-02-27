@@ -7,7 +7,7 @@ using namespace st;
 
 TEST_CASE("Entity to node mapping") {
     tree_context context;
-    auto root = node::create_root(context);
+    auto root = context.create_root();
 
     SECTION("Entity should be added to mapping") {
         auto en = root->entities().push();
@@ -40,7 +40,7 @@ struct event_listener {
 
 TEST_CASE("Entities event") {
     tree_context context;
-    auto root = node::create_root(context);
+    auto root = context.create_root();
     event_listener lis;
 
     SECTION("Create event") {

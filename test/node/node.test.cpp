@@ -4,7 +4,7 @@ import stay3.node;
 
 TEST_CASE("node basic functionality") {
     st::tree_context context;
-    auto root = st::node::create_root(context);
+    auto root = context.create_root();
 
     SECTION("Root node is correctly registered") {
         REQUIRE(root->id() == context.get_root().id());
