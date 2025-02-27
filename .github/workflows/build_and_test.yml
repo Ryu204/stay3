@@ -60,12 +60,17 @@ jobs:
         run: |
           echo "CXX=clang++" >> "$GITHUB_ENV"
           echo "PATH=${{ runner.temp }}/llvm/bin:$PATH" >> "$GITHUB_ENV"
-        
-      - name: Setup Clang scan deps (Linux)
-        if: contains(matrix.platform.name, 'Ubuntu with Clang')
+      
+      - name: Install compiler (Linux)
+        if: contains(matrix.platform.name, 'ubuntu')
         run: |
           sudo apt update
-          sudo apt install -y clang-tools-${{ matrix.platform.version }}
+          sudo apt install -y ${{ matrix.platform.pkg }}-${{ matrix.platform.version }}
+          echo "CXX=${{ matrix.platform.compiler }}-${{ matrix.platform.version }}" >> "$GITHUB_ENV"
+
+      - name: Setup Clang scan deps (Linux)
+        if: contains(matrix.platform.name, 'Ubuntu with Clang')
+        run: sudo apt install -y clang-tools-${{ matrix.platform.version }}
 
       - name: Configure
         run: |
