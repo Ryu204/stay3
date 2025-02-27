@@ -2,15 +2,25 @@
 
 As of document writing (01/2025), only Ninja and Visual Studio support modules.
 
+However, currently `EnTT` failed to build if used inside a module with MSVC.
+
 # Important note
 
 1. Coordinate system is left handed, and positive rotation means clockwise. For example, 90 deg rotation around X+ axis is from Y+ to Z+.
 
 1. Angle unit is radians, `radians` is alias of float.
 
+1. The framework follows a tree hierarchy. Root node is created by a `tree_context` instance.
+
+1. ECS is supported by attaching arbitrary amount of entities to each node, and use the registry provided by `tree_context`.
+
 # Build instructions
 
-Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher.
+Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
+* `clang >= 19`
+* `emscripten>=4`
+* <del>`msvc >= v17.14`
+* <del>`gcc>=14`
 
 (Linux only) Install dependencies:
 ```
