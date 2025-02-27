@@ -13,4 +13,4 @@
 [submodule "extern/entt"]
 	path = extern/entt
 	url = https://github.com/skypjack/entt
-	branch = v3.13.x
+	branch = master
