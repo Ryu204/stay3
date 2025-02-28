@@ -33,7 +33,7 @@ public:
     /**
      * @brief Creates new entity
      */
-    [[nodiscard]] entity push() {
+    [[nodiscard]] entity create() {
         const auto result = m_registry.get().create_entity();
         m_entities.emplace_back(result);
         m_entity_created.publish(result);
@@ -43,7 +43,7 @@ public:
     /**
      * @brief Erases entity by index
      */
-    void erase(std::ptrdiff_t index) {
+    void destroy(std::ptrdiff_t index) {
         assert(m_entities.size() > index && "Out of range");
 
         const auto destroyed_entity = m_entities[index];

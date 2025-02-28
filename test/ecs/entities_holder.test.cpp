@@ -11,15 +11,15 @@ TEST_CASE("Entity manipulation") {
     entities_holder es{reg};
 
     SECTION("Push and erase") {
-        const auto en = es.push();
+        const auto en = es.create();
         REQUIRE(reg.contains_entity(en));
 
-        const auto en2 = es.push();
-        es.erase(1);
+        const auto en2 = es.create();
+        es.destroy(1);
         REQUIRE_FALSE(reg.contains_entity(en2));
         REQUIRE(reg.contains_entity(en));
 
-        es.erase(0);
+        es.destroy(0);
         REQUIRE_FALSE(reg.contains_entity(en));
     }
 
@@ -29,7 +29,7 @@ TEST_CASE("Entity manipulation") {
         constexpr auto size = 10;
         std::unordered_set<entity, entity_hasher> entities;
         for(auto i = 0; i < size; ++i) {
-            entities.insert(es.push());
+            entities.insert(es.create());
         }
         REQUIRE(entities.size() == size);
         REQUIRE(es.size() == size);
@@ -37,9 +37,9 @@ TEST_CASE("Entity manipulation") {
 
     SECTION("Iterator") {
         REQUIRE(es.begin() == es.end());
-        std::ignore = es.push();
+        std::ignore = es.create();
         REQUIRE((es.begin() + 1) == es.end());
-        es.erase(0);
+        es.destroy(0);
         REQUIRE(es.begin() == es.end());
     }
 
@@ -47,7 +47,7 @@ TEST_CASE("Entity manipulation") {
         constexpr auto size = 10;
         std::unordered_set<entity, entity_hasher> entities;
         for(auto i = 0; i < size; ++i) {
-            entities.insert(es.push());
+            entities.insert(es.create());
         }
         es.each([](ecs_registry &reg, entity en) {
             reg.emplace_component<int>(en, 10);
@@ -74,11 +74,11 @@ TEST_CASE("Signal emission") {
         listener lis{};
 
         es.on_create().connect<&listener::on_other_entity_update>(lis);
-        const auto created_en = es.push();
+        const auto created_en = es.create();
         REQUIRE(lis.en == created_en);
 
         es.on_create().disconnect<&listener::on_other_entity_update>(lis);
-        std::ignore = es.push();
+        std::ignore = es.create();
         REQUIRE(lis.en == created_en);
     }
 
@@ -86,13 +86,13 @@ TEST_CASE("Signal emission") {
         listener lis{};
 
         es.on_destroy().connect<&listener::on_other_entity_update>(lis);
-        const auto created_en = es.push();
-        es.erase(0);
+        const auto created_en = es.create();
+        es.destroy(0);
         REQUIRE(lis.en == created_en);
 
         es.on_destroy().disconnect<&listener::on_other_entity_update>(lis);
-        std::ignore = es.push();
-        es.erase(0);
+        std::ignore = es.create();
+        es.destroy(0);
         REQUIRE(lis.en == created_en);
     }
 }

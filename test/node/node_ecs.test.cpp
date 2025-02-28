@@ -10,21 +10,21 @@ TEST_CASE("Entity to node mapping") {
     auto root = context.create_root();
 
     SECTION("Entity should be added to mapping") {
-        auto en = root->entities().push();
+        auto en = root->entities().create();
         REQUIRE(context.ecs().contains_entity(en));
         REQUIRE((&context.get_node(en)) == root.get());
     }
 
     SECTION("Children's entities should be added to mapping") {
         auto &child1 = root->add_child();
-        auto en = child1.entities().push();
+        auto en = child1.entities().create();
         REQUIRE(context.ecs().contains_entity(en));
         REQUIRE((&context.get_node(en)) == (&child1));
     }
 
     SECTION("Deleted entity is removed from ecs registry") {
-        auto en = root->entities().push();
-        root->entities().erase(0);
+        auto en = root->entities().create();
+        root->entities().destroy(0);
         REQUIRE_FALSE(context.ecs().contains_entity(en));
     }
 }
@@ -45,39 +45,39 @@ TEST_CASE("Entities event") {
 
     SECTION("Create event") {
         root->on_entity_created().connect<&event_listener::on_event>(lis);
-        auto en = root->entities().push();
+        auto en = root->entities().create();
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == root.get());
 
         auto &child = root->add_child();
         child.on_entity_created().connect<&event_listener::on_event>(lis);
-        en = child.entities().push();
+        en = child.entities().create();
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == (&child));
 
         child.on_entity_created().disconnect<&event_listener::on_event>(lis);
-        en = child.entities().push();
+        en = child.entities().create();
         REQUIRE(lis.en != en);
         REQUIRE(lis.node == (&child));
     }
 
     SECTION("Destroy event") {
         root->on_entity_destroyed().connect<&event_listener::on_event>(lis);
-        auto en = root->entities().push();
-        root->entities().erase(0);
+        auto en = root->entities().create();
+        root->entities().destroy(0);
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == root.get());
 
         auto &child = root->add_child();
         child.on_entity_destroyed().connect<&event_listener::on_event>(lis);
-        en = child.entities().push();
-        child.entities().erase(0);
+        en = child.entities().create();
+        child.entities().destroy(0);
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == (&child));
 
         child.on_entity_destroyed().disconnect<&event_listener::on_event>(lis);
-        en = child.entities().push();
-        child.entities().erase(0);
+        en = child.entities().create();
+        child.entities().destroy(0);
         REQUIRE(lis.en != en);
         REQUIRE(lis.node == (&child));
     }
