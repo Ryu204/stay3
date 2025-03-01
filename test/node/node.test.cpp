@@ -3,17 +3,19 @@
 import stay3.node;
 
 TEST_CASE("node basic functionality") {
-    st::node_registry registry;
-    auto root = st::node::create_root(registry);
+    st::tree_context context;
+    auto root = context.create_root();
 
     SECTION("Root node is correctly registered") {
-        REQUIRE(root->id() == registry.get_root().id());
+        REQUIRE(root->id() == context.get_root().id());
+        REQUIRE((&context.get_node(root->id())) == root.get());
     }
 
     SECTION("Adding child nodes") {
         auto &child1 = root->add_child();
         auto &child2 = root->add_child();
         REQUIRE(child1.id() != child2.id());
+        REQUIRE((&context.get_node(child1.id())) == (&child1));
     }
 
     SECTION("Parent-child relationship is maintained") {

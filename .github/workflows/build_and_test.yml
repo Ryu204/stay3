@@ -17,9 +17,12 @@ jobs:
     strategy:
       matrix:
         platform: 
+          - { name: Ubuntu with Clang, os: ubuntu-latest, pkg: clang, compiler: clang++, version: 19 }
+          - { name: Windows with Clang, os: windows-latest, compiler: clang++, version: 19 }
+          # MSVC does not compile EnTT with module yet. Ref: https://github.com/skypjack/entt/issues/1216
+          # - { name: Windows with MSVC, os: windows-latest }
+          # I do not know how to build with gcc yet
           # - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
-          - { name: Ubuntu with clang, os: ubuntu-latest, pkg: clang, compiler: clang++, version: 18 }
-          - { name: Windows with MSVC, os: windows-latest }
         buildType: ["Debug"]
 
     name: ${{ matrix.platform.name }} - ${{ matrix.buildType }}
@@ -33,8 +36,11 @@ jobs:
       
       - name: Install build dependencies (Linux)
         if: contains(matrix.platform.os, 'ubuntu')
-        run: sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config nodejs npm libwayland-dev libxkbcommon-dev xorg-dev xvfb fluxbox
-
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev \
+                                  mesa-common-dev libx11-xcb-dev pkg-config nodejs npm \
+                                  libwayland-dev libxkbcommon-dev xorg-dev xvfb fluxbox
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
     
@@ -42,12 +48,29 @@ jobs:
         if: contains(matrix.platform.name, 'MSVC')
         uses: ilammy/msvc-dev-cmd@v1
       
+      - name: Install LLVM and Clang (Windows)
+        if: contains(matrix.platform.name, 'Windows with Clang')
+        uses: KyleMayes/install-llvm-action@v2.0.6
+        with:
+          version: ${{ matrix.platform.version }}
+          directory: ${{ runner.temp }}/llvm
+      
+      - name: Setup Clang environment (Windows)
+        if: contains(matrix.platform.name, 'Windows with Clang')
+        run: |
+          echo "CXX=clang++" >> "$GITHUB_ENV"
+          echo "PATH=${{ runner.temp }}/llvm/bin:$PATH" >> "$GITHUB_ENV"
+      
       - name: Install compiler (Linux)
         if: contains(matrix.platform.name, 'ubuntu')
         run: |
           sudo apt update
           sudo apt install -y ${{ matrix.platform.pkg }}-${{ matrix.platform.version }}
           echo "CXX=${{ matrix.platform.compiler }}-${{ matrix.platform.version }}" >> "$GITHUB_ENV"
+
+      - name: Setup Clang scan deps (Linux)
+        if: contains(matrix.platform.name, 'Ubuntu with Clang')
+        run: sudo apt install -y clang-tools-${{ matrix.platform.version }}
 
       - name: Configure
         run: |

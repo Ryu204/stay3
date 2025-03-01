@@ -1,19 +1,22 @@
 module;
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <unordered_map>
 
 export module stay3.node:node;
 
+import stay3.ecs;
+import stay3.system;
+
 export namespace st {
 
-class node_registry;
+class tree_context;
 class node {
 public:
-    using id_type = std::size_t;
+    using id_type = std::uint32_t;
 
-    node(node_registry &registry);
     ~node();
     node(node &&) noexcept = delete;
     node(const node &) = delete;
@@ -29,12 +32,31 @@ public:
 
     [[nodiscard]] id_type id() const;
 
-    [[nodiscard]] static std::unique_ptr<node> create_root(node_registry &registry);
+    [[nodiscard]] entities_holder &entities();
+    [[nodiscard]] const entities_holder &entities() const;
+    decltype(auto) on_entity_created() {
+        return this->m_entity_created_sink;
+    }
+    decltype(auto) on_entity_destroyed() {
+        return this->m_entity_destroyed_sink;
+    }
 
 private:
+    friend class tree_context;
+
+    node(tree_context &context);
+    void entity_created_handler(entity en);
+    void entity_destroyed_handler(entity en);
+
     id_type m_id{};
     node *m_parent{};
     std::unordered_map<id_type, std::unique_ptr<node>> m_children;
-    std::reference_wrapper<node_registry> m_registry;
+    std::reference_wrapper<tree_context> m_tree_context;
+
+    entities_holder m_entities;
+    signal<void(node &, entity)> m_entity_created;
+    sink<decltype(m_entity_created)> m_entity_created_sink{m_entity_created};
+    signal<void(node &, entity)> m_entity_destroyed;
+    sink<decltype(m_entity_destroyed)> m_entity_destroyed_sink{m_entity_destroyed};
 };
 } // namespace st
