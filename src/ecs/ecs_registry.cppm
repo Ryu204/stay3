@@ -29,7 +29,7 @@ public:
     }
 
     template<component comp, typename... arguments>
-    void emplace_component(entity en, arguments &&...args) {
+    void add_component(entity en, arguments &&...args) {
         m_registry.emplace<comp>(en, std::forward<arguments>(args)...);
     }
 

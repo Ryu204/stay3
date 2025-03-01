@@ -50,7 +50,7 @@ TEST_CASE("Entity manipulation") {
             entities.insert(es.create());
         }
         es.each([](ecs_registry &reg, entity en) {
-            reg.emplace_component<int>(en, 10);
+            reg.add_component<int>(en, 10);
         });
 
         for(const auto &en: es) {
