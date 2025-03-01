@@ -49,6 +49,9 @@ target_sources(${PROJECT_NAME}
     src/ecs/entity.cppm
     src/ecs/ecs_registry.cppm
     src/ecs/entities_holder.cppm
+    src/ecs/system_data.cppm
+    src/ecs/system_wrapper.cppm
+    src/ecs/system_manager.cppm
 
     PRIVATE
 
