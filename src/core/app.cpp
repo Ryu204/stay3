@@ -6,6 +6,8 @@ module;
 
 module stay3.core;
 
+import stay3.ecs;
+import stay3.node;
 import stay3.window;
 import stay3.system;
 
@@ -13,7 +15,12 @@ constexpr auto temp_fps = 60.F;
 
 namespace st {
 
+system_manager<tree_context> &app::systems() {
+    return m_ecs_systems;
+}
+
 void app::run() {
+    m_ecs_systems.start(m_tree_context);
 #ifdef __EMSCRIPTEN__
     constexpr auto func = [](void *p_app) {
         static_cast<app *>(p_app)->on_frame();
@@ -23,6 +30,7 @@ void app::run() {
     while(m_window.is_open()) {
         on_frame();
     }
+    m_ecs_systems.cleanup(m_tree_context);
 #endif
 }
 
@@ -41,10 +49,12 @@ void app::on_frame() {
 }
 
 void app::update(seconds delta) {
+    m_ecs_systems.update(delta, m_tree_context);
 }
 
 void app::render() {
     m_window.clear();
+    m_ecs_systems.render(m_tree_context);
     m_window.display();
 }
 
