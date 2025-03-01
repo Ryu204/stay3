@@ -24,7 +24,7 @@ template<typename context>
 class system_manager {
     struct system_entry_per_type {
         std::reference_wrapper<system_wrapper<context>> system;
-        sys_custom_priority priority;
+        sys_priority_t priority;
         bool operator<(const system_entry_per_type &other) const {
             constexpr auto has_higher_priority = [](const auto &higher, const auto &lower) {
                 return higher.priority > lower.priority;
@@ -34,27 +34,28 @@ class system_manager {
     };
 
     using wrapper = system_wrapper<context>;
-    class proxy {
+    /**
+     * @brief Register system roles to manager
+     */
+    class base_proxy {
     public:
-        using priority = std::variant<sys_priority, sys_custom_priority>;
+        using priority = std::variant<sys_priority, sys_priority_t>;
         using types = std::underlying_type_t<sys_type>;
 
-        proxy(wrapper &system, system_manager &manager)
+        base_proxy(wrapper &system, system_manager &manager)
             : m_system{system}, m_manager{manager} {}
 
+    protected:
         template<sys_type type>
-        proxy &run_as(priority order = sys_priority::medium) {
+        void run_as(priority order) {
             const auto order_as_num = std::visit(
-                [](auto &&value) { return static_cast<sys_custom_priority>(value); },
+                [](auto &&value) { return static_cast<sys_priority_t>(value); },
                 order);
 
             assert((static_cast<types>(type) & m_registered_types) == 0 && "System type registered twice");
-            assert(m_system.get().template is_type<type>() && "System does not satisfy type");
             m_registered_types |= static_cast<types>(type);
 
             m_manager.get().m_systems_by_type[type].insert({.system = m_system, .priority = order_as_num});
-
-            return *this;
         }
 
     private:
@@ -62,10 +63,25 @@ class system_manager {
         std::reference_wrapper<wrapper> m_system;
         std::reference_wrapper<system_manager<context>> m_manager;
     };
+    /**
+     * @brief Provides compile time system roles check
+     */
+    template<typename sys>
+    struct proxy: base_proxy {
+        using base_proxy::base_proxy;
+
+        template<sys_type type>
+        proxy &run_as(base_proxy::priority order = sys_priority::medium)
+            requires is_system_type<type, sys, context>
+        {
+            base_proxy::template run_as<type>(order);
+            return *this;
+        }
+    };
 
 public:
     template<typename sys, typename... sys_ctor_args>
-    proxy add(sys_ctor_args &&...args) {
+    proxy<sys> add(sys_ctor_args &&...args) {
         auto &sys_ptr = m_systems.emplace_back(std::make_unique<wrapper>(std::in_place_type<sys>, std::forward<sys_ctor_args>(args)...));
         return {*sys_ptr, *this};
     }
@@ -93,7 +109,7 @@ private:
             entry.system.get().template call_method<type>(std::forward<args>(arguments)...);
         }
     }
-    friend class proxy;
+    friend class base_proxy;
     std::unordered_map<sys_type, std::set<system_entry_per_type>> m_systems_by_type;
     std::vector<std::unique_ptr<wrapper>> m_systems;
 };

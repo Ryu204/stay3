@@ -64,6 +64,5 @@ add_custom_test(graphics-glfw-window graphics/glfw_window.test.cpp "Catch2::Catc
 
 add_custom_test(ecs-ecs-registry ecs/ecs_registry.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-entities-holder ecs/entities_holder.test.cpp "Catch2::Catch2WithMain" "")
-add_custom_test(ecs-system-wrapper ecs/system_wrapper.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-system-data ecs/system_data.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-system-manager ecs/system_manager.test.cpp "Catch2::Catch2WithMain" "")

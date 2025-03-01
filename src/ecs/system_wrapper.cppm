@@ -26,31 +26,15 @@ public:
 
     template<sys_type type, typename... args>
     void call_method(args &&...arguments) {
-        if constexpr(type == sys_type::start) {
-            assert(m_start_callback && "Not a start system");
-            m_start_callback(std::forward<args>(arguments)...);
-        }
-        if constexpr(type == sys_type::update) {
-            assert(m_update_callback && "Not an update system");
-            m_update_callback(std::forward<args>(arguments)...);
-        }
-        if constexpr(type == sys_type::cleanup) {
-            assert(m_cleanup_callback && "Not a cleanup system");
-            m_cleanup_callback(std::forward<args>(arguments)...);
-        }
-        if constexpr(type == sys_type::render) {
-            assert(m_render_callback && "Not a render system");
-            m_render_callback(std::forward<args>(arguments)...);
-        }
+#define CHECK_AND_CALL(role) \
+    if constexpr(type == sys_type::role) { \
+        assert(m_##role##_callback && "Not " #role " system"); \
+        m_##role##_callback(std::forward<args>(arguments)...); \
     }
-
-    template<sys_type type>
-    [[nodiscard]] bool is_type() const {
-        return m_types & static_cast<decltype(m_types)>(type);
-    }
-
-    auto types() const {
-        return m_types;
+        CHECK_AND_CALL(start)
+        CHECK_AND_CALL(update)
+        CHECK_AND_CALL(cleanup)
+        CHECK_AND_CALL(render)
     }
 
 private:
@@ -61,29 +45,24 @@ private:
             m_update_callback = [object](seconds delta, context &ctx) {
                 object->update(delta, ctx);
             };
-            m_types |= static_cast<decltype(m_types)>(sys_type::update);
         }
         if constexpr(is_start_system<sys, context>) {
             m_start_callback = [object](context &ctx) {
                 object->start(ctx);
             };
-            m_types |= static_cast<decltype(m_types)>(sys_type::start);
         }
         if constexpr(is_cleanup_system<sys, context>) {
             m_cleanup_callback = [object](context &ctx) {
                 object->cleanup(ctx);
             };
-            m_types |= static_cast<decltype(m_types)>(sys_type::cleanup);
         }
         if constexpr(is_render_system<sys, context>) {
             m_render_callback = [object](context &ctx) {
                 object->render(ctx);
             };
-            m_types |= static_cast<decltype(m_types)>(sys_type::render);
         }
     }
 
-    std::underlying_type_t<sys_type> m_types{};
     std::any m_underlying;
     std::function<void(seconds, context &)> m_update_callback;
     std::function<void(context &)> m_start_callback;
