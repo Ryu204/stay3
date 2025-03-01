@@ -1,3 +1,5 @@
+# 🚧 Under Construction 🚧
+
 **stay3** is a game framework allowing rapid development... to be continued.
 
 As of document writing (01/2025), only Ninja and Visual Studio support modules.
@@ -14,6 +16,32 @@ However, currently `EnTT` failed to build if used inside a module with MSVC.
 
 1. ECS is supported by attaching arbitrary amount of entities to each node, and use the registry provided by `tree_context`.
 
+1. Any class act as multiple system types. Requirements are having public methods with:
+* correct names
+* arguments convertible to types in following table.
+
+|system type|method name|argument(s)|
+|-----------|-----------|--------|
+|`sys_type::start`|`start`|`tree_context&`|
+|`sys_type::update`|`update`|`seconds`, `tree_context&`|
+|`sys_type::render`|`render`|`tree_context&`|
+|`sys_type::cleanup`|`cleanup`|`tree_context&`|
+
+```cpp
+import stay3;
+using namespace st;
+
+class my_type;
+struct system {
+    // Qualified as start system
+    bool start(const tree_context&) const;
+    
+    // Qualified as an update system
+    static my_type update(double delta_time, tree_context& ctx);
+    
+    /* ... */
+};
+```
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
