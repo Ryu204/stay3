@@ -3,10 +3,8 @@ module;
 #include <cassert>
 #include <functional>
 #include <memory>
-#include <optional>
 #include <unordered_map>
 #include <utility>
-
 
 export module stay3.node:tree_context;
 
@@ -19,6 +17,15 @@ export namespace st {
 
 class tree_context {
 public:
+    tree_context() = default;
+    ~tree_context() {
+        m_root.reset();
+    }
+    tree_context(const tree_context &) = delete;
+    tree_context &operator=(const tree_context &) = delete;
+    tree_context(tree_context &&) noexcept = delete;
+    tree_context &operator=(tree_context &&) noexcept = delete;
+
     [[nodiscard]] node &get_node(entity en) {
         assert(m_entity_to_node.contains(en) && "Invalid entity");
         return m_entity_to_node.at(en);
@@ -37,16 +44,12 @@ public:
         return const_cast<node &>(std::as_const(*this).get_node(id));
     }
 
-    [[nodiscard]] node &get_root() const {
-        assert(m_root_id.has_value() && "Root was not registered");
-        return m_id_to_node.at(m_root_id.value());
-    }
-
-    [[nodiscard]] std::unique_ptr<node> create_root() {
-        // We cannot use `std::make_unique` because the constructor is private
-        auto result = std::unique_ptr<node>{new node{*this}};
-        set_root(*result);
-        return result;
+    [[nodiscard]] node &root() {
+        if(!m_root) {
+            // We cannot use `std::make_unique` because the constructor is private
+            m_root = std::unique_ptr<node>{new node{*this}};
+        }
+        return *m_root;
     }
 
 private:
@@ -73,13 +76,7 @@ private:
         m_id_to_node.erase(id);
     }
 
-    void set_root(node &node) {
-        assert(!m_root_id.has_value() && "Root was set");
-        assert(m_id_to_node.contains(node.id()) && "Node was not registered");
-        m_root_id = node.id();
-    }
-
-    std::optional<node::id_type> m_root_id;
+    std::unique_ptr<node> m_root;
     std::unordered_map<node::id_type, std::reference_wrapper<node>> m_id_to_node;
     id_generator<node::id_type> m_id_generator;
 
