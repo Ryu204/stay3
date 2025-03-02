@@ -14,8 +14,13 @@ struct my_system {
         ctx.ecs().add_component<int>(child2.entities().create(), 4);
     }
 
-    static void update(seconds, tree_context &) {
-        std::cout << "Updated scene\n";
+    static void update(seconds, tree_context &ctx) {
+        auto sum = 0;
+        for(auto &&[en, val]: ctx.ecs().each<int>()) {
+            std::cout << "[node " << ctx.get_node(en).id() << ", value " << val << "];";
+            sum += val;
+        }
+        std::cout << "\nSum = " << sum << '\n';
     }
 
     static void render(tree_context &) {

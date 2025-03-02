@@ -59,6 +59,11 @@ public:
         return m_registry.get<comp>(en);
     }
 
+    template<component... comps>
+    auto each() {
+        return m_registry.view<comps...>().each();
+    }
+
 private:
     entt::registry m_registry;
 };
