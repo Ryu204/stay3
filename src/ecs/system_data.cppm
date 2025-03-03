@@ -5,7 +5,7 @@ module;
 
 export module stay3.ecs:system_data;
 
-import stay3.system;
+import stay3.core;
 
 export namespace st {
 

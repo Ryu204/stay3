@@ -2,7 +2,7 @@ module;
 
 #include <chrono>
 
-export module stay3.system:time;
+export module stay3.core:time;
 
 export namespace st {
 

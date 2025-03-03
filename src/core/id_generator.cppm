@@ -5,7 +5,7 @@ module;
 #include <limits>
 #include <unordered_set>
 
-export module stay3.system:id_generator;
+export module stay3.core:id_generator;
 
 export namespace st {
 template<std::unsigned_integral type>

@@ -3,7 +3,7 @@
 #include <catch2/catch_all.hpp>
 #include "catch2/matchers/catch_matchers_range_equals.hpp"
 
-import stay3.system;
+import stay3.core;
 import stay3.ecs;
 
 struct test_context {

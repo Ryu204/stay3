@@ -2,12 +2,12 @@ module;
 
 #include <cstdint>
 
-export module stay3.core:app;
+export module stay3.program:app;
 
 import stay3.ecs;
 import stay3.node;
 import stay3.graphics;
-import stay3.system;
+import stay3.core;
 
 export namespace st {
 class app {

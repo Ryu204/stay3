@@ -8,7 +8,7 @@ module;
 
 export module stay3.node:tree_context;
 
-import stay3.system;
+import stay3.core;
 import stay3.ecs;
 
 import :node;

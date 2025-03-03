@@ -18,24 +18,24 @@ target_sources(${PROJECT_NAME}
 
     src/main.cppm
 
-    src/core/mod.cppm
-    src/core/app.cppm
+    src/program/mod.cppm
+    src/program/app.cppm
 
     src/graphics/mod.cppm
     src/graphics/error.cppm
     src/graphics/glfw_window.cppm
 
-    src/system/mod.cppm
-    src/system/error.cppm
-    src/system/time.cppm
-    src/system/vector.cppm
-    src/system/quaternion.cppm
-    src/system/transform.cppm
-    src/system/matrix.cppm
-    src/system/math_ops.cppm
-    src/system/math.cppm
-    src/system/id_generator.cppm
-    src/system/signal.cppm
+    src/core/mod.cppm
+    src/core/error.cppm
+    src/core/time.cppm
+    src/core/vector.cppm
+    src/core/quaternion.cppm
+    src/core/transform.cppm
+    src/core/matrix.cppm
+    src/core/math_ops.cppm
+    src/core/math.cppm
+    src/core/id_generator.cppm
+    src/core/signal.cppm
 
     src/window/mod.cppm
     src/window/event.cppm
@@ -55,12 +55,12 @@ target_sources(${PROJECT_NAME}
 
     PRIVATE
 
-    src/core/app.cpp
+    src/program/app.cpp
 
     src/graphics/glfw_window.cpp
 
-    src/system/time.cpp
-    src/system/transform.cpp
+    src/core/time.cpp
+    src/core/transform.cpp
 
     src/node/node.cpp
 )

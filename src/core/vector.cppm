@@ -3,7 +3,7 @@ module;
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 
-export module stay3.system:vector;
+export module stay3.core:vector;
 
 import :math;
 

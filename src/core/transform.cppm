@@ -1,6 +1,6 @@
 module;
 
-export module stay3.system:transform;
+export module stay3.core:transform;
 
 import :vector;
 import :quaternion;

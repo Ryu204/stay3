@@ -11,7 +11,7 @@ module;
 
 export module stay3.ecs:system_manager;
 
-import stay3.system;
+import stay3.core;
 import :system_data;
 import :system_wrapper;
 

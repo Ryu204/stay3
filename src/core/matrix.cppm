@@ -3,7 +3,7 @@ module;
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/matrix.hpp>
 
-export module stay3.system:matrix;
+export module stay3.core:matrix;
 
 import :vector;
 

@@ -4,12 +4,12 @@ module;
 #    include <emscripten.h>
 #endif
 
-module stay3.core;
+module stay3.program;
 
 import stay3.ecs;
 import stay3.node;
 import stay3.window;
-import stay3.system;
+import stay3.core;
 
 constexpr auto temp_fps = 60.F;
 

@@ -4,7 +4,7 @@ module;
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-export module stay3.system:quaternion;
+export module stay3.core:quaternion;
 
 import :vector;
 import :matrix;

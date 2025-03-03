@@ -3,7 +3,7 @@ module;
 #include <chrono>
 #include <utility>
 
-module stay3.system;
+module stay3.core;
 
 namespace st {
 stop_watch::stop_watch()

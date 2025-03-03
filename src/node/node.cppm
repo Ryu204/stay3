@@ -8,7 +8,7 @@ module;
 export module stay3.node:node;
 
 import stay3.ecs;
-import stay3.system;
+import stay3.core;
 
 export namespace st {
 

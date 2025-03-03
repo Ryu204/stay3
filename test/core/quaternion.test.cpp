@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-import stay3.system;
+import stay3.core;
 import stay3.test_helper;
 using namespace st;
 using Catch::Approx;

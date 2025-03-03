@@ -2,7 +2,7 @@ module;
 
 #include <numbers>
 
-export module stay3.system:math;
+export module stay3.core:math;
 
 export namespace st {
 

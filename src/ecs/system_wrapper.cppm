@@ -8,7 +8,7 @@ module;
 
 export module stay3.ecs:system_wrapper;
 
-import stay3.system;
+import stay3.core;
 import :system_data;
 
 export namespace st {

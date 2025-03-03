@@ -24,7 +24,7 @@ add_library(test-helper)
 target_link_libraries(test-helper PRIVATE stay3)
 target_sources(test-helper
     PUBLIC FILE_SET my_modules_source TYPE CXX_MODULES FILES
-    system/test_helper.cppm
+    core/test_helper.cppm
 )
 
 function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
@@ -47,13 +47,13 @@ function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
     endif()
 endfunction()
 
-add_custom_test(system-time system/time.test.cpp "Catch2::Catch2WithMain" "")
-add_custom_test(system-vector system/vector.test.cpp "Catch2::Catch2WithMain" "")
-add_custom_test(system-matrix system/matrix.test.cpp "Catch2::Catch2WithMain;glm" "")
-add_custom_test(system-quaternion system/quaternion.test.cpp "Catch2::Catch2WithMain;glm" "")
-add_custom_test(system-transform system/transform.test.cpp "Catch2::Catch2WithMain" "")
-add_custom_test(system-id-generator system/id_generator.test.cpp "Catch2::Catch2WithMain" "")
-add_custom_test(system-signal system/signal.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-time core/time.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-vector core/vector.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-matrix core/matrix.test.cpp "Catch2::Catch2WithMain;glm" "")
+add_custom_test(core-quaternion core/quaternion.test.cpp "Catch2::Catch2WithMain;glm" "")
+add_custom_test(core-transform core/transform.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-id-generator core/id_generator.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-signal core/signal.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(node-node node/node.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(node-node-ecs node/node_ecs.test.cpp "Catch2::Catch2WithMain" "")

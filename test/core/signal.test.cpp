@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
 
-import stay3.system;
+import stay3.core;
 
 using st::signal;
 using st::sink;

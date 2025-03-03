@@ -2,7 +2,7 @@ module;
 
 #include <entt/entt.hpp>
 
-export module stay3.system:signal;
+export module stay3.core:signal;
 
 export namespace st {
 template<typename signature>

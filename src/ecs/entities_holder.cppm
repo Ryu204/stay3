@@ -7,7 +7,7 @@ module;
 
 export module stay3.ecs:entities_holder;
 
-import stay3.system;
+import stay3.core;
 
 import :entity;
 import :ecs_registry;

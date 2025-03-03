@@ -4,7 +4,7 @@ module;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-module stay3.system;
+module stay3.core;
 
 import :math_ops;
 
