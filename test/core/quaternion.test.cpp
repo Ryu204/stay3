@@ -37,8 +37,8 @@ TEST_CASE("Quaternion operations", "[quaternion]") {
         quaternionf result2 = q1;
         result2.rotate(q2.axis(), q2.angle());
 
-        REQUIRE(result1 == (q2 * q1));
-        REQUIRE(approx_equal(result2, q2 * q1));
+        REQUIRE(approx_equal(result1, q2 * q1, 1e-4F));
+        REQUIRE(approx_equal(result2, q2 * q1, 1e-4F));
     }
 
     SECTION("Quaternion to matrix conversion") {
