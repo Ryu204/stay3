@@ -15,8 +15,29 @@ import :component;
 namespace st {
 
 export class ecs_registry {
+    template<component ccomp>
+    class read_access_proxy {
+        static_assert(std::is_const_v<std::remove_reference_t<ccomp>>);
+
+    public:
+        read_access_proxy(ccomp &data)
+            : m_data{data} {}
+
+        ccomp *operator->() const {
+            return std::addressof(m_data.get());
+        }
+        ccomp &operator*() const {
+            return m_data.get();
+        }
+
+    private:
+        std::reference_wrapper<ccomp>
+            m_data;
+    };
     template<component comp>
     class write_access_proxy {
+        static_assert(!std::is_const_v<std::remove_reference_t<comp>>);
+
     public:
         write_access_proxy(ecs_registry &reg, entity en)
             : m_registry{&reg}, m_entity{en}, m_component{&reg.m_registry.get<comp>(en)} {}
@@ -34,6 +55,10 @@ export class ecs_registry {
         comp *operator->() {
             assert(m_registry != nullptr && "Stale proxy");
             return m_component;
+        }
+        comp &operator*() {
+            assert(m_registry != nullptr && "Stale proxy");
+            return *m_component;
         }
 
     private:
@@ -55,35 +80,35 @@ export class ecs_registry {
     };
 
     template<component comp>
-    using component_wrapper = std::conditional_t<
+    using proxy = std::conditional_t<
         std::is_const_v<std::remove_reference_t<comp>>,
-        std::add_lvalue_reference_t<comp>,
+        read_access_proxy<comp>,
         write_access_proxy<comp>>;
 
     template<component comp>
-    component_wrapper<comp> make_component_wrapper(entity en) {
+    proxy<comp> make_proxy(entity en) {
         if constexpr(std::is_const_v<std::remove_reference_t<comp>>) {
-            return m_registry.get<std::remove_cv_t<comp>>(en);
+            return m_registry.get<std::decay_t<comp>>(en);
         } else {
             return {*this, en};
         }
     }
 
     template<typename entt_it, component... comps>
-    class view_iterator {
+    class entity_view_iterator {
     public:
-        view_iterator(entt_it it, ecs_registry &reg)
+        entity_view_iterator(entt_it it, ecs_registry &reg)
             : m_it{it}, m_registry{reg} {}
-        std::tuple<entity, component_wrapper<comps>...> operator*() const {
+        std::tuple<entity, proxy<comps>...> operator*() const {
             entity en{*m_it};
             auto &reg = m_registry.get();
-            return {en, reg.make_component_wrapper<comps>(en)...};
+            return {en, reg.make_proxy<comps>(en)...};
         }
-        view_iterator &operator++() {
+        entity_view_iterator &operator++() {
             ++m_it;
             return *this;
         }
-        bool operator!=(const view_iterator &other) const {
+        bool operator!=(const entity_view_iterator &other) const {
             return m_it != other.m_it;
         }
 
@@ -93,12 +118,12 @@ export class ecs_registry {
     };
 
     template<typename entt_view, component... comps>
-    class view {
+    class entity_view {
         using entt_it = std::decay_t<decltype(std::declval<entt_view>().begin())>;
-        using it = view_iterator<entt_it, comps...>;
+        using it = entity_view_iterator<entt_it, comps...>;
 
     public:
-        view(entt_view view, ecs_registry &reg)
+        entity_view(entt_view view, ecs_registry &reg)
             : m_view{view}, m_registry{reg} {}
         it begin() {
             return {m_view.begin(), m_registry};
@@ -152,31 +177,32 @@ public:
     }
 
     /**
-     * @note Getting non const reference will publish an update event
+     * @note Will publish an update event if `comp` is non const
+     * and the returned result goes out of scope
      */
     template<component comp>
-    component_wrapper<comp> get_component(entity en) {
-        return make_component_wrapper<comp>(en);
+    proxy<comp> get_component(entity en) {
+        return make_proxy<comp>(en);
     }
 
     /**
      * @example
      * ```
      * for (auto &&[en, c1, c2] : registry.each<comp1, comp2>()) {
-     *   // Access components here...
-     *}
-     *```
+     *     // Access components here...
+     * }
+     * ```
      */
     template<component... comps>
     auto each() {
-        using result = view<
+        using result = entity_view<
             std::decay_t<decltype(std::declval<entt::registry>().view<comps...>())>,
             comps...>;
         return result{m_registry.view<comps...>(), *this};
     }
 
     template<component comp, typename pred>
-        requires std::invocable<pred, entity, entity>
+        requires is_sort_predicate<pred, comp>
     void sort(pred &&func) {
         m_registry.sort<comp>(std::forward<pred>(func));
     }
@@ -193,12 +219,13 @@ public:
 private:
     template<comp_event ev, component comp>
     void create_event() {
-        auto entt_sink = m_registry.on_construct<comp>();
+        using decayed = std::decay_t<comp>;
+        auto entt_sink = m_registry.on_construct<decayed>();
         if constexpr(ev == comp_event::destroy) {
-            entt_sink = m_registry.on_destroy<comp>();
+            entt_sink = m_registry.on_destroy<decayed>();
         }
         if constexpr(ev == comp_event::update) {
-            entt_sink = m_registry.on_update<comp>();
+            entt_sink = m_registry.on_update<decayed>();
         }
 
         m_component_signals.try_emplace(event_key<ev, comp>);
@@ -228,7 +255,7 @@ private:
             std::size_t h1 = std::hash<comp_event>{}(ev.first);
             std::size_t h2 = std::hash<std::type_index>{}(ev.second);
             // Combine the hashes using a common bit-mixing method.
-            return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
+            return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2)); // NOLINT
         }
     };
 

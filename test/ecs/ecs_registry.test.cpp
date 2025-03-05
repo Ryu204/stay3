@@ -6,7 +6,7 @@ struct dummy {
     int value;
 };
 
-TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
+TEST_CASE("Entity and Component Management") {
     st::ecs_registry registry;
 
     SECTION("Entity creation and destruction") {
@@ -20,25 +20,28 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
     SECTION("Single component operations") {
         auto en = registry.create_entity();
 
-        REQUIRE_FALSE(registry.has_components<dummy>(en));
-
-        SECTION("Emplace, get, and modify component") {
+        SECTION("Add and has component check") {
+            REQUIRE_FALSE(registry.has_components<dummy>(en));
             registry.add_component<dummy>(en, 42);
             REQUIRE(registry.has_components<dummy>(en));
+        }
 
-            auto &&comp = registry.get_component<dummy>(en);
-            REQUIRE(comp->value == 42);
-
-            SECTION("Modify via get_component") {
-                comp->value = 100;
-                auto &&comp2 = registry.get_component<const dummy>(en);
-                REQUIRE(comp2.value == 100);
+        SECTION("Get component") {
+            registry.add_component<dummy>(en, 42);
+            SECTION("Read proxy") {
+                auto comp = registry.get_component<const dummy>(en);
+                REQUIRE(comp->value == 42);
+            }
+            SECTION("Write proxy") {
+                auto comp = registry.get_component<dummy>(en);
+                REQUIRE(comp->value == 42);
+                comp->value = 50;
+                REQUIRE(registry.get_component<const dummy>(en)->value == 50);
             }
         }
 
         SECTION("Remove component") {
             registry.add_component<dummy>(en, 10);
-            REQUIRE(registry.has_components<dummy>(en));
             registry.remove_component<dummy>(en);
             REQUIRE_FALSE(registry.has_components<dummy>(en));
         }
@@ -48,45 +51,46 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
             registry.patch_component<dummy>(en, [](dummy &comp) {
                 comp.value = 84;
             });
-            auto &&comp = registry.get_component<const dummy>(en);
-            REQUIRE(comp.value == 84);
+            auto comp = registry.get_component<const dummy>(en);
+            REQUIRE(comp->value == 84);
         }
 
         SECTION("Replace component") {
             registry.add_component<dummy>(en, 30);
             registry.replace_component<dummy>(en, 150);
-            auto &&comp = registry.get_component<const dummy>(en);
-            REQUIRE(comp.value == 150);
+            auto comp = registry.get_component<const dummy>(en);
+            REQUIRE(comp->value == 150);
         }
     }
+}
+
+TEST_CASE("Sort and iteration") {
+    st::ecs_registry registry;
+    auto en1 = registry.create_entity();
+    auto en2 = registry.create_entity();
+    auto en3 = registry.create_entity();
+
+    registry.add_component<dummy>(en1, 10);
+    registry.add_component<dummy>(en2, 20);
+    registry.add_component<dummy>(en3, 30);
+
+    struct second_comp {
+        float value;
+        second_comp(float value)
+            : value{value} {}
+    };
+
+    registry.add_component<second_comp>(en1, 1.0f);
+    registry.add_component<second_comp>(en3, 3.0f);
 
     SECTION("Iteration over components") {
-        auto en1 = registry.create_entity();
-        auto en2 = registry.create_entity();
-        auto en3 = registry.create_entity();
-
-        registry.add_component<dummy>(en1, 10);
-        registry.add_component<dummy>(en2, 20);
-        registry.add_component<dummy>(en3, 30);
-
-        struct second_comp {
-            float value;
-            second_comp(float value)
-                : value{value} {}
-        };
-
-        registry.add_component<second_comp>(en1, 1.0f);
-        registry.add_component<second_comp>(en3, 3.0f);
-
         SECTION("Single component iteration") {
             int count = 0;
             int sum = 0;
-
             for(auto &&[entity, comp]: registry.each<const dummy>()) {
                 count++;
-                sum += comp.value;
+                sum += comp->value;
             }
-
             REQUIRE(count == 3);
             REQUIRE(sum == 60);
         }
@@ -104,15 +108,42 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
 
             REQUIRE(count == 2);
 
-            auto &&d1 = registry.get_component<const dummy>(en1);
-            auto &&s1 = registry.get_component<const second_comp>(en1);
-            REQUIRE(d1.value == 20);
-            REQUIRE(s1.value == 10.0f);
+            auto d1 = registry.get_component<const dummy>(en1);
+            auto s1 = registry.get_component<const second_comp>(en1);
+            REQUIRE(d1->value == 20);
+            REQUIRE(s1->value == 10.0f);
 
-            auto &&d3 = registry.get_component<const dummy>(en3);
-            auto &&s3 = registry.get_component<const second_comp>(en3);
-            REQUIRE(d3.value == 60);
-            REQUIRE(s3.value == 30.0f);
+            auto d3 = registry.get_component<const dummy>(en3);
+            auto s3 = registry.get_component<const second_comp>(en3);
+            REQUIRE(d3->value == 60);
+            REQUIRE(s3->value == 30.0f);
+        }
+    }
+
+    SECTION("Sort") {
+        SECTION("Sort") {
+            registry.sort<dummy>([](const dummy &lhs, const dummy &rhs) {
+                return lhs.value > rhs.value;
+            });
+
+            std::vector<int> values;
+            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+                values.push_back(comp->value);
+            }
+
+            REQUIRE(std::ranges::is_sorted(values, std::greater<int>{}));
+        }
+        SECTION("Sort by entity") {
+            registry.sort<dummy>([&registry](const st::entity &lhs, const st::entity &rhs) {
+                return registry.get_component<const dummy>(lhs)->value > registry.get_component<const dummy>(rhs)->value;
+            });
+
+            std::vector<int> values;
+            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+                values.push_back(comp->value);
+            }
+
+            REQUIRE(std::ranges::is_sorted(values, std::greater<int>{}));
         }
     }
 }

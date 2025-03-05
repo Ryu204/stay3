@@ -17,8 +17,8 @@ struct my_system {
     static void update(seconds, tree_context &ctx) {
         auto sum = 0;
         for(auto &&[en, val]: ctx.ecs().each<const int>()) {
-            std::cout << "[node " << ctx.get_node(en).id() << ", value " << val << "];";
-            sum += val;
+            std::cout << "[node " << ctx.get_node(en).id() << ", value " << *val << "];";
+            sum += *val;
         }
         std::cout << "\nSum = " << sum << '\n';
     }
