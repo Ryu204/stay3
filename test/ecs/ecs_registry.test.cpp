@@ -26,12 +26,12 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
             registry.add_component<dummy>(en, 42);
             REQUIRE(registry.has_components<dummy>(en));
 
-            auto &comp = registry.get_component<dummy>(en);
-            REQUIRE(comp.value == 42);
+            auto &&comp = registry.get_component<dummy>(en);
+            REQUIRE(comp->value == 42);
 
             SECTION("Modify via get_component") {
-                comp.value = 100;
-                auto &comp2 = registry.get_component<dummy>(en);
+                comp->value = 100;
+                auto &&comp2 = registry.get_component<const dummy>(en);
                 REQUIRE(comp2.value == 100);
             }
         }
@@ -48,14 +48,14 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
             registry.patch_component<dummy>(en, [](dummy &comp) {
                 comp.value = 84;
             });
-            auto &comp = registry.get_component<dummy>(en);
+            auto &&comp = registry.get_component<const dummy>(en);
             REQUIRE(comp.value == 84);
         }
 
         SECTION("Replace component") {
             registry.add_component<dummy>(en, 30);
             registry.replace_component<dummy>(en, 150);
-            auto &comp = registry.get_component<dummy>(en);
+            auto &&comp = registry.get_component<const dummy>(en);
             REQUIRE(comp.value == 150);
         }
     }
@@ -104,13 +104,13 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
 
             REQUIRE(count == 2);
 
-            auto &d1 = registry.get_component<dummy>(en1);
-            auto &s1 = registry.get_component<second_comp>(en1);
+            auto &&d1 = registry.get_component<const dummy>(en1);
+            auto &&s1 = registry.get_component<const second_comp>(en1);
             REQUIRE(d1.value == 20);
             REQUIRE(s1.value == 10.0f);
 
-            auto &d3 = registry.get_component<dummy>(en3);
-            auto &s3 = registry.get_component<second_comp>(en3);
+            auto &&d3 = registry.get_component<const dummy>(en3);
+            auto &&s3 = registry.get_component<const second_comp>(en3);
             REQUIRE(d3.value == 60);
             REQUIRE(s3.value == 30.0f);
         }

@@ -114,15 +114,15 @@ const mat4f &transform::inv_matrix() const {
     return m_inv_transform_mat;
 }
 
-const quaternionf &transform::orientation() {
+const quaternionf &transform::orientation() const {
     return m_orientation;
 }
 
-const vec3f &transform::position() {
+const vec3f &transform::position() const {
     return m_position;
 }
 
-const vec3f &transform::scale() {
+const vec3f &transform::scale() const {
     return m_scale;
 }
 

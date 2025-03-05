@@ -53,6 +53,9 @@ target_sources(${PROJECT_NAME}
     src/ecs/system_wrapper.cppm
     src/ecs/system_manager.cppm
 
+    src/systems/mod.cppm
+    src/systems/transform/global_transform.cppm
+
     PRIVATE
 
     src/program/app.cpp
@@ -63,6 +66,8 @@ target_sources(${PROJECT_NAME}
     src/core/transform.cpp
 
     src/node/node.cpp
+
+    src/systems/transform/global_transform.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT)

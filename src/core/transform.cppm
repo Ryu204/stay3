@@ -35,9 +35,9 @@ public:
     const mat4f &matrix() const;
     const mat4f &inv_matrix() const;
 
-    const quaternionf &orientation();
-    const vec3f &position();
-    const vec3f &scale();
+    const quaternionf &orientation() const;
+    const vec3f &position() const;
+    const vec3f &scale() const;
 
 private:
     vec3f m_position{0.F};
