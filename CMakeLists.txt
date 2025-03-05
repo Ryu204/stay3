@@ -71,11 +71,6 @@ target_sources(${PROJECT_NAME}
     src/systems/transform/global_transform.cpp
 )
 
-if(${PROJECT_NAME}_DEBUG)
-    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-endif()
-
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT)
 if(EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PRIVATE
