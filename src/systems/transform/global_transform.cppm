@@ -28,11 +28,11 @@ struct transform_sync_system {
 /**
  * @brief Sync all `global_transform` based on local `transform`
  */
-void sync_global_transform(tree_context &ctx);
+// void sync_global_transform(tree_context &ctx);
 
 /**
  * @brief Sync single `global_transform`
  */
-global_transform &sync_global_transform(tree_context &ctx, entity en);
+// global_transform &sync_global_transform(tree_context &ctx, entity en);
 
 } // namespace st

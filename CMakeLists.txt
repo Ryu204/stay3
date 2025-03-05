@@ -52,6 +52,7 @@ target_sources(${PROJECT_NAME}
     src/ecs/system_data.cppm
     src/ecs/system_wrapper.cppm
     src/ecs/system_manager.cppm
+    src/ecs/component.cppm
 
     src/systems/mod.cppm
     src/systems/transform/global_transform.cppm
@@ -69,6 +70,11 @@ target_sources(${PROJECT_NAME}
 
     src/systems/transform/global_transform.cpp
 )
+
+if(${PROJECT_NAME}_DEBUG)
+    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT)
 if(EMSCRIPTEN)

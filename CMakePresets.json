@@ -10,7 +10,9 @@
             "binaryDir": "build/dev",
             "cacheVariables": {
                 "stay3_BUILD_TESTS": true,
-                "stay3_BUILD_EXAMPLES": true
+                "stay3_BUILD_EXAMPLES": true,
+                "CMAKE_BUILD_TYPE": "Debug",
+                "stay3_DEBUG": true
             }
         },
         {

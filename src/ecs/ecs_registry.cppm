@@ -1,7 +1,6 @@
 module;
 
 #include <concepts>
-#include <cstdint>
 #include <type_traits>
 #include <typeindex>
 #include <utility>
@@ -11,68 +10,108 @@ export module stay3.ecs:ecs_registry;
 
 import stay3.core;
 import :entity;
+import :component;
 
 namespace st {
 
-template<typename type>
-concept component = !std::is_same_v<entity, std::decay_t<type>>;
-
-export enum class comp_event: std::uint8_t {
-    construct,
-    destroy,
-    update,
-};
-
-template<component comp>
-class write_access_proxy {
-public:
-    write_access_proxy(ecs_registry &reg, entity en)
-        : m_registry{&reg}, m_entity{en}, m_component{&reg.m_registry.get<comp>(en)} {}
-    ~write_access_proxy() {
-        publish_update_event();
-    }
-    write_access_proxy(const write_access_proxy &) = delete;
-    write_access_proxy(write_access_proxy &&other) noexcept {
-        if(this == &other) {
-            return;
-        }
-        publish_update_event();
-        m_registry = other.m_registry;
-        m_entity = other.m_entity;
-        m_component = other.m_component;
-        other.m_registry = nullptr;
-    }
-    write_access_proxy &operator=(const write_access_proxy &) = delete;
-    write_access_proxy &operator=(write_access_proxy &&) noexcept = delete;
-
-    comp *operator->() {
-        return m_component;
-    }
-
-private:
-    void publish_update_event() noexcept {
-        try {
-            if(m_registry != nullptr) {
-                m_registry->publish_event<comp_event::update, comp>(m_registry->m_registry, m_entity);
-            }
-        } catch(std::exception &e) {
-            assert(false && "Unknown exception");
-        } catch(...) {
-            assert(false && "Unknown error");
-        }
-    }
-
-    ecs_registry *m_registry;
-    entity m_entity;
-    comp *m_component;
-};
-template<component comp>
-using get_return_t = std::conditional_t<
-    std::is_const_v<std::remove_reference_t<comp>>,
-    std::add_lvalue_reference_t<comp>,
-    write_access_proxy<comp>>;
-
 export class ecs_registry {
+    template<component comp>
+    class write_access_proxy {
+    public:
+        write_access_proxy(ecs_registry &reg, entity en)
+            : m_registry{&reg}, m_entity{en}, m_component{&reg.m_registry.get<comp>(en)} {}
+        ~write_access_proxy() {
+            publish_update_event();
+        }
+        write_access_proxy(const write_access_proxy &) = delete;
+        write_access_proxy(write_access_proxy &&other) noexcept
+            : m_registry{other.m_registry}, m_entity{other.m_entity}, m_component{other.m_component} {
+            other.m_registry = nullptr;
+        }
+        write_access_proxy &operator=(const write_access_proxy &) = delete;
+        write_access_proxy &operator=(write_access_proxy &&) noexcept = delete;
+
+        comp *operator->() {
+            assert(m_registry != nullptr && "Stale proxy");
+            return m_component;
+        }
+
+    private:
+        void publish_update_event() noexcept {
+            try {
+                if(m_registry != nullptr) {
+                    m_registry->publish_event<comp_event::update, comp>(m_registry->m_registry, m_entity);
+                }
+            } catch(std::exception &e) {
+                assert(false && "Unknown exception");
+            } catch(...) {
+                assert(false && "Unknown error");
+            }
+        }
+
+        ecs_registry *m_registry;
+        entity m_entity;
+        comp *m_component;
+    };
+
+    template<component comp>
+    using component_wrapper = std::conditional_t<
+        std::is_const_v<std::remove_reference_t<comp>>,
+        std::add_lvalue_reference_t<comp>,
+        write_access_proxy<comp>>;
+
+    template<component comp>
+    component_wrapper<comp> make_component_wrapper(entity en) {
+        if constexpr(std::is_const_v<std::remove_reference_t<comp>>) {
+            return m_registry.get<std::remove_cv_t<comp>>(en);
+        } else {
+            return {*this, en};
+        }
+    }
+
+    template<typename entt_it, component... comps>
+    class view_iterator {
+    public:
+        view_iterator(entt_it it, ecs_registry &reg)
+            : m_it{it}, m_registry{reg} {}
+        std::tuple<entity, component_wrapper<comps>...> operator*() const {
+            entity en{*m_it};
+            auto &reg = m_registry.get();
+            return {en, reg.make_component_wrapper<comps>(en)...};
+        }
+        view_iterator &operator++() {
+            ++m_it;
+            return *this;
+        }
+        bool operator!=(const view_iterator &other) const {
+            return m_it != other.m_it;
+        }
+
+    private:
+        entt_it m_it;
+        std::reference_wrapper<ecs_registry> m_registry;
+    };
+
+    template<typename entt_view, component... comps>
+    class view {
+        using entt_it = std::decay_t<decltype(std::declval<entt_view>().begin())>;
+        using it = view_iterator<entt_it, comps...>;
+
+    public:
+        view(entt_view view, ecs_registry &reg)
+            : m_view{view}, m_registry{reg} {}
+        it begin() {
+            return {m_view.begin(), m_registry};
+        }
+        it end() {
+            return {m_view.end(), m_registry};
+        }
+
+    private:
+        entt_view m_view;
+        std::reference_wrapper<ecs_registry> m_registry;
+    };
+
 public:
     [[nodiscard]] entity create_entity() {
         return m_registry.create();
@@ -116,12 +155,8 @@ public:
      * @note Getting non const reference will publish an update event
      */
     template<component comp>
-    get_return_t<comp> get_component(entity en) {
-        if constexpr(std::is_const_v<std::remove_reference_t<comp>>) {
-            return m_registry.get<comp>(en);
-        } else {
-            return write_access_proxy<comp>{*this, en};
-        }
+    component_wrapper<comp> get_component(entity en) {
+        return make_component_wrapper<comp>(en);
     }
 
     /**
@@ -134,7 +169,10 @@ public:
      */
     template<component... comps>
     auto each() {
-        return m_registry.view<comps...>().each();
+        using result = view<
+            std::decay_t<decltype(std::declval<entt::registry>().view<comps...>())>,
+            comps...>;
+        return result{m_registry.view<comps...>(), *this};
     }
 
     template<component comp, typename pred>
@@ -173,8 +211,9 @@ private:
     template<comp_event ev, component comp>
     void publish_event(entt::registry &, entity en) {
         auto itr = m_component_signals.find(event_key<ev, comp>);
-        if(itr == m_component_signals.end())
+        if(itr == m_component_signals.end()) {
             return;
+        }
         itr->second.sig.publish(*this, en);
     }
 

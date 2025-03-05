@@ -82,7 +82,7 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
             int count = 0;
             int sum = 0;
 
-            for(auto &&[entity, comp]: registry.each<dummy>()) {
+            for(auto &&[entity, comp]: registry.each<const dummy>()) {
                 count++;
                 sum += comp.value;
             }
@@ -96,10 +96,10 @@ TEST_CASE("ecs_registry: Entity and Component Management", "[ecs_registry]") {
 
             for(auto &&[entity, d, s]: registry.each<dummy, second_comp>()) {
                 count++;
-                REQUIRE(((d.value == 10 && s.value == 1.0f) || (d.value == 30 && s.value == 3.0f)));
+                REQUIRE(((d->value == 10 && s->value == 1.0f) || (d->value == 30 && s->value == 3.0f)));
 
-                d.value *= 2;
-                s.value *= 10.0f;
+                d->value *= 2;
+                s->value *= 10.0f;
             }
 
             REQUIRE(count == 2);

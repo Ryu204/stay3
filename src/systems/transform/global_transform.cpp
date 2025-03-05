@@ -37,27 +37,27 @@ void sync_global_transform(tree_context &ctx) {
     });
 }
 
-global_transform &sync_global_transform(tree_context &ctx, entity en) {
-    auto &reg = ctx.ecs();
-    auto &target = reg.get_component<global_transform>(en);
-    //     if(!target.dirty) { goto RETURN; }
+// global_transform &sync_global_transform(tree_context &ctx, entity en) {
+// auto &reg = ctx.ecs();
+// auto &&target = reg.get_component<global_transform>(en);
+// //     if(!target.dirty) { goto RETURN; }
 
-    //     const auto &node = ctx.get_node(en);
-    //     const auto *parent = node.parent();
-    //     const auto is_root_node = parent == nullptr;
-    //     if(is_root_node) { goto RETURN; }
+// //     const auto &node = ctx.get_node(en);
+// //     const auto *parent = node.parent();
+// //     const auto is_root_node = parent == nullptr;
+// //     if(is_root_node) { goto RETURN; }
 
-    //     const auto has_parent_transform = !parent->entities().empty()
-    //                                       && reg.has_components<global_transform>(parent->entities()[0]);
-    //     if(!has_parent_transform) { goto RETURN; }
+// //     const auto has_parent_transform = !parent->entities().empty()
+// //                                       && reg.has_components<global_transform>(parent->entities()[0]);
+// //     if(!has_parent_transform) { goto RETURN; }
 
-    //     const auto &parent_transform = sync_global_transform(ctx, parent->entities()[0]);
-    //     const auto &local_transform = reg.get_component<transform>(en);
-    //     target.global.set_matrix(parent_transform.matrix() * local_transform.matrix());
+// //     const auto &parent_transform = sync_global_transform(ctx, parent->entities()[0]);
+// //     const auto &local_transform = reg.get_component<transform>(en);
+// //     target.global.set_matrix(parent_transform.matrix() * local_transform.matrix());
 
-    // RETURN:
-    //     target.dirty = false;
-    return target;
-}
+// // RETURN:
+// //     target.dirty = false;
+// return target;
+// }
 
 } // namespace st
