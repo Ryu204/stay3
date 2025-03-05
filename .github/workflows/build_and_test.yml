@@ -23,7 +23,7 @@ jobs:
           # - { name: Windows with MSVC, os: windows-latest }
           # I do not know how to build with gcc yet
           # - { name: Ubuntu with gcc, os: ubuntu-latest, pkg: g++, compiler: g++, version: 14 }
-        buildType: ["Debug"]
+        buildType: ["Debug", "Release", "RelWithDebInfo"]
 
     name: ${{ matrix.platform.name }} - ${{ matrix.buildType }}
 
