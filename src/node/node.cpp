@@ -36,6 +36,10 @@ node &node::parent() const {
     return *m_parent;
 }
 
+bool node::is_root() const {
+    return m_parent == nullptr;
+}
+
 void node::reparent(node &other) {
     assert(this != &other && "Parent to self");
     assert(!is_ancestor_of(other) && "Cyclic relationship");

@@ -25,6 +25,7 @@ public:
 
     node &add_child();
     [[nodiscard]] node &parent() const;
+    [[nodiscard]] bool is_root() const;
     void reparent(node &other);
     [[nodiscard]] bool is_ancestor_of(const node &other) const;
     [[nodiscard]] node &child(const id_type &id) const;
@@ -39,6 +40,26 @@ public:
     }
     decltype(auto) on_entity_destroyed() {
         return this->m_entity_destroyed_sink;
+    }
+
+    /**
+     * @brief Apply `function` recursively, using parent's result as child's parameter
+     * @note Traversal is pre-order DFS. `ret`
+     */
+    template<typename func, typename... rets>
+        requires(sizeof...(rets) == 0 || sizeof...(rets) == 1)
+    void traverse(const func &function, const rets &...initials) {
+        if constexpr(sizeof...(rets) == 1) {
+            auto result = function(*this, initials...);
+            for(auto &&[id, ptr]: m_children) {
+                ptr->traverse(function, result);
+            }
+        } else {
+            function(*this);
+            for(auto &&[id, ptr]: m_children) {
+                ptr->traverse(function);
+            }
+        }
     }
 
 private:
