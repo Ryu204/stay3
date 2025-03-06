@@ -60,7 +60,7 @@ struct my_system {
     }
 };
 ```
-If you want to modify the component, use non const template. This will however may be a litle bit slower [^1].
+If you want to modify the component, use non const template. This however may be a litle bit slower [^1].
 
 The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get_component`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
 
