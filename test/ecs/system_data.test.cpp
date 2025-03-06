@@ -11,6 +11,13 @@ public:
     void update(short, const context &) {}
 };
 
+class valid_post_update_system {
+public:
+    [[nodiscard]] static bool post_update(bool, const context &) {
+        return false;
+    }
+};
+
 class valid_start_system {
 public:
     void start(context &) {}
@@ -31,6 +38,7 @@ public:
 class mixed_system {
 public:
     void update(double, const context &) {}
+    void post_update(double, const context &) {}
     void start(const context &) {}
     void cleanup(context &) {}
     void render(context &) {}
@@ -49,11 +57,13 @@ private:
 
 TEST_CASE("Concepts work correctly") {
     STATIC_REQUIRE(is_update_system<valid_update_system, context>);
+    STATIC_REQUIRE(is_post_update_system<valid_post_update_system, context>);
     STATIC_REQUIRE(is_start_system<valid_start_system, context>);
     STATIC_REQUIRE(is_cleanup_system<valid_cleanup_system, context>);
     STATIC_REQUIRE(is_render_system<valid_render_system, context>);
 
     STATIC_REQUIRE(is_update_system<mixed_system, context>);
+    STATIC_REQUIRE(is_post_update_system<mixed_system, context>);
     STATIC_REQUIRE(is_start_system<mixed_system, context>);
     STATIC_REQUIRE(is_cleanup_system<mixed_system, context>);
     STATIC_REQUIRE(is_render_system<mixed_system, context>);

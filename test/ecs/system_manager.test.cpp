@@ -1,7 +1,6 @@
 #include <string>
 #include <type_traits>
 #include <catch2/catch_all.hpp>
-#include "catch2/matchers/catch_matchers_range_equals.hpp"
 
 import stay3.core;
 import stay3.ecs;
@@ -11,6 +10,7 @@ struct test_context {
     int update_count{};
     int cleanup_count{};
     int render_count{};
+    int post_update_count{};
 
     std::vector<std::string> messages;
 };
@@ -37,13 +37,20 @@ struct update_and_cleanup_system {
 };
 
 struct start_system {
-    static void update(float, test_context &&ctx) {
+    static void update(float, test_context &&) {
         // This is not valid update syntax
-        ctx.update_count++;
     }
     static void start(test_context &ctx) {
         ctx.start_count++;
         ctx.messages.emplace_back("start");
+    }
+};
+
+struct post_update_system {
+    static bool post_update(int, test_context &ctx) {
+        ctx.post_update_count++;
+        ctx.messages.emplace_back("post update");
+        return false;
     }
 };
 
@@ -57,14 +64,17 @@ TEST_CASE("Added systems does not run automatically") {
     manager.add<start_system>();
     manager.add<render_system>("webgpu");
     manager.add<update_and_cleanup_system>();
+    manager.add<post_update_system>();
 
     manager.start(ctx);
     manager.update(seconds{1.F}, ctx);
+    manager.post_update(seconds{1.F}, ctx);
     manager.render(ctx);
     manager.cleanup(ctx);
 
     REQUIRE(ctx.start_count == 0);
     REQUIRE(ctx.update_count == 0);
+    REQUIRE(ctx.post_update_count == 0);
     REQUIRE(ctx.render_count == 0);
     REQUIRE(ctx.cleanup_count == 0);
     REQUIRE(ctx.messages.empty());
@@ -84,17 +94,22 @@ TEST_CASE("Added system run when registered") {
         .add<update_and_cleanup_system>()
         .run_as<sys_type::update>()
         .run_as<sys_type::cleanup>();
+    manager
+        .add<post_update_system>()
+        .run_as<sys_type::post_update>();
 
     manager.start(ctx);
     manager.update(seconds{1.F}, ctx);
+    manager.post_update(seconds{1.F}, ctx);
     manager.render(ctx);
     manager.cleanup(ctx);
 
     REQUIRE(ctx.start_count == 1);
     REQUIRE(ctx.update_count == 1);
+    REQUIRE(ctx.post_update_count == 1);
     REQUIRE(ctx.render_count == 1);
     REQUIRE(ctx.cleanup_count == 1);
-    REQUIRE_THAT(ctx.messages, RangeEquals({"start", "update cleanup", "render webgpu", "update cleanup"}));
+    REQUIRE_THAT(ctx.messages, RangeEquals({"start", "update cleanup", "post update", "render webgpu", "update cleanup"}));
 }
 
 TEST_CASE("Added system run with priority") {

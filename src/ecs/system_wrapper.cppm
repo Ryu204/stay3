@@ -35,7 +35,9 @@ public:
         CHECK_AND_CALL(update)
         CHECK_AND_CALL(cleanup)
         CHECK_AND_CALL(render)
+        CHECK_AND_CALL(post_update)
     }
+#undef CHECK_AND_CALL
 
 private:
     template<typename sys>
@@ -61,6 +63,11 @@ private:
                 object->render(ctx);
             };
         }
+        if constexpr(is_post_update_system<sys, context>) {
+            m_post_update_callback = [object](seconds delta, context &ctx) {
+                object->post_update(delta, ctx);
+            };
+        }
     }
 
     std::any m_underlying;
@@ -68,5 +75,6 @@ private:
     std::function<void(context &)> m_start_callback;
     std::function<void(context &)> m_cleanup_callback;
     std::function<void(context &)> m_render_callback;
+    std::function<void(seconds, context &)> m_post_update_callback;
 };
 } // namespace st

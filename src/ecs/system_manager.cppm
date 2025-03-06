@@ -102,6 +102,10 @@ public:
         apply_all<sys_type::render>(ctx);
     }
 
+    void post_update(seconds delta, context &ctx) {
+        apply_all<sys_type::post_update>(delta, ctx);
+    }
+
 private:
     template<sys_type type, typename... args>
     void apply_all(args &&...arguments) {

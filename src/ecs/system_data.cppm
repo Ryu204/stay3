@@ -17,6 +17,7 @@ enum class sys_type : std::uint8_t {
     start = 1 << 2,
     cleanup = 1 << 3,
     render = 1 << 4,
+    post_update = 1 << 5,
 };
 using sys_type_t = std::underlying_type_t<sys_type>;
 
@@ -41,6 +42,11 @@ concept is_render_system = requires(sys &system, context &ctx) {
 };
 
 template<typename sys, typename context>
+concept is_post_update_system = requires(sys &system, seconds delta, context &ctx) {
+    system.post_update(delta, ctx);
+};
+
+template<typename sys, typename context>
 constexpr auto sys_types = []() {
     sys_type_t result{};
 #define CHECK_ROLE(role) \
@@ -50,7 +56,8 @@ constexpr auto sys_types = []() {
     CHECK_ROLE(start)
     CHECK_ROLE(render)
     CHECK_ROLE(cleanup)
-
+    CHECK_ROLE(post_update)
+#undef CHECK_ROLE
     return result;
 }();
 
