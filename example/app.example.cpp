@@ -34,6 +34,7 @@ struct my_system {
 
 int main() {
     app my_app;
+    my_app.enable_default_systems();
     my_app.systems()
         .add<my_system>()
         .run_as<sys_type::start>()

@@ -10,6 +10,7 @@ import stay3.ecs;
 import stay3.node;
 import stay3.window;
 import stay3.core;
+import stay3.systems;
 
 constexpr auto temp_fps = 60.F;
 
@@ -17,6 +18,15 @@ namespace st {
 
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
+}
+
+app &app::enable_default_systems() {
+    m_ecs_systems
+        .add<transform_sync_system>()
+        .run_as<sys_type::start>(sys_priority::very_high)
+        .run_as<sys_type::post_update>(sys_priority::very_high);
+
+    return *this;
 }
 
 void app::run() {
@@ -50,6 +60,7 @@ void app::on_frame() {
 
 void app::update(seconds delta) {
     m_ecs_systems.update(delta, m_tree_context);
+    m_ecs_systems.post_update(delta, m_tree_context);
 }
 
 void app::render() {

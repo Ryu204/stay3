@@ -12,6 +12,7 @@ import stay3.core;
 export namespace st {
 class app {
 public:
+    app &enable_default_systems();
     system_manager<tree_context> &systems();
     void run();
 

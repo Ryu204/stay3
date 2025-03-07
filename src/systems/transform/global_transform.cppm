@@ -13,26 +13,27 @@ export namespace st {
  */
 class global_transform {
 public:
-    const transform &get() const;
+    [[nodiscard]] const transform &get() const;
 
 private:
-    friend class transform_sync_system;
+    friend void sync_global_transform(tree_context &);
+    friend global_transform &sync_global_transform(tree_context &, entity);
     transform global;
 };
 
 struct transform_sync_system {
     static void start(tree_context &ctx);
-    static void post_update(tree_context &ctx);
+    static void post_update(seconds, tree_context &ctx);
 };
 
 /**
  * @brief Sync all `global_transform` based on local `transform`
  */
-// void sync_global_transform(tree_context &ctx);
+void sync_global_transform(tree_context &ctx);
 
 /**
  * @brief Sync single `global_transform`
  */
-// global_transform &sync_global_transform(tree_context &ctx, entity en);
+global_transform &sync_global_transform(tree_context &ctx, entity en);
 
 } // namespace st

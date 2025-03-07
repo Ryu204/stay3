@@ -134,6 +134,28 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
                 REQUIRE(tracker.update_count == 4);
                 REQUIRE(do_not_optimize_out != 0);
             }
+
+            SECTION("Update on construct") {
+                REQUIRE(tracker.update_count == 2);
+
+                en = registry.create_entity();
+                {
+                    auto dum = registry.add_component<dummy>(en);
+                    // Out of scope
+                }
+                REQUIRE(tracker.update_count == 3);
+
+                registry.clear_component<dummy>();
+
+                int do_not_optimize_out{};
+                {
+                    auto dum = registry.add_component<const dummy>(en);
+                    do_not_optimize_out = dum->value;
+                    // Out of scope
+                }
+                REQUIRE(do_not_optimize_out == 0);
+                REQUIRE(tracker.update_count == 3);
+            }
         }
 
         SECTION("Destroy Event") {

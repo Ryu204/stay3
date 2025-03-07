@@ -15,6 +15,11 @@ import :component;
 namespace st {
 
 export class ecs_registry {
+    template<component ecomp>
+    class empty_proxy {
+        static_assert(std::is_empty_v<ecomp>);
+    };
+
     template<component ccomp>
     class read_access_proxy {
         static_assert(std::is_const_v<std::remove_reference_t<ccomp>>);
@@ -34,6 +39,7 @@ export class ecs_registry {
         std::reference_wrapper<ccomp>
             m_data;
     };
+
     template<component comp>
     class write_access_proxy {
         static_assert(!std::is_const_v<std::remove_reference_t<comp>>);
@@ -81,13 +87,18 @@ export class ecs_registry {
 
     template<component comp>
     using proxy = std::conditional_t<
-        std::is_const_v<std::remove_reference_t<comp>>,
-        read_access_proxy<comp>,
-        write_access_proxy<comp>>;
+        std::is_empty_v<comp>,
+        empty_proxy<comp>,
+        std::conditional_t<
+            std::is_const_v<std::remove_reference_t<comp>>,
+            read_access_proxy<comp>,
+            write_access_proxy<comp>>>;
 
     template<component comp>
     proxy<comp> make_proxy(entity en) {
-        if constexpr(std::is_const_v<std::remove_reference_t<comp>>) {
+        if constexpr(std::is_empty_v<comp>) {
+            return empty_proxy<comp>{};
+        } else if constexpr(std::is_const_v<std::remove_reference_t<comp>>) {
             return m_registry.get<std::decay_t<comp>>(en);
         } else {
             return {*this, en};
@@ -150,14 +161,23 @@ public:
         return m_registry.valid(en);
     }
 
+    /**
+     * @return A read or write proxy to created component based on constness of `comp`
+     */
     template<component comp, typename... arguments>
-    void add_component(entity en, arguments &&...args) {
-        m_registry.emplace<comp>(en, std::forward<arguments>(args)...);
+    proxy<comp> add_component(entity en, arguments &&...args) {
+        m_registry.emplace<std::decay_t<comp>>(en, std::forward<arguments>(args)...);
+        return get_component<comp>(en);
     }
 
     template<component comp>
     void remove_component(entity en) {
         m_registry.remove<comp>(en);
+    }
+
+    template<component comp>
+    void clear_component() {
+        m_registry.clear<comp>();
     }
 
     template<component comp, typename func>

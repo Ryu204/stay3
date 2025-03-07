@@ -1,9 +1,13 @@
 #include <catch2/catch_all.hpp>
+#include "catch2/catch_test_macros.hpp"
 
 import stay3.ecs;
 
 struct dummy {
     int value;
+};
+
+struct empty_dummy {
 };
 
 TEST_CASE("Entity and Component Management") {
@@ -24,10 +28,17 @@ TEST_CASE("Entity and Component Management") {
             REQUIRE_FALSE(registry.has_components<dummy>(en));
             registry.add_component<dummy>(en, 42);
             REQUIRE(registry.has_components<dummy>(en));
+            SECTION("Empty component") {
+                REQUIRE_FALSE(registry.has_components<empty_dummy>(en));
+                registry.add_component<empty_dummy>(en);
+                REQUIRE(registry.has_components<empty_dummy>(en));
+                REQUIRE(registry.has_components<dummy, empty_dummy>(en));
+            }
         }
 
         SECTION("Get component") {
-            registry.add_component<dummy>(en, 42);
+            registry.add_component<const dummy>(en, 42);
+            registry.add_component<empty_dummy>(en);
             SECTION("Read proxy") {
                 auto comp = registry.get_component<const dummy>(en);
                 REQUIRE(comp->value == 42);
@@ -37,6 +48,9 @@ TEST_CASE("Entity and Component Management") {
                 REQUIRE(comp->value == 42);
                 comp->value = 50;
                 REQUIRE(registry.get_component<const dummy>(en)->value == 50);
+            }
+            SECTION("Empty proxy") {
+                REQUIRE_NOTHROW(registry.get_component<empty_dummy>(en));
             }
         }
 
@@ -60,6 +74,13 @@ TEST_CASE("Entity and Component Management") {
             registry.replace_component<dummy>(en, 150);
             auto comp = registry.get_component<const dummy>(en);
             REQUIRE(comp->value == 150);
+        }
+
+        SECTION("Clear component") {
+            registry.add_component<dummy>(en, 30);
+            registry.add_component<empty_dummy>(en);
+            registry.clear_component<dummy>();
+            REQUIRE_FALSE(registry.has_components<dummy>(en));
         }
     }
 }
