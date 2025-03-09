@@ -270,11 +270,10 @@ private:
      */
     template<comp_event ev, component comp>
     void publish_event(entt::registry &, entity en) {
-        auto itr = m_component_signals.find(event_key<ev, comp>);
-        if(itr == m_component_signals.end()) {
+        if(!m_component_signals.contains(event_key<ev, comp>)) {
             return;
         }
-        itr->second.sig.publish(*this, en);
+        m_component_signals[event_key<ev, comp>].sig.publish(*this, en);
     }
 
     struct component_event {
