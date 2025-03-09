@@ -12,9 +12,9 @@ import stay3.core;
 import :entity;
 import :component;
 
-namespace st {
+export namespace st {
 
-export class ecs_registry {
+class ecs_registry {
     template<component ecomp>
     class empty_proxy {
         static_assert(std::is_empty_v<ecomp>);
@@ -277,7 +277,10 @@ private:
         itr->second.sig.publish(*this, en);
     }
 
-    using component_event = std::pair<comp_event, std::type_index>;
+    struct component_event {
+        comp_event first;
+        std::type_index second;
+    };
     using signal_signature = void(ecs_registry &, entity);
     struct signal_pair {
         signal<signal_signature> sig;
@@ -291,15 +294,20 @@ private:
             return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2)); // NOLINT
         }
     };
+    struct equal {
+        bool operator()(const component_event &lhs, const component_event &rhs) const {
+            return lhs.first == rhs.first && ((lhs.second <=> rhs.second) == 0);
+        }
+    };
 
     void entity_destroyed_handler(entt::registry &, entt::entity en) {
         m_entity_destroyed.publish(en);
     }
 
     template<comp_event ev, component comp>
-    static inline const component_event event_key{ev, typeid(std::decay_t<comp>)};
+    static inline const component_event event_key{.first = ev, .second = typeid(std::decay_t<comp>)};
     entt::registry m_registry;
-    std::unordered_map<component_event, signal_pair, hasher> m_component_signals;
+    std::unordered_map<component_event, signal_pair, hasher, equal> m_component_signals;
     signal<void(entity)> m_entity_destroyed;
     sink<decltype(m_entity_destroyed)> m_entity_destroyed_sink{m_entity_destroyed};
 };
