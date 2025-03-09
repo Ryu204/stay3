@@ -149,6 +149,10 @@ export class ecs_registry {
     };
 
 public:
+    ecs_registry() {
+        m_registry.on_destroy<entt::entity>().connect<&ecs_registry::entity_destroyed_handler>(*this);
+    }
+
     [[nodiscard]] entity create_entity() {
         return m_registry.create();
     }
@@ -167,7 +171,7 @@ public:
     template<component comp, typename... arguments>
     proxy<comp> add_component(entity en, arguments &&...args) {
         m_registry.emplace<std::decay_t<comp>>(en, std::forward<arguments>(args)...);
-        return get_component<comp>(en);
+        return get_components<comp>(en);
     }
 
     template<component comp>
@@ -200,9 +204,14 @@ public:
      * @note Will publish an update event if `comp` is non const
      * and the returned result goes out of scope
      */
-    template<component comp>
-    proxy<comp> get_component(entity en) {
-        return make_proxy<comp>(en);
+    template<component... comps>
+        requires(sizeof...(comps) > 0)
+    auto get_components(entity en) {
+        if constexpr(sizeof...(comps) == 1) {
+            return make_proxy<comps...>(en);
+        } else {
+            return std::make_tuple(make_proxy<comps>(en)...);
+        }
     }
 
     /**
@@ -234,6 +243,10 @@ public:
             create_event<ev, comp>();
         }
         return m_component_signals[key].sk;
+    }
+
+    decltype(auto) on_entity_destroyed() {
+        return this->m_entity_destroyed_sink;
     }
 
 private:
@@ -279,9 +292,15 @@ private:
         }
     };
 
+    void entity_destroyed_handler(entt::registry &, entt::entity en) {
+        m_entity_destroyed.publish(en);
+    }
+
     template<comp_event ev, component comp>
     static inline const component_event event_key{ev, typeid(std::decay_t<comp>)};
     entt::registry m_registry;
     std::unordered_map<component_event, signal_pair, hasher> m_component_signals;
+    signal<void(entity)> m_entity_destroyed;
+    sink<decltype(m_entity_destroyed)> m_entity_destroyed_sink{m_entity_destroyed};
 };
 } // namespace st

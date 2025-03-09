@@ -10,6 +10,13 @@ struct dummy {
 struct empty_dummy {
 };
 
+struct entity_destroyed_handler {
+    void on_event() {
+        signaled = true;
+    }
+    bool signaled{false};
+};
+
 TEST_CASE("Entity and Component Management") {
     st::ecs_registry registry;
 
@@ -19,6 +26,14 @@ TEST_CASE("Entity and Component Management") {
 
         registry.destroy_entity(en);
         REQUIRE_FALSE(registry.contains_entity(en));
+
+        SECTION("On entity destroyed signal") {
+            entity_destroyed_handler handler;
+            registry.on_entity_destroyed().connect<&entity_destroyed_handler::on_event>(handler);
+            REQUIRE_FALSE(handler.signaled);
+            registry.destroy_entity(registry.create_entity());
+            REQUIRE(handler.signaled);
+        }
     }
 
     SECTION("Single component operations") {
@@ -40,17 +55,22 @@ TEST_CASE("Entity and Component Management") {
             registry.add_component<const dummy>(en, 42);
             registry.add_component<empty_dummy>(en);
             SECTION("Read proxy") {
-                auto comp = registry.get_component<const dummy>(en);
+                auto comp = registry.get_components<const dummy>(en);
                 REQUIRE(comp->value == 42);
             }
             SECTION("Write proxy") {
-                auto comp = registry.get_component<dummy>(en);
+                auto comp = registry.get_components<dummy>(en);
                 REQUIRE(comp->value == 42);
                 comp->value = 50;
-                REQUIRE(registry.get_component<const dummy>(en)->value == 50);
+                REQUIRE(registry.get_components<const dummy>(en)->value == 50);
             }
             SECTION("Empty proxy") {
-                REQUIRE_NOTHROW(registry.get_component<empty_dummy>(en));
+                REQUIRE_NOTHROW(registry.get_components<empty_dummy>(en));
+                STATIC_REQUIRE(std::is_empty_v<std::decay_t<decltype(registry.get_components<empty_dummy>(en))>>);
+            }
+            SECTION("Multiple components") {
+                auto [comp, ecomp] = registry.get_components<dummy, empty_dummy>(en);
+                REQUIRE(comp->value == 42);
             }
         }
 
@@ -65,14 +85,14 @@ TEST_CASE("Entity and Component Management") {
             registry.patch_component<dummy>(en, [](dummy &comp) {
                 comp.value = 84;
             });
-            auto comp = registry.get_component<const dummy>(en);
+            auto comp = registry.get_components<const dummy>(en);
             REQUIRE(comp->value == 84);
         }
 
         SECTION("Replace component") {
             registry.add_component<dummy>(en, 30);
             registry.replace_component<dummy>(en, 150);
-            auto comp = registry.get_component<const dummy>(en);
+            auto comp = registry.get_components<const dummy>(en);
             REQUIRE(comp->value == 150);
         }
 
@@ -129,13 +149,13 @@ TEST_CASE("Sort and iteration") {
 
             REQUIRE(count == 2);
 
-            auto d1 = registry.get_component<const dummy>(en1);
-            auto s1 = registry.get_component<const second_comp>(en1);
+            auto d1 = registry.get_components<const dummy>(en1);
+            auto s1 = registry.get_components<const second_comp>(en1);
             REQUIRE(d1->value == 20);
             REQUIRE(s1->value == 10.0f);
 
-            auto d3 = registry.get_component<const dummy>(en3);
-            auto s3 = registry.get_component<const second_comp>(en3);
+            auto d3 = registry.get_components<const dummy>(en3);
+            auto s3 = registry.get_components<const second_comp>(en3);
             REQUIRE(d3->value == 60);
             REQUIRE(s3->value == 30.0f);
         }
@@ -156,7 +176,7 @@ TEST_CASE("Sort and iteration") {
         }
         SECTION("Sort by entity") {
             registry.sort<dummy>([&registry](const st::entity &lhs, const st::entity &rhs) {
-                return registry.get_component<const dummy>(lhs)->value > registry.get_component<const dummy>(rhs)->value;
+                return registry.get_components<const dummy>(lhs)->value > registry.get_components<const dummy>(rhs)->value;
             });
 
             std::vector<int> values;

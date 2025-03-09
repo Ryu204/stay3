@@ -94,16 +94,16 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
 
             SECTION("Read and write proxy") {
                 {
-                    auto dum = registry.get_component<dummy>(en);
+                    auto dum = registry.get_components<dummy>(en);
                     dum->value = 0;
                     // Out of scope
                 }
                 REQUIRE(tracker.update_count == 3);
-                REQUIRE(registry.get_component<const dummy>(en)->value == 0);
+                REQUIRE(registry.get_components<const dummy>(en)->value == 0);
 
                 int do_not_optimize_out{};
                 {
-                    auto dum = registry.get_component<const dummy>(en);
+                    auto dum = registry.get_components<const dummy>(en);
                     do_not_optimize_out = dum->value;
                     // Out of scope
                 }
@@ -185,8 +185,8 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
             d->value = 100;
             c->value = 200;
 
-            auto rd = registry.get_component<const dummy>(en);
-            auto rc = registry.get_component<const complex_component>(en);
+            auto rd = registry.get_components<const dummy>(en);
+            auto rc = registry.get_components<const complex_component>(en);
 
             REQUIRE(rd->value == 100);
             REQUIRE(rc->value == 200);
