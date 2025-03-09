@@ -17,7 +17,24 @@ export namespace st {
 
 class tree_context {
 public:
-    tree_context() = default;
+    struct node_reparented_args {
+        node::id_type current;
+        node::id_type old_parent;
+        node::id_type new_parent;
+    };
+    decltype(auto) on_node_reparented() {
+        return this->m_node_reparented_sink;
+    }
+    decltype(auto) on_entity_created() {
+        return this->m_entity_created_sink;
+    }
+    decltype(auto) on_entity_destroyed() {
+        return this->m_entity_destroyed_sink;
+    }
+
+    tree_context() {
+        m_ecs_reg.on_entity_destroyed().connect<&tree_context::remove_entity_node_mapping>(*this);
+    }
     ~tree_context() {
         m_root.reset();
     }
@@ -59,13 +76,11 @@ private:
         m_entity_to_node.emplace(en, node);
     }
 
-    void remove_entity_node_mapping(node &, entity en) {
+    void remove_entity_node_mapping(entity en) {
         m_entity_to_node.erase(en);
     }
 
     [[nodiscard]] node::id_type register_node(node &node) {
-        node.on_entity_created().connect<&tree_context::add_entity_node_mapping>(*this);
-        node.on_entity_destroyed().connect<&tree_context::remove_entity_node_mapping>(*this);
         const auto new_id = m_id_generator.create();
         m_id_to_node.emplace(new_id, node);
         return new_id;
@@ -80,7 +95,14 @@ private:
     std::unordered_map<node::id_type, std::reference_wrapper<node>> m_id_to_node;
     id_generator<node::id_type> m_id_generator;
 
+    signal<void(node_reparented_args)> m_node_reparented;
+    sink<decltype(m_node_reparented)> m_node_reparented_sink{m_node_reparented};
+
     ecs_registry m_ecs_reg;
     std::unordered_map<entity, std::reference_wrapper<node>, entity_hasher> m_entity_to_node;
+    signal<void(node &, entity)> m_entity_created;
+    sink<decltype(m_entity_created)> m_entity_created_sink{m_entity_created};
+    signal<void(node &, entity)> m_entity_destroyed;
+    sink<decltype(m_entity_destroyed)> m_entity_destroyed_sink{m_entity_destroyed};
 };
 } // namespace st

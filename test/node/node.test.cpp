@@ -4,6 +4,14 @@
 import stay3.node;
 using Catch::Matchers::UnorderedRangeEquals;
 
+struct reparented_handler {
+    void on_event(st::tree_context::node_reparented_args args) {
+        this->args = args;
+    }
+
+    st::tree_context::node_reparented_args args;
+};
+
 TEST_CASE("node basic functionality") {
     st::tree_context context;
     auto &root = context.root();
@@ -34,6 +42,16 @@ TEST_CASE("node basic functionality") {
         auto &child2 = root.add_child();
         child1.reparent(child2);
         REQUIRE(&child1.parent() == &child2);
+
+        SECTION("Publish signal") {
+            reparented_handler handler;
+            context.on_node_reparented().connect<&reparented_handler::on_event>(handler);
+            child1.reparent(root);
+            const auto &args = handler.args;
+            REQUIRE(args.current == child1.id());
+            REQUIRE(args.old_parent == child2.id());
+            REQUIRE(args.new_parent == root.id());
+        }
     }
 
     SECTION("Ancestor relationship") {
