@@ -1,5 +1,4 @@
 #include <format>
-#include <iostream>
 #include <numbers>
 #include <stdexcept>
 
@@ -103,7 +102,6 @@ struct transform_user {
         } catch(std::exception &e) {
             result->ok = false;
             result->message = e.what();
-            std::cerr << e.what() << '\n';
         }
         result->ok = true;
         result->message = "OK";
@@ -128,7 +126,6 @@ struct transform_sync_user {
         } catch(std::exception &e) {
             result->ok = false;
             result->message = e.what();
-            std::cerr << e.what() << '\n';
         }
         result->ok = true;
         result->message = "OK";
