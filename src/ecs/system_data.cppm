@@ -75,4 +75,9 @@ enum class sys_priority : std::uint8_t {
     very_low = 1,
 };
 using sys_priority_t = std::underlying_type_t<sys_priority>;
+
+enum class sys_run_result : std::uint8_t {
+    noop,
+    exit,
+};
 } // namespace st

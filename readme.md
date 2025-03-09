@@ -88,7 +88,17 @@ This is the (non exhaustive) list of available events.
 |update|**After** the component is changed|`patch` or `replace`<br>`each` or `get_components` with a non const type parameter and the proxy goes out of scope|
 |destroy|**Before** the component is removed|`remove_component`|
 
-8. It's possible to iterate over `node` and its entities holder:
+8. To signal exit from inside a system method, use `sys_run_result` as a return type:
+
+```cpp
+struct my_system {
+    static sys_run_result update(seconds, tree_context &) {
+        return sys_run_result::exit;
+    }
+};
+```
+
+9. It's possible to iterate over `node` and its entities holder:
 
 ```cpp
 node& my_node = /* ... */

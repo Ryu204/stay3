@@ -86,33 +86,43 @@ public:
         return {*sys_ptr, *this};
     }
 
-    void update(seconds delta, context &ctx) {
-        apply_all<sys_type::update>(delta, ctx);
+    sys_run_result update(seconds delta, context &ctx) {
+        return apply_all<sys_type::update>(delta, ctx);
     }
 
-    void start(context &ctx) {
-        apply_all<sys_type::start>(ctx);
+    sys_run_result start(context &ctx) {
+        return apply_all<sys_type::start>(ctx);
     }
 
-    void cleanup(context &ctx) {
-        apply_all<sys_type::cleanup>(ctx);
+    sys_run_result cleanup(context &ctx) {
+        return apply_all<sys_type::cleanup>(ctx);
     }
 
-    void render(context &ctx) {
-        apply_all<sys_type::render>(ctx);
+    sys_run_result render(context &ctx) {
+        return apply_all<sys_type::render>(ctx);
     }
 
-    void post_update(seconds delta, context &ctx) {
-        apply_all<sys_type::post_update>(delta, ctx);
+    sys_run_result post_update(seconds delta, context &ctx) {
+        return apply_all<sys_type::post_update>(delta, ctx);
     }
 
 private:
     template<sys_type type, typename... args>
-    void apply_all(args &&...arguments) {
+    sys_run_result apply_all(args &&...arguments) {
+        auto res = sys_run_result::noop;
         for(const auto &entry: m_systems_by_type[type]) {
-            entry.system.get().template call_method<type>(std::forward<args>(arguments)...);
+            auto cur = entry.system.get().template call_method<type>(std::forward<args>(arguments)...);
+            switch(cur) {
+            case sys_run_result::noop:
+                break;
+            case sys_run_result::exit:
+                res = sys_run_result::exit;
+                break;
+            }
         }
+        return res;
     }
+
     // friend class base_proxy;
     std::unordered_map<sys_type, std::set<system_entry_per_type>> m_systems_by_type;
     std::vector<std::unique_ptr<wrapper>> m_systems;
