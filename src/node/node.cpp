@@ -11,38 +11,6 @@ import :tree_context;
 
 namespace st {
 
-node::iterator::iterator(internal it)
-    : m_it{it} {};
-
-node &node::iterator::operator*() {
-    return *m_it->second;
-}
-
-node::iterator &node::iterator::operator++() {
-    ++m_it;
-    return *this;
-}
-
-bool node::iterator::operator==(const iterator &other) const {
-    return m_it == other.m_it;
-}
-
-node::const_iterator::const_iterator(internal it)
-    : m_it{it} {};
-
-const node &node::const_iterator::operator*() const {
-    return *m_it->second;
-}
-
-node::const_iterator &node::const_iterator::operator++() {
-    ++m_it;
-    return *this;
-}
-
-bool node::const_iterator::operator==(const const_iterator &other) const {
-    return m_it == other.m_it;
-}
-
 node::node(tree_context &context)
     : m_tree_context{context}, m_entities{context.ecs()} {
     m_id = m_tree_context.get().register_node(*this);

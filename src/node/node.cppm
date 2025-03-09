@@ -21,10 +21,19 @@ public:
         using internal = std::unordered_map<id_type, std::unique_ptr<node>>::iterator;
 
     public:
-        iterator(internal it);
-        node &operator*();
-        iterator &operator++();
-        bool operator==(const iterator &other) const;
+        iterator(internal it)
+            : m_it{it} {}
+
+        node &operator*() {
+            return *m_it->second;
+        }
+        iterator &operator++() {
+            ++m_it;
+            return *this;
+        }
+        bool operator==(const iterator &other) const {
+            return m_it == other.m_it;
+        }
 
     private:
         internal m_it;
@@ -34,10 +43,19 @@ public:
         using internal = std::unordered_map<id_type, std::unique_ptr<node>>::const_iterator;
 
     public:
-        const_iterator(internal it);
-        const node &operator*() const;
-        const_iterator &operator++();
-        bool operator==(const const_iterator &other) const;
+        const_iterator(internal it)
+            : m_it{it} {}
+
+        const node &operator*() const {
+            return *m_it->second;
+        }
+        const_iterator &operator++() {
+            ++m_it;
+            return *this;
+        }
+        bool operator==(const const_iterator &other) const {
+            return m_it == other.m_it;
+        }
 
     private:
         internal m_it;
