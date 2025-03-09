@@ -17,11 +17,12 @@ public:
 
 private:
     friend void sync_global_transform(tree_context &);
-    friend global_transform &sync_global_transform(tree_context &, entity);
+    friend const global_transform &sync_global_transform(tree_context &, entity);
     transform global;
 };
 
-struct transform_sync_system {
+class transform_sync_system {
+public:
     static void start(tree_context &ctx);
     static void post_update(seconds, tree_context &ctx);
 };
@@ -34,6 +35,6 @@ void sync_global_transform(tree_context &ctx);
 /**
  * @brief Sync single `global_transform`
  */
-global_transform &sync_global_transform(tree_context &ctx, entity en);
+const global_transform &sync_global_transform(tree_context &ctx, entity en);
 
 } // namespace st

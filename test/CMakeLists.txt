@@ -69,3 +69,4 @@ add_custom_test(ecs-system-data ecs/system_data.test.cpp "Catch2::Catch2WithMain
 add_custom_test(ecs-system-manager ecs/system_manager.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")

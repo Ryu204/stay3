@@ -58,7 +58,7 @@ void check_single_transform(const std::string &test_name, tree_context &ctx, ent
     if(!ctx.ecs().has_components<global_transform>(id_to_check)) {
         throw std::runtime_error{"No global component"};
     }
-    const auto &global_tf = ctx.ecs().get_component<const global_transform>(id_to_check)->get();
+    const auto &global_tf = ctx.ecs().get_components<const global_transform>(id_to_check)->get();
 
 #define THROW_IF_NOT_EQUAL(x, y, z) \
     if(!approx_equal((x), (y), (z))) { \

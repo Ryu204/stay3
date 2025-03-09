@@ -1,5 +1,6 @@
 module;
 
+#include <cassert>
 #include <cstdint>
 #include <unordered_map>
 
@@ -13,10 +14,85 @@ struct dirty_flag {};
 
 namespace st {
 
-void add_dirty_flag(st::ecs_registry &reg, st::entity en) {
+void mark_entity_dirty(ecs_registry &reg, entity en) {
     if(!reg.has_components<dirty_flag>(en)) {
-        reg.add_component<dirty_flag>(en);
+        reg.add_component<const dirty_flag>(en);
     }
+}
+
+void mark_subtree_dirty(tree_context &ctx, entity en) {
+    auto &reg = ctx.ecs();
+    assert(reg.has_components<transform>(en));
+    const auto &node = ctx.get_node(en);
+
+    if(node.entities()[0] != en) {
+        mark_entity_dirty(reg, en);
+        return;
+    }
+    if(reg.has_components<dirty_flag>(en)) {
+        return;
+    }
+
+    constexpr auto children_needs_mark = [](ecs_registry &reg, const class node &node) {
+        if(node.entities().is_empty()) { return false; }
+        return reg.has_components<transform>(node.entities()[0])
+               && !reg.has_components<dirty_flag>(node.entities()[0]);
+    };
+    constexpr auto traverse_tree = [children_needs_mark](auto &&self, ecs_registry &reg, const class node &node) -> void {
+        const auto will_mark_children = children_needs_mark(reg, node);
+        for(auto en: node.entities()) {
+            if(reg.has_components<transform>(en)) {
+                mark_entity_dirty(reg, en);
+            }
+        }
+        if(will_mark_children) {
+            for(const auto &child_node: node) {
+                self(self, reg, child_node);
+            }
+        };
+    };
+    reg.add_component<dirty_flag>(en);
+    for(const auto &child: node) {
+        traverse_tree(traverse_tree, reg, child);
+    }
+}
+
+void mark_subtree_dirty_except_root(tree_context &ctx, entity en) {
+    auto &reg = ctx.ecs();
+    for(const auto &child: ctx.get_node(en)) {
+        for(const auto child_en: child.entities()) {
+            if(reg.has_components<transform>(child_en)) {
+                mark_subtree_dirty(ctx, child_en);
+            }
+        }
+    }
+}
+
+void node_reparented_handler(tree_context &ctx, tree_context::node_reparented_args args) {
+    const auto &node = ctx.get_node(args.current);
+    for(auto en: node.entities()) {
+        if(ctx.ecs().has_components<transform>(en)) {
+            mark_subtree_dirty(ctx, en);
+        }
+    }
+}
+
+void transform_constructed_handler(tree_context &ctx, ecs_registry &, entity en) {
+    auto &reg = ctx.ecs();
+    reg.add_component<const global_transform>(en);
+    mark_subtree_dirty(ctx, en);
+}
+
+void transform_destroyed_handler(tree_context &ctx, ecs_registry &, entity en) {
+    auto &reg = ctx.ecs();
+    if(en == ctx.get_node(en).entities()[0]) {
+        mark_subtree_dirty_except_root(ctx, en);
+    }
+    reg.remove_component<global_transform>(en);
+}
+
+void transform_updated_handler(tree_context &ctx, ecs_registry &, entity en) {
+    mark_subtree_dirty(ctx, en);
 }
 
 const transform &global_transform::get() const {
@@ -26,12 +102,11 @@ const transform &global_transform::get() const {
 void transform_sync_system::start(tree_context &ctx) {
     auto &reg = ctx.ecs();
 
-    reg.on<comp_event::construct, transform>().connect<&ecs_registry::add_component<global_transform>>();
-    reg.on<comp_event::destroy, transform>().connect<&ecs_registry::remove_component<global_transform>>();
+    reg.on<comp_event::construct, transform>().connect<&transform_constructed_handler>(ctx);
+    reg.on<comp_event::destroy, transform>().connect<&transform_destroyed_handler>(ctx);
+    reg.on<comp_event::update, transform>().connect<&transform_updated_handler>(ctx);
 
-    reg.on<comp_event::update, transform>().connect<&add_dirty_flag>();
-    // New transform is dirty by default
-    reg.on<comp_event::construct, transform>().connect<&add_dirty_flag>();
+    ctx.on_node_reparented().connect<&node_reparented_handler>(ctx);
 }
 
 void transform_sync_system::post_update(seconds, tree_context &ctx) {
@@ -55,8 +130,10 @@ void sync_global_transform(tree_context &ctx) {
 
     for(auto &&[en, unused]: reg.each<const dirty_flag>()) {
         const auto &node = ctx.get_node(en);
-        const auto local = reg.get_component<const transform>(en);
-        auto global = reg.get_component<global_transform>(en);
+        if(!reg.has_components<transform>(en)) {
+            continue;
+        }
+        auto [local, global] = reg.get_components<const transform, global_transform>(en);
         const auto has_parent_transform =
             !node.is_root()
             && !node.parent().entities().is_empty()
@@ -65,33 +142,31 @@ void sync_global_transform(tree_context &ctx) {
             global->global = *local;
             continue;
         }
-        auto parent_global = reg.get_component<const global_transform>(node.parent().entities()[0]);
+        auto parent_global = reg.get_components<const global_transform>(node.parent().entities()[0]);
         global->global.set_matrix(parent_global->global.matrix() * local->matrix());
     }
     reg.clear_component<dirty_flag>();
 }
 
-global_transform &sync_global_transform(tree_context &ctx, entity en) {
+const global_transform &sync_global_transform(tree_context &ctx, entity en) {
     auto &reg = ctx.ecs();
-    auto &&target = reg.get_component<global_transform>(en);
-    //     if(!target.dirty) { goto RETURN; }
-
-    //     const auto &node = ctx.get_node(en);
-    //     const auto *parent = node.parent();
-    //     const auto is_root_node = parent == nullptr;
-    //     if(is_root_node) { goto RETURN; }
-
-    //     const auto has_parent_transform = !parent->entities().empty()
-    //                                       && reg.has_components<global_transform>(parent->entities()[0]);
-    //     if(!has_parent_transform) { goto RETURN; }
-
-    //     const auto &parent_transform = sync_global_transform(ctx, parent->entities()[0]);
-    //     const auto &local_transform = reg.get_component<transform>(en);
-    //     target.global.set_matrix(parent_transform.matrix() * local_transform.matrix());
-
-    // RETURN:
-    //     target.dirty = false;
-    return *target;
+    if(!reg.has_components<dirty_flag>(en)) {
+        return *reg.get_components<const global_transform>(en);
+    }
+    const auto &node = ctx.get_node(en);
+    const auto has_parent_transform =
+        !node.is_root()
+        && !node.parent().entities().is_empty()
+        && reg.has_components<global_transform>(node.parent().entities()[0]);
+    auto [local, global] = reg.get_components<const transform, global_transform>(en);
+    if(!has_parent_transform) {
+        global->global = *local;
+    } else {
+        auto parent_global = reg.get_components<const global_transform>(node.parent().entities()[0]);
+        global->global.set_matrix(parent_global->global.matrix() * local->matrix());
+    }
+    reg.remove_component<dirty_flag>(en);
+    return *reg.get_components<const global_transform>(en);
 }
 
 } // namespace st
