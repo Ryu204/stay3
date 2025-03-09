@@ -17,6 +17,32 @@ class node {
 public:
     using id_type = std::uint32_t;
 
+    class iterator {
+        using internal = std::unordered_map<id_type, std::unique_ptr<node>>::iterator;
+
+    public:
+        iterator(internal it);
+        node &operator*();
+        iterator &operator++();
+        bool operator==(const iterator &other) const;
+
+    private:
+        internal m_it;
+    };
+
+    class const_iterator {
+        using internal = std::unordered_map<id_type, std::unique_ptr<node>>::const_iterator;
+
+    public:
+        const_iterator(internal it);
+        const node &operator*() const;
+        const_iterator &operator++();
+        bool operator==(const const_iterator &other) const;
+
+    private:
+        internal m_it;
+    };
+
     ~node();
     node(node &&) noexcept = delete;
     node(const node &) = delete;
@@ -31,17 +57,13 @@ public:
     [[nodiscard]] node &child(const id_type &id) const;
     void destroy_child(const id_type &id);
 
-    [[nodiscard]] id_type id() const;
-
-    [[nodiscard]] entities_holder &entities();
-    [[nodiscard]] const entities_holder &entities() const;
-    decltype(auto) on_entity_created() {
-        return this->m_entity_created_sink;
-    }
-    decltype(auto) on_entity_destroyed() {
-        return this->m_entity_destroyed_sink;
-    }
-
+    /**
+     * @brief Iterates over children nodes
+     */
+    const_iterator begin() const;
+    const_iterator end() const;
+    iterator begin();
+    iterator end();
     /**
      * @brief Apply `function` recursively, using parent's result as child's parameter
      * @note Traversal is pre-order DFS. `ret`
@@ -62,6 +84,11 @@ public:
         }
     }
 
+    [[nodiscard]] id_type id() const;
+
+    [[nodiscard]] entities_holder &entities();
+    [[nodiscard]] const entities_holder &entities() const;
+
 private:
     friend class tree_context;
 
@@ -75,9 +102,5 @@ private:
     std::reference_wrapper<tree_context> m_tree_context;
 
     entities_holder m_entities;
-    signal<void(node &, entity)> m_entity_created;
-    sink<decltype(m_entity_created)> m_entity_created_sink{m_entity_created};
-    signal<void(node &, entity)> m_entity_destroyed;
-    sink<decltype(m_entity_destroyed)> m_entity_destroyed_sink{m_entity_destroyed};
 };
 } // namespace st

@@ -10,6 +10,39 @@ import stay3.ecs;
 import :tree_context;
 
 namespace st {
+
+node::iterator::iterator(internal it)
+    : m_it{it} {};
+
+node &node::iterator::operator*() {
+    return *m_it->second;
+}
+
+node::iterator &node::iterator::operator++() {
+    ++m_it;
+    return *this;
+}
+
+bool node::iterator::operator==(const iterator &other) const {
+    return m_it == other.m_it;
+}
+
+node::const_iterator::const_iterator(internal it)
+    : m_it{it} {};
+
+const node &node::const_iterator::operator*() const {
+    return *m_it->second;
+}
+
+node::const_iterator &node::const_iterator::operator++() {
+    ++m_it;
+    return *this;
+}
+
+bool node::const_iterator::operator==(const const_iterator &other) const {
+    return m_it == other.m_it;
+}
+
 node::node(tree_context &context)
     : m_tree_context{context}, m_entities{context.ecs()} {
     m_id = m_tree_context.get().register_node(*this);
@@ -50,8 +83,10 @@ void node::reparent(node &other) {
     auto this_unique_ptr = std::move(m_parent->m_children[m_id]);
     m_parent->m_children.erase(m_id);
     // Append to new parent
+    auto *old_parent = m_parent;
     m_parent = &other;
     other.m_children.emplace(m_id, std::move(this_unique_ptr));
+    m_tree_context.get().m_node_reparented.publish({.current = m_id, .old_parent = old_parent->m_id, .new_parent = m_parent->m_id});
 }
 
 bool node::is_ancestor_of(const node &other) const {
@@ -73,6 +108,22 @@ void node::destroy_child(const id_type &id) {
     m_children.erase(id);
 }
 
+node::const_iterator node::begin() const {
+    return m_children.cbegin();
+}
+
+node::const_iterator node::end() const {
+    return m_children.cend();
+}
+
+node::iterator node::begin() {
+    return m_children.begin();
+}
+
+node::iterator node::end() {
+    return m_children.end();
+}
+
 node::id_type node::id() const {
     return m_id;
 }
@@ -86,11 +137,12 @@ entities_holder &node::entities() {
 }
 
 void node::entity_created_handler(entity en) {
-    m_entity_created.publish(*this, en);
+    m_tree_context.get().add_entity_node_mapping(*this, en);
+    m_tree_context.get().m_entity_created.publish(*this, en);
 }
 
 void node::entity_destroyed_handler(entity en) {
-    m_entity_destroyed.publish(*this, en);
+    m_tree_context.get().m_entity_destroyed.publish(*this, en);
 }
 
 } // namespace st

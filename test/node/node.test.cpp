@@ -1,6 +1,8 @@
+#include <utility>
 #include <catch2/catch_all.hpp>
 
 import stay3.node;
+using Catch::Matchers::UnorderedRangeEquals;
 
 TEST_CASE("node basic functionality") {
     st::tree_context context;
@@ -95,6 +97,34 @@ TEST_CASE("node basic functionality") {
                 REQUIRE(sum_up_to_root[child2.id()] == (root.id() + child2.id()));
                 REQUIRE(sum_up_to_root[child5.id()] == (root.id() + child2.id() + child5.id()));
             }
+        }
+    }
+
+    SECTION("Iterators") {
+        REQUIRE(root.begin() == root.end());
+        REQUIRE(std::as_const(root).begin() == std::as_const(root).end());
+
+        std::vector<st::node::id_type> children;
+        constexpr auto children_count = 5;
+        children.reserve(children_count);
+        for(auto i = 0; i < children_count; ++i) {
+            children.emplace_back(root.add_child().id());
+        }
+        decltype(children) checked_children;
+
+        SECTION("Const iter") {
+            const auto &croot = root;
+            for(const auto &child: croot) {
+                checked_children.emplace_back(child.id());
+            }
+            REQUIRE_THAT(checked_children, UnorderedRangeEquals(children));
+        }
+
+        SECTION("Iter") {
+            for(auto &child: root) {
+                checked_children.emplace_back(child.id());
+            }
+            REQUIRE_THAT(checked_children, UnorderedRangeEquals(children));
         }
     }
 }

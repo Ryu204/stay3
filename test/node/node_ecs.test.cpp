@@ -44,38 +44,38 @@ TEST_CASE("Entities event") {
     event_listener lis;
 
     SECTION("Create event") {
-        root.on_entity_created().connect<&event_listener::on_event>(lis);
+        context.on_entity_created().connect<&event_listener::on_event>(lis);
         auto en = root.entities().create();
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == &root);
 
         auto &child = root.add_child();
-        child.on_entity_created().connect<&event_listener::on_event>(lis);
+        context.on_entity_created().connect<&event_listener::on_event>(lis);
         en = child.entities().create();
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == (&child));
 
-        child.on_entity_created().disconnect<&event_listener::on_event>(lis);
+        context.on_entity_created().disconnect<&event_listener::on_event>(lis);
         en = child.entities().create();
         REQUIRE(lis.en != en);
         REQUIRE(lis.node == (&child));
     }
 
     SECTION("Destroy event") {
-        root.on_entity_destroyed().connect<&event_listener::on_event>(lis);
+        context.on_entity_destroyed().connect<&event_listener::on_event>(lis);
         auto en = root.entities().create();
         root.entities().destroy(0);
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == &root);
 
         auto &child = root.add_child();
-        child.on_entity_destroyed().connect<&event_listener::on_event>(lis);
+        context.on_entity_destroyed().connect<&event_listener::on_event>(lis);
         en = child.entities().create();
         child.entities().destroy(0);
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == (&child));
 
-        child.on_entity_destroyed().disconnect<&event_listener::on_event>(lis);
+        context.on_entity_destroyed().disconnect<&event_listener::on_event>(lis);
         en = child.entities().create();
         child.entities().destroy(0);
         REQUIRE(lis.en != en);

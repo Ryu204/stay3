@@ -24,6 +24,7 @@ However, currently `EnTT` failed to build if used inside a module with MSVC.
 |-----------|-----------|--------|
 |`sys_type::start`|`start`|`tree_context&`|
 |`sys_type::update`|`update`|`seconds`, `tree_context&`|
+|`sys_type::post_update`|`post_update`|`seconds`, `tree_context&`|
 |`sys_type::render`|`render`|`tree_context&`|
 |`sys_type::cleanup`|`cleanup`|`tree_context&`|
 
@@ -62,7 +63,7 @@ struct my_system {
 ```
 If you want to modify the component, use non const template. This however may be a litle bit slower [^1].
 
-The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get_component`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
+The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get_components`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
 
 [^1]: In above example, `comp`'s destructor will invoke the update signal if somebody subcribed to it before.
 
@@ -84,9 +85,20 @@ This is the (non exhaustive) list of available events.
 |Event|Trigger time|Causes|
 |-----|------------|------|
 |construct|**After** the component is created|`add_component`|
-|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get_component` with a non const type parameter and the proxy goes out of scope|
+|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get_components` with a non const type parameter and the proxy goes out of scope|
 |destroy|**Before** the component is removed|`remove_component`|
 
+8. It's possible to iterate over `node` and its entities holder:
+
+```cpp
+node& my_node = /* ... */
+for (auto& child : my_node) {
+    /* child is reference to child node */
+}
+for (auto entity : my_node.entities()) {
+    /* entity belongs to my_node */
+}
+```
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
