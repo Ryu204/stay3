@@ -7,10 +7,13 @@ import stay3;
 import stay3.test_helper;
 
 using namespace st;
-using Catch::Matchers::Message;
+
+struct run_result {
+    bool ok{false};
+    std::string message;
+};
 
 namespace {
-
 struct entities {
     entity root_child;
     entity stray;
@@ -87,50 +90,76 @@ void check_transforms(tree_context &ctx, const entities &ids) {
 } // namespace
 
 struct transform_user {
+    transform_user(run_result &res)
+        : result{&res} {}
     void start(tree_context &ctx) {
         ids = set_up_entities(ctx);
     }
 
-    void post_update(seconds, tree_context &ctx) const {
-        check_transforms(ctx, ids);
-        throw std::runtime_error{"OK"}; // TODO: allow system to request game loop exit
+    sys_run_result post_update(seconds, tree_context &ctx) {
+        try {
+            check_transforms(ctx, ids);
+        } catch(std::exception &e) {
+            result->ok = false;
+            result->message = e.what();
+        }
+        result->ok = true;
+        result->message = "OK";
+        return sys_run_result::exit;
     }
 
     entities ids;
+    run_result *result;
 };
 
 struct transform_sync_user {
+    transform_sync_user(run_result &result)
+        : result{&result} {}
     void start(tree_context &ctx) {
         ids = set_up_entities(ctx);
     }
 
-    void update(seconds, tree_context &ctx) const {
-        sync_global_transform(ctx);
-        check_transforms(ctx, ids);
-        throw std::runtime_error{"OK"}; // TODO: allow system to request game loop exit
+    sys_run_result update(seconds, tree_context &ctx) {
+        try {
+            sync_global_transform(ctx);
+            check_transforms(ctx, ids);
+        } catch(std::exception &e) {
+            result->ok = false;
+            result->message = e.what();
+        }
+        result->ok = true;
+        result->message = "OK";
+        return sys_run_result::exit;
     }
 
     entities ids;
+    run_result *result;
 };
 
-TEST_CASE("Sync system changes global transform correctly") {
+TEST_CASE("Happy path") {
+    run_result result;
     app my_app;
     my_app.enable_default_systems();
-    my_app.systems()
-        .add<transform_user>()
-        .run_as<sys_type::start>()
-        .run_as<sys_type::post_update>();
 
-    REQUIRE_THROWS_MATCHES(my_app.run(), std::runtime_error, Message("OK"));
-}
+    SECTION("Sync system changes global transform correctly") {
+        my_app.systems()
+            .add<transform_user>(result)
+            .run_as<sys_type::start>()
+            .run_as<sys_type::post_update>();
 
-TEST_CASE("Sync free function changes global transform correctly") {
-    app my_app;
-    my_app.enable_default_systems()
-        .systems()
-        .add<transform_sync_user>()
-        .run_as<sys_type::start>()
-        .run_as<sys_type::update>();
+        my_app.run();
+        REQUIRE(result.message == "OK");
+        REQUIRE(result.ok == true);
+    }
 
-    REQUIRE_THROWS_MATCHES(my_app.run(), std::runtime_error, Message("OK"));
+    SECTION("Sync free function changes global transform correctly") {
+        my_app.systems()
+            .add<transform_sync_user>(result)
+            .run_as<sys_type::start>()
+            .run_as<sys_type::update>();
+
+        my_app.run();
+        REQUIRE(result.message == "OK");
+        REQUIRE(result.ok == true);
+    }
 }

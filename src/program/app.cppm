@@ -21,8 +21,12 @@ private:
         yes,
         no,
     };
+    enum class should_exit : std::uint8_t {
+        yes,
+        no
+    };
 
-    void update(seconds delta);
+    should_exit update(seconds delta);
     void on_frame();
     window_closed input();
     void render();

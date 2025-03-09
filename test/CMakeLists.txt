@@ -16,6 +16,11 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(Catch2)
+if(EMSCRIPTEN)
+    target_compile_options(Catch2 PUBLIC -fexceptions)
+    target_link_options(Catch2 PUBLIC -fexceptions)
+endif()
+
 
 include(CTest)
 
@@ -33,6 +38,8 @@ function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
 
     if(MSVC)
         target_compile_options(${TEST_NAME} PRIVATE /W4)
+    elseif(EMSCRIPTEN)
+        target_compile_options(${TEST_NAME} PRIVATE -g)
     else()
         target_compile_options(${TEST_NAME} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
@@ -40,7 +47,10 @@ function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
     if(EMSCRIPTEN)
         set(TEST_SHELL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/web/test-shell.html)
         set_target_properties(${TEST_NAME} PROPERTIES SUFFIX ".html" LINK_DEPENDS ${TEST_SHELL_FILE})
-        target_link_options(${TEST_NAME} PRIVATE --shell-file ${TEST_SHELL_FILE} -s EXIT_RUNTIME=1)
+        target_link_options(${TEST_NAME} PRIVATE
+            --shell-file ${TEST_SHELL_FILE}
+            -sEXIT_RUNTIME=1
+        )
         add_test(NAME ${TEST_NAME} COMMAND node ${CMAKE_CURRENT_SOURCE_DIR}/web/index.js -d ${CMAKE_CURRENT_BINARY_DIR} -i ${TEST_NAME}.html ${ARGS})
     else()
         add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} ${ARGS})

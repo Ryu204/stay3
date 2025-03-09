@@ -89,6 +89,9 @@ void transform_destroyed_handler(tree_context &ctx, ecs_registry &, entity en) {
         mark_subtree_dirty_except_root(ctx, en);
     }
     reg.remove_component<global_transform>(en);
+    if(reg.has_components<dirty_flag>(en)) {
+        reg.remove_component<dirty_flag>(en);
+    }
 }
 
 void transform_updated_handler(tree_context &ctx, ecs_registry &, entity en) {

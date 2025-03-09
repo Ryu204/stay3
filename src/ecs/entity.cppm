@@ -27,4 +27,10 @@ struct entity_hasher: std::hash<entt::entity> {
         return std::hash<entt::entity>::operator()(en.raw);
     }
 };
+
+struct entity_equal {
+    bool operator()(const entity &lhs, const entity &rhs) const noexcept {
+        return lhs.raw == rhs.raw;
+    }
+};
 } // namespace st
