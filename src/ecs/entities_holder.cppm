@@ -18,6 +18,31 @@ export namespace st {
  */
 class entities_holder {
 public:
+    class const_iterator {
+        using internal = std::vector<entity>::const_iterator;
+
+    public:
+        using difference_type = std::ptrdiff_t;
+        const_iterator(internal it)
+            : m_it{it} {};
+        const entity &operator*() const {
+            return *m_it;
+        }
+        const_iterator &operator++() {
+            ++m_it;
+            return *this;
+        }
+        bool operator==(const const_iterator &other) const {
+            return m_it == other.m_it;
+        }
+        const_iterator operator+(difference_type n) const {
+            return m_it + n;
+        }
+
+    private:
+        internal m_it;
+    };
+
     entities_holder(ecs_registry &reg)
         : m_registry{reg} {};
     ~entities_holder() {
@@ -66,19 +91,11 @@ public:
         return m_entities[index];
     }
 
-    [[nodiscard]] auto begin() {
-        return m_entities.begin();
-    }
-
-    [[nodiscard]] auto end() {
-        return m_entities.end();
-    }
-
-    [[nodiscard]] auto begin() const {
+    [[nodiscard]] const_iterator begin() const {
         return m_entities.cbegin();
     }
 
-    [[nodiscard]] auto end() const {
+    [[nodiscard]] const_iterator end() const {
         return m_entities.cend();
     }
 
