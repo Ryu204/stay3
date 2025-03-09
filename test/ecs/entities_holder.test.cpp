@@ -2,8 +2,8 @@
 #include <unordered_set>
 #include <catch2/catch_all.hpp>
 
+using Catch::Matchers::Contains;
 import stay3.ecs;
-
 using namespace st;
 
 TEST_CASE("Entity manipulation") {
@@ -57,6 +57,18 @@ TEST_CASE("Entity manipulation") {
             REQUIRE(reg.has_components<int>(en));
         }
     }
+
+    SECTION("Clear") {
+        constexpr auto size = 5;
+        for(auto i = 0; i < size; ++i) {
+            es.create();
+        }
+        REQUIRE(es.size() == size);
+
+        es.clear();
+        REQUIRE(es.is_empty());
+        REQUIRE(es.begin() == es.end());
+    }
 }
 
 struct listener {
@@ -94,5 +106,43 @@ TEST_CASE("Signal emission") {
         std::ignore = es.create();
         es.destroy(0);
         REQUIRE(lis.en == created_en);
+
+        SECTION("On destructor") {
+            std::vector<entity> entities;
+            {
+                entities_holder es2{reg};
+                entities = {es2.create(), es2.create()};
+                es2.on_destroy().connect<&listener::on_other_entity_update>(lis);
+            }
+            for(auto en: entities) {
+                REQUIRE_FALSE(reg.contains_entity(en));
+            }
+            REQUIRE_THAT(entities, Contains(lis.en));
+        }
+    }
+}
+
+TEST_CASE("Iteration") {
+    ecs_registry reg;
+    entities_holder es{reg};
+
+    SECTION("Ranged-for iteration") {
+        std::unordered_set<entity, entity_hasher> entities;
+        constexpr auto size = 5;
+        for(auto i = 0; i < size; ++i) {
+            entities.insert(es.create());
+        }
+        std::unordered_set<entity, entity_hasher> iterated;
+        for(auto &en: es) {
+            iterated.insert(en);
+        }
+        REQUIRE(iterated == entities);
+
+        iterated.clear();
+        const entities_holder &const_es = es;
+        for(const auto &en: const_es) {
+            iterated.insert(en);
+        }
+        REQUIRE(iterated == entities);
     }
 }

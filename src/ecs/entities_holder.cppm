@@ -21,9 +21,7 @@ public:
     entities_holder(ecs_registry &reg)
         : m_registry{reg} {};
     ~entities_holder() {
-        for(const auto &en: m_entities) {
-            m_registry.get().destroy_entity(en);
-        }
+        clear();
     }
     entities_holder(entities_holder &&) noexcept = delete;
     entities_holder(const entities_holder &) = delete;
@@ -33,7 +31,7 @@ public:
     /**
      * @brief Creates new entity
      */
-    [[nodiscard]] entity create() {
+    entity create() {
         const auto result = m_registry.get().create_entity();
         m_entities.emplace_back(result);
         m_entity_created.publish(result);
@@ -42,14 +40,17 @@ public:
 
     /**
      * @brief Erases entity by index
+     * @brief Entity at index 0 must be destroyed last
      */
     void destroy(std::ptrdiff_t index) {
         assert(m_entities.size() > index && "Out of range");
-
+        assert(
+            (index > 0 || m_entities.size() == 1)
+            && "Entity at index 0 must be destroyed last");
         const auto destroyed_entity = m_entities[index];
         m_on_entity_destroy.publish(destroyed_entity);
-        m_entities.erase(m_entities.begin() + index);
         m_registry.get().destroy_entity(destroyed_entity);
+        m_entities.erase(m_entities.begin() + index);
     }
 
     [[nodiscard]] std::size_t size() const {
@@ -65,11 +66,19 @@ public:
         return m_entities[index];
     }
 
-    auto begin() {
+    [[nodiscard]] auto begin() {
         return m_entities.begin();
     }
 
-    auto end() {
+    [[nodiscard]] auto end() {
+        return m_entities.end();
+    }
+
+    [[nodiscard]] auto begin() const {
+        return m_entities.begin();
+    }
+
+    [[nodiscard]] auto end() const {
         return m_entities.end();
     }
 
@@ -81,6 +90,12 @@ public:
     void each(const func &function) {
         for(auto en: m_entities) {
             function(m_registry, en);
+        }
+    }
+
+    void clear() {
+        while(!m_entities.empty()) {
+            destroy(static_cast<std::ptrdiff_t>(m_entities.size()) - 1);
         }
     }
 
