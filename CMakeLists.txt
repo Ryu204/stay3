@@ -73,6 +73,8 @@ target_sources(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT)
 if(EMSCRIPTEN)
+    target_compile_options(${PROJECT_NAME} PUBLIC -fexceptions)
+    target_link_options(${PROJECT_NAME} PUBLIC -fexceptions -sASYNCIFY)
     target_link_options(${PROJECT_NAME} PRIVATE
         -sUSE_GLFW=3
     )

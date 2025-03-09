@@ -99,7 +99,7 @@ private:
     sink<decltype(m_node_reparented)> m_node_reparented_sink{m_node_reparented};
 
     ecs_registry m_ecs_reg;
-    std::unordered_map<entity, std::reference_wrapper<node>, entity_hasher> m_entity_to_node;
+    std::unordered_map<entity, std::reference_wrapper<node>, entity_hasher, entity_equal> m_entity_to_node;
     signal<void(node &, entity)> m_entity_created;
     sink<decltype(m_entity_created)> m_entity_created_sink{m_entity_created};
     signal<void(node &, entity)> m_entity_destroyed;

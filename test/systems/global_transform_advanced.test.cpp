@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <catch2/catch_all.hpp>
+
 import stay3;
 import stay3.test_helper;
 
@@ -161,8 +162,8 @@ void check_parent_transform_added_update(tree_context &ctx, const entities &es) 
     }; \
     TEST_CASE(#function) { \
         app my_app; \
-        my_app.enable_default_systems(); \
-        my_app.systems().add<sys_##function>().run_as<sys_type::start>().run_as<sys_type::update>(); \
+        REQUIRE_NOTHROW(my_app.enable_default_systems()); \
+        REQUIRE_NOTHROW(my_app.systems().add<sys_##function>().run_as<sys_type::start>().run_as<sys_type::update>()); \
         REQUIRE_THROWS_MATCHES(my_app.run(), std::runtime_error, Message("OK")); \
     }
 

@@ -31,17 +31,13 @@ app &app::enable_default_systems() {
 
 void app::run() {
     m_ecs_systems.start(m_tree_context);
-#ifdef __EMSCRIPTEN__
-    constexpr auto func = [](void *p_app) {
-        static_cast<app *>(p_app)->on_frame();
-    };
-    emscripten_set_main_loop_arg(func, static_cast<void *>(this), 0, true);
-#else
     while(m_window.is_open()) {
         on_frame();
+#ifdef __EMSCRIPTEN__
+        emscripten_sleep(100);
+#endif
     }
     m_ecs_systems.cleanup(m_tree_context);
-#endif
 }
 
 void app::on_frame() {
@@ -53,14 +49,22 @@ void app::on_frame() {
         if(input() == window_closed::yes) {
             return;
         };
-        update(time_per_update);
+        if(update(time_per_update) == should_exit::yes) {
+            m_window.close();
+            return;
+        }
+        render();
     }
-    render();
 }
 
-void app::update(seconds delta) {
-    m_ecs_systems.update(delta, m_tree_context);
-    m_ecs_systems.post_update(delta, m_tree_context);
+app::should_exit app::update(seconds delta) {
+    auto update_res = m_ecs_systems.update(delta, m_tree_context);
+    auto post_update_res = m_ecs_systems.post_update(delta, m_tree_context);
+
+    if(update_res == sys_run_result::exit || post_update_res == sys_run_result::exit) {
+        return should_exit::yes;
+    }
+    return should_exit::no;
 }
 
 void app::render() {
