@@ -93,6 +93,7 @@ This is the (non exhaustive) list of available events.
 ```cpp
 struct my_system {
     static sys_run_result update(seconds, tree_context &) {
+        /* Do something here and realize we need to quit */
         return sys_run_result::exit;
     }
 };
@@ -109,6 +110,22 @@ for (auto entity : my_node.entities()) {
     /* entity belongs to my_node */
 }
 ```
+
+10. There are multiples signals published during the execution:
+* `ecs_registry`:
+    * `on<comp event, type>`: Signal related to components. Handlers should never add or remove component from any entity if it's observing the same type.
+    * `on_entity_destroyed`: An entity is about to be destroyed, it is no longer related to the scene tree. Handlers should never add new component to it.
+* `entities_holder`:
+    * `on_destroyed`: An entity it owns is destroyed. The entity is still considered owned by holder and its node.
+    * `on_created`: An entity is created and associated with the holder and its node.
+* `tree_context`:
+    * `on_entity_destroyed`: same with `entities_holder::on_destroyed`, but with `node&` as extra argument.
+    * `on_entity_created`:same with `entities_holder::on_created`.
+
+tl;dr:
+* Entity signals emitted from ecs registry do not have associations with scene tree anymore (`tree_context::get_node` will not work)
+* Never attach components to entity that is signaled to be destroyed
+* Never add or destroy component in signal handler of that component.
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
