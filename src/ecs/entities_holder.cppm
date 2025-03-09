@@ -75,11 +75,11 @@ public:
     }
 
     [[nodiscard]] auto begin() const {
-        return m_entities.begin();
+        return m_entities.cbegin();
     }
 
     [[nodiscard]] auto end() const {
-        return m_entities.end();
+        return m_entities.cend();
     }
 
     /**
