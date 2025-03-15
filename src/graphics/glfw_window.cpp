@@ -67,6 +67,9 @@ glfw_window::glfw_window(glfw_window &&other) noexcept {
 glfw_window &glfw_window::operator=(glfw_window &&other) noexcept {
     auto *other_handle = other.m_window;
     other.m_window = nullptr;
+    if(m_window != nullptr) {
+        glfwDestroyWindow(m_window);
+    }
     m_window = other_handle;
 
     if(m_window != nullptr) {
