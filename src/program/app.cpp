@@ -11,10 +11,12 @@ import stay3.node;
 import stay3.window;
 import stay3.core;
 import stay3.systems;
-
-constexpr auto temp_fps = 60.F;
+import :config;
 
 namespace st {
+
+app::app(const app_config &config)
+    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second} {}
 
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
@@ -43,13 +45,12 @@ void app::run() {
 void app::on_frame() {
     const auto elapsed_time = m_watch.restart();
     m_pending_time += elapsed_time;
-    constexpr seconds time_per_update = 1.F / temp_fps;
-    while(m_pending_time > time_per_update) {
-        m_pending_time -= time_per_update;
+    while(m_pending_time > m_time_per_update) {
+        m_pending_time -= m_time_per_update;
         if(input() == window_closed::yes) {
             return;
         };
-        if(update(time_per_update) == should_exit::yes) {
+        if(update(m_time_per_update) == should_exit::yes) {
             m_window.close();
             return;
         }

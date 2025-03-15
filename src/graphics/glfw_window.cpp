@@ -44,9 +44,9 @@ glfw_context_user::glfw_context_user()
           return context;
       }()} {}
 
-glfw_window::glfw_window()
+glfw_window::glfw_window(const window_config &config)
     : m_window{
-          glfwCreateWindow(500, 500, "My window", nullptr, nullptr)} {
+          glfwCreateWindow(static_cast<int>(config.size.x), static_cast<int>(config.size.y), config.name.c_str(), nullptr, nullptr)} {
     if(m_window == nullptr) {
         throw graphics_error{"Failed to create glfw window."};
     }

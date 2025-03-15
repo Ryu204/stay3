@@ -54,10 +54,13 @@ using vec4 = base_vec<4, type>;
 
 using vec2f = vec2<float>;
 using vec2i = vec2<int>;
+using vec2u = vec2<unsigned int>;
 using vec3f = vec3<float>;
 using vec3i = vec3<int>;
+using vec3u = vec3<unsigned int>;
 using vec4f = vec4<float>;
 using vec4i = vec4<int>;
+using vec4u = vec4<unsigned int>;
 
 /* Left handed coordinate system
           Y+

@@ -19,6 +19,7 @@ target_sources(${PROJECT_NAME}
     src/main.cppm
 
     src/program/mod.cppm
+    src/program/config.cppm
     src/program/app.cppm
 
     src/graphics/mod.cppm
@@ -56,6 +57,7 @@ target_sources(${PROJECT_NAME}
 
     src/systems/mod.cppm
     src/systems/transform/global_transform.cppm
+    src/systems/render/render_system.cppm
 
     PRIVATE
 

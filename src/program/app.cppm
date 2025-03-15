@@ -8,10 +8,12 @@ import stay3.ecs;
 import stay3.node;
 import stay3.graphics;
 import stay3.core;
+import :config;
 
 export namespace st {
 class app {
 public:
+    app(const app_config &config = {});
     app &enable_default_systems();
     system_manager<tree_context> &systems();
     void run();
@@ -33,6 +35,7 @@ private:
 
     stop_watch m_watch;
     seconds m_pending_time{0.F};
+    seconds m_time_per_update;
 
     glfw_window m_window;
 
