@@ -1,6 +1,8 @@
 module;
 
 #include <cstdint>
+#include <filesystem>
+#include <limits>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -108,6 +110,84 @@ std::optional<wgpu::Device> create_device(const wgpu::Adapter &adapter) {
     return maybe_device;
 }
 
+struct ShaderModules {
+    wgpu::ShaderModule vertex;
+    wgpu::ShaderModule fragment;
+};
+
+ShaderModules create_shader_modules(const wgpu::Device &device, const std::filesystem::path &shader_path) {
+    const auto maybe_source = read_file_as_str_nothrow(shader_path);
+    if(!maybe_source.has_value()) {
+        throw error{"Shader file not found"};
+    }
+    const auto &source = maybe_source.value();
+
+    wgpu::ShaderModuleDescriptor vertex_desc;
+    wgpu::ShaderSourceWGSL vertex_code_desc;
+    vertex_code_desc.code = source.c_str();
+    vertex_code_desc.sType = wgpu::SType::ShaderSourceWGSL;
+    vertex_desc.nextInChain = &vertex_code_desc;
+
+    const auto vertex = device.CreateShaderModule(&vertex_desc);
+    const auto fragment = vertex; // NOLINT
+
+    return {
+        .vertex = vertex,
+        .fragment = fragment,
+    };
+}
+
+wgpu::RenderPipeline create_pipeline(const wgpu::Device &device, wgpu::TextureFormat surface_format, const std::filesystem::path &shader_path) {
+    wgpu::RenderPipelineDescriptor desc;
+
+    const auto shader_modules = create_shader_modules(device, shader_path);
+
+    auto &vertex = desc.vertex;
+    vertex.bufferCount = 0;
+    vertex.buffers = nullptr;
+    vertex.module = shader_modules.vertex;
+    vertex.entryPoint = "vs_main";
+    vertex.constantCount = 0;
+    vertex.constants = nullptr;
+
+    auto &primitive = desc.primitive;
+    primitive.cullMode = wgpu::CullMode::Back;
+    primitive.frontFace = wgpu::FrontFace::CCW;
+    primitive.topology = wgpu::PrimitiveTopology::TriangleList;
+    primitive.stripIndexFormat = wgpu::IndexFormat::Undefined;
+
+    wgpu::FragmentState fragment;
+    fragment.entryPoint = "fs_main";
+    fragment.constantCount = 0;
+    fragment.constants = nullptr;
+    fragment.module = shader_modules.fragment;
+    wgpu::BlendState blend;
+    blend.alpha.srcFactor = wgpu::BlendFactor::Zero;
+    blend.alpha.dstFactor = wgpu::BlendFactor::One;
+    blend.alpha.operation = wgpu::BlendOperation::Add;
+    blend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+    blend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+    blend.color.operation = wgpu::BlendOperation::Add;
+    wgpu::ColorTargetState color_target;
+    color_target.format = surface_format;
+    color_target.blend = &blend;
+    color_target.writeMask = wgpu::ColorWriteMask::All;
+    fragment.targetCount = 1;
+    fragment.targets = &color_target;
+    desc.fragment = &fragment;
+
+    desc.depthStencil = nullptr;
+
+    auto &multisample = desc.multisample;
+    multisample.count = 1;
+    multisample.mask = std::numeric_limits<std::uint32_t>::max(); // All bits on
+    multisample.alphaToCoverageEnabled = false;
+
+    desc.layout = nullptr;
+
+    return device.CreateRenderPipeline(&desc);
+}
+
 void config_surface(const wgpu::Surface &surface, const wgpu::Device &device, wgpu::TextureFormat texture_format, vec2u size) {
     wgpu::SurfaceConfiguration config;
     config.height = size.y;
@@ -122,8 +202,8 @@ void config_surface(const wgpu::Surface &surface, const wgpu::Device &device, wg
 
 export class render_system {
 public:
-    render_system(const vec2u &surface_size, const render_config &config = {})
-        : m_config{config}, m_surface_size{surface_size} {}
+    render_system(const vec2u &surface_size, std::filesystem::path shader_path, const render_config &config = {})
+        : m_config{config}, m_surface_size{surface_size}, m_shader_path{std::move(shader_path)} {}
     void start(tree_context &ctx) {
         auto &window = ctx.ecs().get_context<runtime_info>().window();
         auto instance = wgpu::CreateInstance();
@@ -158,7 +238,8 @@ public:
         }
         const auto preferred_texture_format = *surface_caps.formats;
         config_surface(m_surface, m_device, preferred_texture_format, m_surface_size);
-        assert(m_surface != nullptr && "Invalid surface");
+
+        m_pipeline = create_pipeline(m_device, preferred_texture_format, m_shader_path);
     }
 
     void render(tree_context &ctx) {
@@ -196,8 +277,10 @@ public:
         render_desc.colorAttachments = &color_attachment;
         render_desc.depthStencilAttachment = nullptr;
 
+        // Draw commands
         const auto render_pass_encoder = encoder.BeginRenderPass(&render_desc);
-
+        render_pass_encoder.SetPipeline(m_pipeline);
+        render_pass_encoder.Draw(3, 1, 0, 0);
         render_pass_encoder.End();
 
         // Submit the command buffer
@@ -217,7 +300,10 @@ private:
     wgpu::Device m_device;
     wgpu::Queue m_queue;
     wgpu::Surface m_surface;
+    wgpu::RenderPipeline m_pipeline;
+
     render_config m_config;
     vec2u m_surface_size;
+    std::filesystem::path m_shader_path;
 };
 } // namespace st
