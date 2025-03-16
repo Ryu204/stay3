@@ -2,6 +2,7 @@
 #include "catch2/catch_test_macros.hpp"
 
 import stay3.ecs;
+using Catch::Approx;
 
 struct dummy {
     int value;
@@ -186,5 +187,36 @@ TEST_CASE("Sort and iteration") {
 
             REQUIRE(std::ranges::is_sorted(values, std::greater<int>{}));
         }
+    }
+}
+
+TEST_CASE("Context Management") {
+    st::ecs_registry registry;
+    struct audio_context {
+        float volume{0.8f};
+    };
+    struct physics_context {
+        float gravity;
+        bool enable_collision;
+    };
+
+    SECTION("Add context") {
+        REQUIRE_NOTHROW(registry.add_context<physics_context>(3.711F, true));
+
+        const auto &physics = registry.get_context<const physics_context>();
+        REQUIRE(physics.gravity == Approx(3.711f));
+        REQUIRE(physics.enable_collision == true);
+
+        SECTION("Multiple contexts") {
+            registry.add_context<audio_context>();
+            REQUIRE(registry.get_context<audio_context>().volume == Approx(0.8f));
+        }
+    }
+
+    SECTION("Modify context") {
+        registry.add_context<physics_context>(3.711F, true);
+        auto &phys = registry.get_context<physics_context>();
+        phys.enable_collision = false;
+        REQUIRE_FALSE(registry.get_context<const physics_context>().enable_collision);
     }
 }

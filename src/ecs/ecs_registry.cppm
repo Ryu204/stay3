@@ -249,6 +249,16 @@ public:
         return this->m_entity_destroyed_sink;
     }
 
+    template<typename context, typename... args>
+    void add_context(args &&...arguments) {
+        m_registry.ctx().emplace<context>(std::forward<args>(arguments)...);
+    }
+
+    template<typename context, typename... args>
+    std::add_lvalue_reference_t<context> get_context() {
+        return m_registry.ctx().get<context>();
+    }
+
 private:
     template<comp_event ev, component comp>
     void create_event() {
