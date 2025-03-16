@@ -165,7 +165,8 @@ public:
         // Create the texture view
         wgpu::SurfaceTexture texture;
         m_surface.GetCurrentTexture(&texture);
-        if(texture.status != wgpu::SurfaceGetCurrentTextureStatus::Success) {
+        if(texture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessOptimal
+           && texture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessSuboptimal) {
             throw graphics_error{"Failed to get surface texture"};
         }
         wgpu::TextureViewDescriptor view_desc;
@@ -180,6 +181,7 @@ public:
         view_desc.aspect = wgpu::TextureAspect::All;
         wgpu::TextureView texture_view = texture.texture.CreateView(&view_desc);
 
+        // Create encoder and configure render pass
         const auto encoder = m_device.CreateCommandEncoder();
         wgpu::RenderPassDescriptor render_desc;
 
