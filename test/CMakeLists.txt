@@ -64,6 +64,7 @@ add_custom_test(core-quaternion core/quaternion.test.cpp "Catch2::Catch2WithMain
 add_custom_test(core-transform core/transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-id-generator core/id_generator.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-signal core/signal.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-file core/file.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(node-node node/node.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(node-node-ecs node/node_ecs.test.cpp "Catch2::Catch2WithMain" "")
@@ -80,3 +81,5 @@ add_custom_test(ecs-system-manager ecs/system_manager.test.cpp "Catch2::Catch2Wi
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")
+
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

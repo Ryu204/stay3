@@ -15,7 +15,7 @@ import :config;
 namespace st {
 
 app::app(const app_config &config)
-    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render} {}
+    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render}, m_assets_dir{config.assets_dir} {}
 
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
@@ -27,7 +27,7 @@ app &app::enable_default_systems() {
         .run_as<sys_type::start>(sys_priority::very_high)
         .run_as<sys_type::post_update>(sys_priority::very_high);
     m_ecs_systems
-        .add<render_system>(m_window.size())
+        .add<render_system>(m_window.size(), m_assets_dir / "shaders" / "my_shader.wgsl")
         .run_as<sys_type::start>(sys_priority::high)
         .run_as<sys_type::render>()
         .run_as<sys_type::cleanup>(sys_priority::very_low);

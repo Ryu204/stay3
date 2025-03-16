@@ -1,5 +1,7 @@
 module;
 
+#include <string>
+
 export module stay3.program:config;
 
 import stay3.graphics;
@@ -13,9 +15,10 @@ struct app_web_config {
 };
 
 export struct app_config {
-    window_config window;
+    window_config window{};
     float updates_per_second{60.F};
-    render_config render;
-    app_web_config web;
+    render_config render{};
+    std::string assets_dir{"assets"};
+    app_web_config web{};
 };
 }; // namespace st

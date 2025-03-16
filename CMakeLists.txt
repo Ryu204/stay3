@@ -38,6 +38,7 @@ target_sources(${PROJECT_NAME}
     src/core/id_generator.cppm
     src/core/signal.cppm
     src/core/logger.cppm
+    src/core/file.cppm
 
     src/input/mod.cppm
     src/input/event.cppm
@@ -95,3 +96,5 @@ endif()
 if(${PROJECT_NAME}_BUILD_EXAMPLES)
     add_subdirectory(example)
 endif()
+
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

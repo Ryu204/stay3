@@ -1,6 +1,7 @@
 module;
 
 #include <cstdint>
+#include <filesystem>
 
 export module stay3.program:app;
 
@@ -46,5 +47,6 @@ private:
     tree_context m_tree_context;
     system_manager<tree_context> m_ecs_systems;
     render_config m_render_config;
+    std::filesystem::path m_assets_dir;
 };
 } // namespace st

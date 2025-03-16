@@ -138,7 +138,7 @@ struct transform_sync_user {
 
 TEST_CASE("Happy path") {
     run_result result;
-    app my_app;
+    app my_app{{.assets_dir = "../assets"}};
     my_app.enable_default_systems();
 
     SECTION("Sync system changes global transform correctly") {
