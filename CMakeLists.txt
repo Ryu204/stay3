@@ -39,9 +39,8 @@ target_sources(${PROJECT_NAME}
     src/core/signal.cppm
     src/core/logger.cppm
 
-    src/window/mod.cppm
-    src/window/event.cppm
-    src/window/base_window.cppm
+    src/input/mod.cppm
+    src/input/event.cppm
 
     src/node/mod.cppm
     src/node/node.cppm

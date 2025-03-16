@@ -4,7 +4,7 @@ module;
 #include <utility>
 #include <variant>
 
-export module stay3.window:event;
+export module stay3.input:event;
 
 namespace st {
 

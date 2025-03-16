@@ -11,7 +11,7 @@ module;
 #endif
 module stay3.graphics;
 
-import stay3.window;
+import stay3.input;
 import stay3.core;
 import :error;
 
@@ -97,14 +97,6 @@ void glfw_window::close() {
     assert(m_window && "Null window handle");
     glfwDestroyWindow(m_window);
     m_window = nullptr;
-}
-
-void glfw_window::clear() {
-    assert(m_window && "Null window handle");
-}
-
-void glfw_window::display() {
-    assert(m_window && "Null window handle");
 }
 
 event glfw_window::poll_event() {

@@ -7,7 +7,7 @@ module stay3.program;
 
 import stay3.ecs;
 import stay3.node;
-import stay3.window;
+import stay3.input;
 import stay3.core;
 import stay3.systems;
 import :config;
@@ -76,9 +76,7 @@ app::should_exit app::update(seconds delta) {
 }
 
 void app::render() {
-    m_window.clear();
     m_ecs_systems.render(m_tree_context);
-    m_window.display();
 }
 
 app::window_closed app::input() {

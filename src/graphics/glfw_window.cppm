@@ -9,7 +9,7 @@ module;
 
 export module stay3.graphics:glfw_window;
 
-import stay3.window;
+import stay3.input;
 import stay3.core;
 
 namespace st {
@@ -30,21 +30,19 @@ export struct window_config {
     vec2u size{default_size};
     std::string name{default_name};
 };
-export class glfw_window: public base_window, private st::glfw_context_user {
+export class glfw_window: private st::glfw_context_user {
 public:
     glfw_window(const window_config &config = {});
-    ~glfw_window() override;
+    ~glfw_window();
 
     glfw_window(const glfw_window &) = delete;
     glfw_window &operator=(const glfw_window &) = delete;
     glfw_window(glfw_window &&other) noexcept;
     glfw_window &operator=(glfw_window &&) noexcept;
 
-    [[nodiscard]] bool is_open() const override;
-    void close() override;
-    void clear() override;
-    void display() override;
-    event poll_event() override;
+    [[nodiscard]] bool is_open() const;
+    void close();
+    event poll_event();
 
     [[nodiscard]] wgpu::Surface create_wgpu_surface(const wgpu::Instance &instance);
     [[nodiscard]] vec2u size() const;
