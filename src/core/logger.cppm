@@ -9,6 +9,8 @@ export module stay3.core:logger;
 export namespace st::log {
 
 std::ostream &operator<<(std::ostream &os, const wgpu::StringView &mes) {
+    // TODO: emscripten is lagging behind dawn native, see: https://github.com/emscripten-core/emscripten/issues/23432
+    // Implement emscripten version later
     os << std::string_view{mes.data, mes.length};
     return os;
 }

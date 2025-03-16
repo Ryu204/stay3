@@ -5,7 +5,6 @@ module;
 #include <string>
 #include <type_traits>
 #include <webgpu/webgpu_cpp.h>
-#include <webgpu/webgpu_glfw.h>
 
 export module stay3.system.render;
 

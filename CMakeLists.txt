@@ -81,6 +81,7 @@ if(EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PUBLIC -fexceptions -sASYNCIFY)
     target_link_options(${PROJECT_NAME} PRIVATE
         -sUSE_GLFW=3
+        -sUSE_WEBGPU
     )
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE
