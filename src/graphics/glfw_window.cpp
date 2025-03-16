@@ -4,10 +4,12 @@ module;
 #include <memory>
 #include <mutex>
 #include <GLFW/glfw3.h>
+#include <webgpu/webgpu_glfw.h>
 
 module stay3.graphics;
 
 import stay3.window;
+import stay3.core;
 import :error;
 
 namespace st {
@@ -127,6 +129,18 @@ void glfw_window::own_glfw_user_pointer() {
     assert(m_window && "Null window handle");
 
     glfwSetWindowUserPointer(m_window, static_cast<void *>(this));
+}
+
+wgpu::Surface glfw_window::create_wgpu_surface(const wgpu::Instance &instance) {
+    return wgpu::glfw::CreateSurfaceForWindow(instance, m_window);
+}
+
+vec2u glfw_window::size() const {
+    assert(m_window && "Null window handle");
+    int width{};
+    int height{};
+    glfwGetWindowSize(m_window, &width, &height);
+    return {static_cast<unsigned int>(width), static_cast<unsigned int>(height)};
 }
 
 } // namespace st

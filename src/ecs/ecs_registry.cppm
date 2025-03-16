@@ -254,7 +254,7 @@ public:
         m_registry.ctx().emplace<context>(std::forward<args>(arguments)...);
     }
 
-    template<typename context, typename... args>
+    template<typename context>
     std::add_lvalue_reference_t<context> get_context() {
         return m_registry.ctx().get<context>();
     }

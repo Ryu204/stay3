@@ -37,6 +37,7 @@ target_sources(${PROJECT_NAME}
     src/core/math.cppm
     src/core/id_generator.cppm
     src/core/signal.cppm
+    src/core/logger.cppm
 
     src/window/mod.cppm
     src/window/event.cppm
@@ -56,6 +57,7 @@ target_sources(${PROJECT_NAME}
     src/ecs/component.cppm
 
     src/systems/mod.cppm
+    src/systems/runtime_info.cppm
     src/systems/transform/global_transform.cppm
     src/systems/render/render_system.cppm
 
@@ -81,9 +83,9 @@ if(EMSCRIPTEN)
         -sUSE_GLFW=3
     )
 else()
-    # target_link_libraries(${PROJECT_NAME} PRIVATE
-    #     dawn::webgpu_dawn
-    # )
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        dawn::webgpu_dawn webgpu_glfw
+    )
 endif()
 
 if(${PROJECT_NAME}_BUILD_TESTS)

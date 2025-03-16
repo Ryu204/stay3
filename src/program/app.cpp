@@ -1,5 +1,4 @@
 module;
-
 #ifdef __EMSCRIPTEN__
 #    include <emscripten.h>
 #endif
@@ -16,7 +15,7 @@ import :config;
 namespace st {
 
 app::app(const app_config &config)
-    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second} {}
+    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render} {}
 
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
@@ -27,19 +26,23 @@ app &app::enable_default_systems() {
         .add<transform_sync_system>()
         .run_as<sys_type::start>(sys_priority::very_high)
         .run_as<sys_type::post_update>(sys_priority::very_high);
-
+    m_ecs_systems
+        .add<render_system>(m_window.size())
+        .run_as<sys_type::start>(sys_priority::high)
+        .run_as<sys_type::render>()
+        .run_as<sys_type::cleanup>(sys_priority::very_low);
     return *this;
 }
 
 void app::run() {
+    add_runtime_info();
     m_ecs_systems.start(m_tree_context);
     while(m_window.is_open()) {
         on_frame();
 #ifdef __EMSCRIPTEN__
-        emscripten_sleep(100);
+        emscripten_sleep(m_emscripten_sleep_milli);
 #endif
     }
-    m_ecs_systems.cleanup(m_tree_context);
 }
 
 void app::on_frame() {
@@ -51,11 +54,15 @@ void app::on_frame() {
             return;
         };
         if(update(m_time_per_update) == should_exit::yes) {
-            m_window.close();
+            close_window();
             return;
         }
         render();
     }
+}
+
+void app::add_runtime_info() {
+    m_tree_context.ecs().add_context<runtime_info>(m_window);
 }
 
 app::should_exit app::update(seconds delta) {
@@ -81,11 +88,16 @@ app::window_closed app::input() {
             break;
         }
         if(ev.is<event::close_requested>()) {
-            m_window.close();
+            close_window();
             return app::window_closed::yes;
         }
     }
     return app::window_closed::no;
+}
+
+void app::close_window() {
+    m_ecs_systems.cleanup(m_tree_context);
+    m_window.close();
 }
 
 } // namespace st

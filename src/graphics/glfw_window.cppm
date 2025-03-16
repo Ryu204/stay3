@@ -5,6 +5,7 @@ module;
 #include <string>
 #include <string_view>
 #include <GLFW/glfw3.h>
+#include <webgpu/webgpu_cpp.h>
 
 export module stay3.graphics:glfw_window;
 
@@ -44,6 +45,9 @@ public:
     void clear() override;
     void display() override;
     event poll_event() override;
+
+    [[nodiscard]] wgpu::Surface create_wgpu_surface(const wgpu::Instance &instance);
+    [[nodiscard]] vec2u size() const;
 
 private:
     void own_glfw_user_pointer();

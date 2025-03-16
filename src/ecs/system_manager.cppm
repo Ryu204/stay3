@@ -123,7 +123,6 @@ private:
         return res;
     }
 
-    // friend class base_proxy;
     std::unordered_map<sys_type, std::set<system_entry_per_type>> m_systems_by_type;
     std::vector<std::unique_ptr<wrapper>> m_systems;
 };
