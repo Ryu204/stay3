@@ -24,6 +24,7 @@ target_sources(${PROJECT_NAME}
 
     src/graphics/mod.cppm
     src/graphics/error.cppm
+    src/graphics/vertex.cppm
     src/graphics/glfw_window.cppm
 
     src/core/mod.cppm

@@ -1,5 +1,6 @@
 module;
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -11,6 +12,7 @@ module;
 export module stay3.system.render;
 
 import stay3.node;
+import stay3.ecs;
 import stay3.core;
 import stay3.graphics;
 import stay3.system.runtime_info;
@@ -58,17 +60,27 @@ std::optional<wgpu::Adapter> create_adapter(const wgpu::Instance &instance, cons
     return maybe_adapter;
 }
 
+wgpu::Limits get_required_limits() {
+    wgpu::Limits result;
+    result.maxVertexAttributes = 4;
+    result.maxVertexBuffers = 1;
+    result.maxVertexBufferArrayStride = sizeof(vertex_attributes);
+    result.maxBindGroups = 0;
+    result.maxUniformBuffersPerShaderStage = 0;
+    result.maxUniformBufferBindingSize = 0;
+    result.maxStorageBuffersPerShaderStage = 0;
+    result.maxInterStageShaderVariables = 4;
+
+    return result;
+}
+
 std::optional<wgpu::Device> create_device(const wgpu::Adapter &adapter) {
     wgpu::DeviceDescriptor desc;
     desc.label = "My device";
     desc.requiredFeatureCount = 0;
     desc.requiredFeatures = nullptr;
 
-    wgpu::Limits limits;
-    limits.maxBindGroups = 0;
-    limits.maxUniformBuffersPerShaderStage = 0;
-    limits.maxUniformBufferBindingSize = 0;
-    limits.maxStorageBuffersPerShaderStage = 0;
+    auto limits = get_required_limits();
     desc.requiredLimits = &limits;
 
     desc.defaultQueue.label = "My queue";
@@ -143,8 +155,36 @@ wgpu::RenderPipeline create_pipeline(const wgpu::Device &device, wgpu::TextureFo
     const auto shader_modules = create_shader_modules(device, shader_path);
 
     auto &vertex = desc.vertex;
-    vertex.bufferCount = 0;
-    vertex.buffers = nullptr;
+    wgpu::VertexBufferLayout vertex_buffer_layout;
+    constexpr auto attribute_count = 4;
+    std::array<wgpu::VertexAttribute, attribute_count> attributes = {
+        wgpu::VertexAttribute{
+            .format = wgpu::VertexFormat::Float32x4,
+            .offset = offsetof(vertex_attributes, color),
+            .shaderLocation = 0,
+        },
+        wgpu::VertexAttribute{
+            .format = wgpu::VertexFormat::Float32x3,
+            .offset = offsetof(vertex_attributes, position),
+            .shaderLocation = 1,
+        },
+        wgpu::VertexAttribute{
+            .format = wgpu::VertexFormat::Float32x3,
+            .offset = offsetof(vertex_attributes, normal),
+            .shaderLocation = 2,
+        },
+        wgpu::VertexAttribute{
+            .format = wgpu::VertexFormat::Float32x2,
+            .offset = offsetof(vertex_attributes, uv),
+            .shaderLocation = 3,
+        },
+    };
+    vertex_buffer_layout.attributeCount = 4;
+    vertex_buffer_layout.attributes = attributes.data();
+    vertex_buffer_layout.arrayStride = sizeof(vertex_attributes);
+    vertex_buffer_layout.stepMode = wgpu::VertexStepMode::Vertex;
+    vertex.bufferCount = 1;
+    vertex.buffers = &vertex_buffer_layout;
     vertex.module = shader_modules.vertex;
     vertex.entryPoint = "vs_main";
     vertex.constantCount = 0;
@@ -186,7 +226,7 @@ wgpu::RenderPipeline create_pipeline(const wgpu::Device &device, wgpu::TextureFo
     desc.layout = nullptr;
 
     return device.CreateRenderPipeline(&desc);
-}
+} // namespace st
 
 void config_surface(const wgpu::Surface &surface, const wgpu::Device &device, wgpu::TextureFormat texture_format, vec2u size) {
     wgpu::SurfaceConfiguration config;
@@ -199,6 +239,11 @@ void config_surface(const wgpu::Surface &surface, const wgpu::Device &device, wg
     config.alphaMode = wgpu::CompositeAlphaMode::Opaque;
     surface.Configure(&config);
 }
+
+struct mesh_status {
+    wgpu::Buffer vertex_buffer;
+    wgpu::Buffer index_buffer;
+};
 
 export class render_system {
 public:
@@ -240,6 +285,7 @@ public:
         config_surface(m_surface, m_device, preferred_texture_format, m_surface_size);
 
         m_pipeline = create_pipeline(m_device, preferred_texture_format, m_shader_path);
+        setup_signals(ctx.ecs());
     }
 
     void render(tree_context &ctx) {
@@ -280,7 +326,15 @@ public:
         // Draw commands
         const auto render_pass_encoder = encoder.BeginRenderPass(&render_desc);
         render_pass_encoder.SetPipeline(m_pipeline);
-        render_pass_encoder.Draw(3, 1, 0, 0);
+        for(auto &&[unused, data, status]: ctx.ecs().each<const mesh_data, const mesh_status>()) {
+            render_pass_encoder.SetVertexBuffer(0, status->vertex_buffer);
+            if(status->index_buffer) {
+                render_pass_encoder.SetIndexBuffer(status->index_buffer, wgpu::IndexFormat::Uint32);
+                render_pass_encoder.DrawIndexed(data->maybe_indices->size(), 1, 0, 0, 0);
+            } else {
+                render_pass_encoder.Draw(data->vertices.size(), 1, 0, 0);
+            }
+        }
         render_pass_encoder.End();
 
         // Submit the command buffer
@@ -297,6 +351,48 @@ public:
     }
 
 private:
+    void setup_signals(ecs_registry &reg) {
+        reg.on<comp_event::construct, mesh_data>().connect<&render_system::update_vertex_buffer>(*this);
+        reg.on<comp_event::update, mesh_data>().connect<&render_system::update_vertex_buffer>(*this);
+        reg.on<comp_event::destroy, mesh_data>().connect<&render_system::remove_mesh_status>();
+    }
+
+    void update_vertex_buffer(ecs_registry &reg, entity en) {
+        if(!reg.has_components<mesh_status>(en)) {
+            reg.add_component<const mesh_status>(en);
+        }
+        auto [status, data] = reg.get_components<mesh_status, const mesh_data>(en);
+        // Vertex buffer
+        {
+            const auto vertex_size_byte = data->vertices.size() * sizeof(std::decay_t<decltype(data->vertices)>::value_type);
+            assert(vertex_size_byte > 0 && "Empty vertices list");
+            wgpu::BufferDescriptor buffer_desc;
+            buffer_desc.mappedAtCreation = false;
+            buffer_desc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex;
+            buffer_desc.size = vertex_size_byte;
+            status->vertex_buffer = m_device.CreateBuffer(&buffer_desc);
+            assert(status->vertex_buffer && "Failed to create buffer");
+            assert(vertex_size_byte % 4 == 0 && "Size is a not multiple of 4");
+            m_queue.WriteBuffer(status->vertex_buffer, 0, static_cast<const void *>(data->vertices.data()), vertex_size_byte);
+        }
+        // Index buffer
+        if(data->maybe_indices.has_value()) {
+            const auto index_size_byte = data->maybe_indices->size() * sizeof(std::decay_t<decltype(data->maybe_indices.value())>::value_type);
+            wgpu::BufferDescriptor buffer_desc;
+            buffer_desc.mappedAtCreation = false;
+            buffer_desc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Index;
+            buffer_desc.size = index_size_byte;
+            status->index_buffer = m_device.CreateBuffer(&buffer_desc);
+            assert(status->index_buffer && "Failed to create buffer");
+            assert(index_size_byte % 4 == 0 && "Size is a not multiple of 4");
+            m_queue.WriteBuffer(status->index_buffer, 0, static_cast<const void *>(data->maybe_indices->data()), index_size_byte);
+        }
+    }
+
+    static void remove_mesh_status(ecs_registry &reg, entity en) {
+        reg.remove_component<mesh_status>(en);
+    }
+
     wgpu::Device m_device;
     wgpu::Queue m_queue;
     wgpu::Surface m_surface;
