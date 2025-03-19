@@ -87,6 +87,9 @@ jobs:
           sleep 5
           fluxbox > /dev/null 2>&1 &
           sleep 5
-
+      - name: Copy DLL files (Windows)
+        if: contains(matrix.platform.name, 'windows')
+        run: cp build/extern/dawn/webgpu_dawn.dll build/test/
+      
       - name: Test
         run: ctest --test-dir build/test --output-on-failure
