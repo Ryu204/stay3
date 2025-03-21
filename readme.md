@@ -152,6 +152,12 @@ In soft version, when `base` is added to `e`, if it already has a `deps`, deleti
 
 **Limitation**: In both version, `args` can contains no more than 1 type.
 
+13. Render mental model:
+* `mesh_data` component defines the geometry, color, uv,... information of drawn objects. It can be shared accross multiple entities.
+* A `rendered_mesh` component corresponds to a drawn object in the scene. It holds reference to `mesh_data` component.
+* There can be multiple cameras, but only the one with `main_camera` tag component will be used for rendering final image.
+* Camera initially looks at Z+ direction, with its up vector being Y+.
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:

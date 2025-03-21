@@ -4,3 +4,4 @@ build/
 .ccache/
 
 CMakeUserPresets.json
+temp_docs/

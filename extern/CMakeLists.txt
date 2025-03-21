@@ -8,6 +8,11 @@ else()
 endif()
 
 add_subdirectory(glm)
-target_compile_definitions(glm PUBLIC GLM_ENABLE_EXPERIMENTAL)
+target_compile_definitions(
+    glm
+    PUBLIC GLM_ENABLE_EXPERIMENTAL
+    PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE
+    PUBLIC GLM_FORCE_LEFT_HANDED
+)
 
 add_subdirectory(entt)

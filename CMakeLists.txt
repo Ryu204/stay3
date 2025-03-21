@@ -26,6 +26,7 @@ target_sources(${PROJECT_NAME}
     src/graphics/error.cppm
     src/graphics/vertex.cppm
     src/graphics/glfw_window.cppm
+    src/graphics/camera.cppm
 
     src/core/mod.cppm
     src/core/error.cppm
@@ -40,6 +41,7 @@ target_sources(${PROJECT_NAME}
     src/core/signal.cppm
     src/core/logger.cppm
     src/core/file.cppm
+    src/core/color.cppm
 
     src/input/mod.cppm
     src/input/event.cppm
@@ -56,17 +58,26 @@ target_sources(${PROJECT_NAME}
     src/ecs/system_wrapper.cppm
     src/ecs/system_manager.cppm
     src/ecs/component.cppm
+    src/ecs/dependency.cppm
 
     src/systems/mod.cppm
     src/systems/runtime_info.cppm
     src/systems/transform/global_transform.cppm
+    src/systems/render/mod.cppm
     src/systems/render/render_system.cppm
+    src/systems/render/components.cppm
+    src/systems/render/init_result.cppm
+    src/systems/render/config.cppm
+    src/systems/render/pipeline.cppm
+    src/systems/render/bind_group_layouts.cppm
+    src/systems/render/render_pass.cppm
 
     PRIVATE
 
     src/program/app.cpp
 
     src/graphics/glfw_window.cpp
+    src/graphics/vertex.cpp
 
     src/core/time.cpp
     src/core/transform.cpp
@@ -74,6 +85,8 @@ target_sources(${PROJECT_NAME}
     src/node/node.cpp
 
     src/systems/transform/global_transform.cpp
+    src/systems/render/init_result.cpp
+    src/systems/render/pipeline.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT)
