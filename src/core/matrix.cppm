@@ -1,5 +1,6 @@
 module;
 
+#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/matrix.hpp>
 
@@ -67,7 +68,13 @@ struct mat: public glm::mat<col, row, type> {
 };
 
 template<typename type>
+mat<4, 4, type> perspective(type fov, type ratio, type near, type far) {
+    return glm::perspective<type>(fov, ratio, near, far);
+}
+
+template<typename type>
 using mat4 = mat<4, 4, type>;
 
 using mat4f = mat<4, 4, float>;
+
 } // namespace st

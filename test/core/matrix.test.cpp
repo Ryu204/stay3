@@ -1,4 +1,5 @@
 #include <catch2/catch_all.hpp>
+#include <glm/ext.hpp>
 #include <glm/glm.hpp>
 import stay3;
 import stay3.test_helper;
@@ -28,6 +29,19 @@ TEST_CASE("Matrix operations", "[mat]") {
         const mat4f result = mata * matb;
         mata *= matb;
         REQUIRE(mata == result);
+    }
+
+    SECTION("Projection") {
+        SECTION("Perspective") {
+            const auto fov = 40 * PI / 180;
+            const auto near = 0.01F;
+            const auto far = 10.F;
+            const auto aspect = 0.5F;
+            auto pers = perspective(fov, aspect, near, far);
+            STATIC_REQUIRE(std::is_same_v<decltype(pers), mat4f>);
+            auto pers_glm = glm::perspective<float>(fov, aspect, near, far);
+            REQUIRE(pers == pers_glm);
+        }
     }
 
     SECTION("Chaining method") {
