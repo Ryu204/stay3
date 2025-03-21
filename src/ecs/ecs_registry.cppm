@@ -1,6 +1,8 @@
 module;
 
 #include <concepts>
+#include <iterator>
+#include <ranges>
 #include <type_traits>
 #include <typeindex>
 #include <utility>
@@ -108,12 +110,14 @@ class ecs_registry {
     template<typename entt_it, component... comps>
     class entity_view_iterator {
     public:
-        entity_view_iterator(entt_it it, ecs_registry &reg)
+        using difference_type = entt_it::difference_type;
+        using value_type = std::tuple<entity, proxy<comps>...>;
+        entity_view_iterator(entt_it it = {}, ecs_registry *reg = nullptr)
             : m_it{it}, m_registry{reg} {}
-        std::tuple<entity, proxy<comps>...> operator*() const {
+        value_type operator*() const {
+            assert(m_registry != nullptr);
             entity en{*m_it};
-            auto &reg = m_registry.get();
-            return {en, reg.make_proxy<comps>(en)...};
+            return {en, m_registry->make_proxy<comps>(en)...};
         }
         entity_view_iterator &operator++() {
             ++m_it;
@@ -122,25 +126,34 @@ class ecs_registry {
         bool operator!=(const entity_view_iterator &other) const {
             return m_it != other.m_it;
         }
+        bool operator==(const entity_view_iterator &other) const {
+            return m_it == other.m_it;
+        }
+        void operator++(int) {
+            ++*this;
+        }
 
     private:
         entt_it m_it;
-        std::reference_wrapper<ecs_registry> m_registry;
+        ecs_registry *m_registry;
     };
 
     template<typename entt_view, component... comps>
     class entity_view {
-        using entt_it = std::decay_t<decltype(std::declval<entt_view>().begin())>;
-        using it = entity_view_iterator<entt_it, comps...>;
-
     public:
+        using entt_it = std::decay_t<decltype(std::declval<entt_view>().begin())>;
+        using iterator = entity_view_iterator<entt_it, comps...>;
+        static_assert(std::input_iterator<iterator>);
+        static_assert(std::semiregular<iterator>);
+        static_assert(std::sentinel_for<iterator, iterator>);
+
         entity_view(entt_view view, ecs_registry &reg)
             : m_view{view}, m_registry{reg} {}
-        it begin() {
-            return {m_view.begin(), m_registry};
+        iterator begin() {
+            return {m_view.begin(), &m_registry.get()};
         }
-        it end() {
-            return {m_view.end(), m_registry};
+        iterator end() {
+            return {m_view.end(), &m_registry.get()};
         }
 
     private:
@@ -227,6 +240,7 @@ public:
         using result = entity_view<
             std::decay_t<decltype(std::declval<entt::registry>().view<comps...>())>,
             comps...>;
+        static_assert(std::ranges::range<result>);
         return result{m_registry.view<comps...>(), *this};
     }
 

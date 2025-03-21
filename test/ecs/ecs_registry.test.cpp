@@ -1,5 +1,6 @@
+#include <iterator>
+#include <type_traits>
 #include <catch2/catch_all.hpp>
-#include "catch2/catch_test_macros.hpp"
 
 import stay3.ecs;
 using Catch::Approx;
@@ -17,6 +18,12 @@ struct entity_destroyed_handler {
     }
     bool signaled{false};
 };
+
+TEST_CASE("Concepts are satisfied") {
+    using each_t = std::decay_t<decltype(std::declval<st::ecs_registry>().each<dummy, empty_dummy>())>;
+    STATIC_REQUIRE(std::input_iterator<each_t::iterator>);
+    STATIC_REQUIRE(std::ranges::range<each_t>);
+}
 
 TEST_CASE("Entity and Component Management") {
     st::ecs_registry registry;
