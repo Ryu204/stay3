@@ -129,6 +129,29 @@ tl;dr:
 
 11. Please don't destroy entity via `ecs_registry::destroy_entity`, use `entities_holder::destroy` instead. The former does not allow disconnecting entity from its node.
 
+12. There is currently a primitive way to specify a dependency relationship between components. Definition:
+
+Component `deps` is considered a dependency of component `base` in the registry if:
+> For every entity `e` with `base`, it has a `deps`. 
+
+This ensures whenever a system queries entities with `base`, they will have following `deps`s (hence the keyword *dependency*).
+
+2 ways to specify dependency relationship:
+
+```cpp
+// Adds `deps` when `base` is added, and removes it when `base` is removed
+template<component deps, component base, typename... args>
+void make_hard_dependency(ecs_registry &reg, args &&...arguments);
+
+// Considers `deps` a dependency if when `base` is added, `deps` does not exist
+template<component deps, component base, typename... args>
+void make_soft_dependency(ecs_registry &reg, args &&...arguments);
+```
+
+In soft version, when `base` is added to `e`, if it already has a `deps`, deletion of `e`'s `base` will not trigger deletion of `deps`, otherwise the behavior is identical to hard version. In other word, hard version is owning while soft version may be owning.
+
+**Limitation**: In both version, `args` can contains no more than 1 type.
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:

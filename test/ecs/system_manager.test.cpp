@@ -129,3 +129,25 @@ TEST_CASE("Added system run with priority") {
     REQUIRE(ctx.render_count == 3);
     REQUIRE_THAT(ctx.messages, RangeEquals({"render first", "render second", "render third"}));
 }
+
+TEST_CASE("System is instantiated once") {
+    struct my_system {
+        int id{};
+        void start(test_context &) {
+            id = 1;
+        }
+        void update(seconds, test_context &) const {
+            if(id == 0) {
+                throw std::runtime_error{"Should be 1"};
+            }
+        }
+    };
+    test_context ctx;
+    system_manager<test_context> manager;
+    manager
+        .add<my_system>()
+        .run_as<sys_type::start>()
+        .run_as<sys_type::update>();
+    manager.start(ctx);
+    REQUIRE_NOTHROW(manager.update(1.F, ctx));
+}

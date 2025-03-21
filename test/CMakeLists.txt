@@ -65,6 +65,7 @@ add_custom_test(core-transform core/transform.test.cpp "Catch2::Catch2WithMain" 
 add_custom_test(core-id-generator core/id_generator.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-signal core/signal.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-file core/file.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-color core/color.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(node-node node/node.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(node-node-ecs node/node_ecs.test.cpp "Catch2::Catch2WithMain" "")
@@ -78,6 +79,7 @@ add_custom_test(ecs-ecs-registry-advanced ecs/ecs_registry_advanced.test.cpp "Ca
 add_custom_test(ecs-entities-holder ecs/entities_holder.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-system-data ecs/system_data.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-system-manager ecs/system_manager.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(ecs-dependency ecs/dependency.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")
