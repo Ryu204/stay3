@@ -4,10 +4,15 @@ module;
 #include <memory>
 #include <mutex>
 #include <GLFW/glfw3.h>
+#ifdef __EMSCRIPTEN__
 
+#else
+#    include <webgpu/webgpu_glfw.h>
+#endif
 module stay3.graphics;
 
-import stay3.window;
+import stay3.input;
+import stay3.core;
 import :error;
 
 namespace st {
@@ -44,9 +49,9 @@ glfw_context_user::glfw_context_user()
           return context;
       }()} {}
 
-glfw_window::glfw_window()
+glfw_window::glfw_window(const window_config &config)
     : m_window{
-          glfwCreateWindow(500, 500, "My window", nullptr, nullptr)} {
+          glfwCreateWindow(static_cast<int>(config.size.x), static_cast<int>(config.size.y), config.name.c_str(), nullptr, nullptr)} {
     if(m_window == nullptr) {
         throw graphics_error{"Failed to create glfw window."};
     }
@@ -67,6 +72,9 @@ glfw_window::glfw_window(glfw_window &&other) noexcept {
 glfw_window &glfw_window::operator=(glfw_window &&other) noexcept {
     auto *other_handle = other.m_window;
     other.m_window = nullptr;
+    if(m_window != nullptr) {
+        glfwDestroyWindow(m_window);
+    }
     m_window = other_handle;
 
     if(m_window != nullptr) {
@@ -89,14 +97,6 @@ void glfw_window::close() {
     assert(m_window && "Null window handle");
     glfwDestroyWindow(m_window);
     m_window = nullptr;
-}
-
-void glfw_window::clear() {
-    assert(m_window && "Null window handle");
-}
-
-void glfw_window::display() {
-    assert(m_window && "Null window handle");
 }
 
 event glfw_window::poll_event() {
@@ -124,6 +124,22 @@ void glfw_window::own_glfw_user_pointer() {
     assert(m_window && "Null window handle");
 
     glfwSetWindowUserPointer(m_window, static_cast<void *>(this));
+}
+
+wgpu::Surface glfw_window::create_wgpu_surface(const wgpu::Instance &instance) {
+#ifdef __EMSCRIPTEN__
+
+#else
+    return wgpu::glfw::CreateSurfaceForWindow(instance, m_window);
+#endif
+}
+
+vec2u glfw_window::size() const {
+    assert(m_window && "Null window handle");
+    int width{};
+    int height{};
+    glfwGetWindowSize(m_window, &width, &height);
+    return {static_cast<unsigned int>(width), static_cast<unsigned int>(height)};
 }
 
 } // namespace st

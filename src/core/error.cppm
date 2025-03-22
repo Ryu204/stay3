@@ -3,7 +3,7 @@ module;
 #include <exception>
 #include <string>
 
-export module stay3.system:error;
+export module stay3.core:error;
 
 export namespace st {
 struct error: public std::exception {

@@ -7,7 +7,6 @@ export module stay3.core:time;
 export namespace st {
 
 using seconds = float;
-
 class stop_watch {
 public:
     stop_watch();
