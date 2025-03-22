@@ -174,7 +174,7 @@ sudo apt-get install libxi-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa
 ```sh
 # root directory
 # Get build dependencies
-git submodule update --init --remote --depth=1
+git submodule update --init --remote
 # Configure project
 cmake -S . -B build -GNinja
 ```
