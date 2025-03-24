@@ -70,7 +70,8 @@ add_custom_test(core-color core/color.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(node-node node/node.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(node-node-ecs node/node_ecs.test.cpp "Catch2::Catch2WithMain" "")
 
-add_custom_test(window-event window/event.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(input-event input/event.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(input-keyboard input/keyboard.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(graphics-glfw-window graphics/glfw_window.test.cpp "Catch2::Catch2WithMain" "")
 
