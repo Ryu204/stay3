@@ -6,6 +6,7 @@ module;
 export module stay3.ecs:system_data;
 
 import stay3.core;
+import stay3.input;
 
 export namespace st {
 
@@ -18,6 +19,7 @@ enum class sys_type : std::uint8_t {
     cleanup = 1 << 3,
     render = 1 << 4,
     post_update = 1 << 5,
+    input = 1 << 6,
 };
 using sys_type_t = std::underlying_type_t<sys_type>;
 
@@ -47,6 +49,11 @@ concept is_post_update_system = requires(sys &system, seconds delta, context &ct
 };
 
 template<typename sys, typename context>
+concept is_input_system = requires(sys &system, const event &ev, context &ctx) {
+    system.input(ev, ctx);
+};
+
+template<typename sys, typename context>
 constexpr auto sys_types = []() {
     sys_type_t result{};
 #define CHECK_ROLE(role) \
@@ -57,6 +64,7 @@ constexpr auto sys_types = []() {
     CHECK_ROLE(render)
     CHECK_ROLE(cleanup)
     CHECK_ROLE(post_update)
+    CHECK_ROLE(input)
 #undef CHECK_ROLE
     return result;
 }();
