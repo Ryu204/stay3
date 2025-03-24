@@ -28,6 +28,13 @@ TEST_CASE("Concepts are satisfied") {
 TEST_CASE("Entity and Component Management") {
     st::ecs_registry registry;
 
+    SECTION("Entity null check") {
+        st::entity en;
+        REQUIRE(en.is_null());
+        en = registry.create_entity();
+        REQUIRE_FALSE(en.is_null());
+    }
+
     SECTION("Entity creation and destruction") {
         auto en = registry.create_entity();
         REQUIRE(registry.contains_entity(en));

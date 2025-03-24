@@ -33,5 +33,6 @@ mesh_data mesh_cube(const vec3f &size, const std::optional<vec4f> &color = std::
  */
 struct rendered_mesh {
     entity mesh_holder;
+    entity material_holder;
 };
 } // namespace st
