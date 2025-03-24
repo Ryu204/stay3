@@ -9,6 +9,7 @@ module;
 export module stay3.ecs:system_wrapper;
 
 import stay3.core;
+import stay3.input;
 import :system_data;
 
 export namespace st {
@@ -36,6 +37,7 @@ public:
         CHECK_AND_CALL(cleanup)
         CHECK_AND_CALL(render)
         CHECK_AND_CALL(post_update)
+        CHECK_AND_CALL(input)
     }
 #undef CHECK_AND_CALL
 
@@ -118,6 +120,21 @@ private:
                 };
             }
         }
+
+        // Cleanup
+        if constexpr(is_input_system<sys, context>) {
+            using return_t = decltype(std::declval<sys>().input(std::declval<const event &>(), std::declval<context &>()));
+            if constexpr(std::is_convertible_v<return_t, sys_run_result>) {
+                m_input_callback = [object](const event &ev, context &ctx) -> sys_run_result {
+                    return object->input(ev, ctx);
+                };
+            } else {
+                m_input_callback = [object](const event &ev, context &ctx) -> sys_run_result {
+                    object->input(ev, ctx);
+                    return sys_run_result::noop;
+                };
+            }
+        }
     }
 
     std::any m_underlying;
@@ -126,5 +143,6 @@ private:
     std::function<sys_run_result(context &)> m_cleanup_callback;
     std::function<sys_run_result(context &)> m_render_callback;
     std::function<sys_run_result(seconds, context &)> m_post_update_callback;
+    std::function<sys_run_result(const event &, context &)> m_input_callback;
 };
 } // namespace st

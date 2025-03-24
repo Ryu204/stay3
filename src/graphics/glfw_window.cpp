@@ -110,6 +110,17 @@ event glfw_window::poll_event() {
     return result;
 }
 
+key_status glfw_window::get_key(scancode code) {
+    switch(glfwGetKey(m_window, static_cast<int>(code))) {
+    case GLFW_PRESS:
+        return key_status::pressed;
+    case GLFW_RELEASE:
+        return key_status::released;
+    default:
+        assert(false && "Unhandled key status");
+    }
+}
+
 void glfw_window::set_window_callbacks() {
     assert(m_window && "Null window handle");
 
@@ -118,6 +129,22 @@ void glfw_window::set_window_callbacks() {
         this_ptr->m_event_queue.emplace(event::close_requested{});
     };
     glfwSetWindowCloseCallback(m_window, on_close_requested);
+    constexpr auto on_key_pressed =
+        // NOLINTNEXTLINE(*-easily-swappable-parameters)
+        [](GLFWwindow *window, int key, [[maybe_unused]] int scan, int action, [[maybe_unused]] int mods) {
+            auto *this_ptr = static_cast<glfw_window *>(glfwGetWindowUserPointer(window));
+            switch(action) {
+            case GLFW_PRESS:
+                this_ptr->m_event_queue.emplace(event::key_pressed{static_cast<scancode>(key)});
+                break;
+            case GLFW_RELEASE:
+                this_ptr->m_event_queue.emplace(event::key_released{static_cast<scancode>(key)});
+                break;
+            default:
+                break;
+            }
+        };
+    glfwSetKeyCallback(m_window, on_key_pressed);
 }
 
 void glfw_window::own_glfw_user_pointer() {

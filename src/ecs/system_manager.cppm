@@ -12,6 +12,7 @@ module;
 export module stay3.ecs:system_manager;
 
 import stay3.core;
+import stay3.input;
 import :system_data;
 import :system_wrapper;
 
@@ -102,6 +103,10 @@ public:
         return apply_all<sys_type::render>(ctx);
     }
 
+    sys_run_result input(const event &ev, context &ctx) {
+        return apply_all<sys_type::input>(ev, ctx);
+    }
+
     sys_run_result post_update(seconds delta, context &ctx) {
         return apply_all<sys_type::post_update>(delta, ctx);
     }
@@ -116,7 +121,9 @@ private:
             case sys_run_result::noop:
                 break;
             case sys_run_result::exit:
-                res = sys_run_result::exit;
+                return sys_run_result::exit;
+            default:
+                // Potentially more control result types
                 break;
             }
         }

@@ -35,12 +35,12 @@ struct setup_system {
             auto tf = reg.get_components<transform>(entity1);
             tf->scale(5.F);
         }
-        // reg.add_component<const rendered_mesh>(
-        //     entity2,
-        //     rendered_mesh{
-        //         .mesh_holder = mesh2,
-        //         .material_holder = mesh2,
-        //     });
+        reg.add_component<const rendered_mesh>(
+            entity2,
+            rendered_mesh{
+                .mesh_holder = mesh2,
+                .material_holder = mesh2,
+            });
 
         reg.add_component<const camera>(cam);
         reg.add_component<const main_camera>(cam);
@@ -53,7 +53,7 @@ struct setup_system {
         auto &reg = ctx.ecs();
         for(auto [en, mesh, tf]: reg.each<const rendered_mesh, transform>()) {
             tf->set_orientation(vec_right, (PI / 2.F) + (std::cos(total_elapsed + 4.F) / 3.F));
-            // tf->set_scale(2.F + std::sin(total_elapsed));
+            tf->set_scale(2.F + std::sin(total_elapsed));
         }
     }
 
@@ -63,17 +63,17 @@ struct setup_system {
 };
 
 int main() {
+    constexpr vec2u win_size{600u, 400u};
+    constexpr auto updates_per_sec = 20;
     try {
-        app my_app{
-            {
-                .window = {
-                    .size = {600u, 400u},
-                    .name = "My cool window",
-                },
-                .updates_per_second = 20,
-                .render = {.power_pref = render_config::power_preference::low},
+        app my_app{{
+            .window = {
+                .size = win_size,
+                .name = "My cool window",
             },
-        };
+            .updates_per_second = updates_per_sec,
+            .render = {.power_pref = render_config::power_preference::low},
+        }};
         my_app.enable_default_systems();
         my_app
             .systems()

@@ -47,6 +47,7 @@ target_sources(${PROJECT_NAME}
 
     src/input/mod.cppm
     src/input/event.cppm
+    src/input/keyboard.cppm
 
     src/node/mod.cppm
     src/node/node.cppm

@@ -89,6 +89,7 @@ app::window_closed app::input() {
             close_window();
             return app::window_closed::yes;
         }
+        m_ecs_systems.input(ev, m_tree_context);
     }
     return app::window_closed::no;
 }

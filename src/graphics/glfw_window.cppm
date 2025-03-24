@@ -43,6 +43,7 @@ public:
     [[nodiscard]] bool is_open() const;
     void close();
     event poll_event();
+    [[nodiscard]] key_status get_key(scancode code);
 
     [[nodiscard]] wgpu::Surface create_wgpu_surface(const wgpu::Instance &instance);
     [[nodiscard]] vec2u size() const;

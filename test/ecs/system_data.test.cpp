@@ -1,6 +1,7 @@
 #include <catch2/catch_all.hpp>
 
 import stay3.ecs;
+import stay3.input;
 
 using namespace st;
 
@@ -35,6 +36,13 @@ public:
     }
 };
 
+class valid_input_system {
+public:
+    static std::string input(const event &, const context &) {
+        return "123";
+    }
+};
+
 class mixed_system {
 public:
     void update(double, const context &) {}
@@ -42,6 +50,7 @@ public:
     void start(const context &) {}
     void cleanup(context &) {}
     void render(context &) {}
+    void input(event, context &) {}
 };
 
 class update_and_render {
@@ -61,12 +70,14 @@ TEST_CASE("Concepts work correctly") {
     STATIC_REQUIRE(is_start_system<valid_start_system, context>);
     STATIC_REQUIRE(is_cleanup_system<valid_cleanup_system, context>);
     STATIC_REQUIRE(is_render_system<valid_render_system, context>);
+    STATIC_REQUIRE(is_input_system<valid_input_system, context>);
 
     STATIC_REQUIRE(is_update_system<mixed_system, context>);
     STATIC_REQUIRE(is_post_update_system<mixed_system, context>);
     STATIC_REQUIRE(is_start_system<mixed_system, context>);
     STATIC_REQUIRE(is_cleanup_system<mixed_system, context>);
     STATIC_REQUIRE(is_render_system<mixed_system, context>);
+    STATIC_REQUIRE(is_input_system<mixed_system, context>);
 
     STATIC_REQUIRE(is_update_system<update_and_render, context>);
     STATIC_REQUIRE(is_render_system<update_and_render, context>);
