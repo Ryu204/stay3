@@ -25,6 +25,7 @@ TEST_CASE("glfw_window behavior") {
         REQUIRE_FALSE(window1.is_open());
     }
 }
+
 #ifndef __EMSCRIPTEN__
 // Currently, Emscripten's GLFW does not support multiple windows
 TEST_CASE("Native multiple windows") {
@@ -51,3 +52,14 @@ TEST_CASE("Native multiple windows") {
     }
 }
 #endif
+
+TEST_CASE("keyboard query") {
+    // We cannot test much here
+    st::glfw_window window;
+
+    REQUIRE(window.get_key(scancode::a) == key_status::released);
+    REQUIRE(window.get_key(scancode::w) == key_status::released);
+    REQUIRE(window.get_key(scancode::d) == key_status::released);
+    REQUIRE(window.get_key(scancode::up) == key_status::released);
+    REQUIRE(window.get_key(scancode::down) == key_status::released);
+}
