@@ -15,7 +15,7 @@ struct base_vec: public glm::vec<length, type> {
 
     using base_glm::base_glm;
     constexpr base_vec()
-        : base_glm{0.F} {}
+        : base_glm{static_cast<type>(0u)} {}
     constexpr base_vec(const base_glm &vec)
         : base_glm{vec} {}
 
@@ -25,7 +25,7 @@ struct base_vec: public glm::vec<length, type> {
 
     [[nodiscard]] constexpr bool is_normalized(type tolerance = static_cast<type>(EPS)) const {
         const auto len = glm::length2<length, type>(*this);
-        return static_cast<type>(1.0) - tolerance <= len && len <= static_cast<type>(1.0) + tolerance;
+        return static_cast<type>(1u) - tolerance <= len && len <= static_cast<type>(1u) + tolerance;
     }
 
     [[nodiscard]] constexpr type magnitude_squared() const {

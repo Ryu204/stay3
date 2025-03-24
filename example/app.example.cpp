@@ -20,27 +20,41 @@ struct setup_system {
         auto cam = scene.entities().create();
 
         reg.add_component<const mesh_data>(mesh2, mesh_cube(vec3f{1.5F, 0.2F, 1.F}));
-        reg.add_component<const mesh_data>(mesh1, mesh_plane(vec2f{1.F, 1.F}, vec4f{0.05F, 0.6F, 0.8F, 1.F}));
+        reg.add_component<const mesh_data>(mesh1, mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
+        auto texture1 = reg.add_component<const texture_2d_data>(mesh1, "assets/textures/example.jpg");
+        auto material1 = reg.add_component<const material_data>(mesh1, material_data{.texture_holder = mesh1});
+        auto material2 = reg.add_component<const material_data>(mesh2);
 
-        reg.add_component<const rendered_mesh>(entity1, mesh2);
-        reg.add_component<const rendered_mesh>(entity2, mesh1);
+        reg.add_component<const rendered_mesh>(
+            entity1,
+            rendered_mesh{
+                .mesh_holder = mesh1,
+                .material_holder = mesh1,
+            });
+        {
+            auto tf = reg.get_components<transform>(entity1);
+            tf->scale(5.F);
+        }
+        // reg.add_component<const rendered_mesh>(
+        //     entity2,
+        //     rendered_mesh{
+        //         .mesh_holder = mesh2,
+        //         .material_holder = mesh2,
+        //     });
 
         reg.add_component<const camera>(cam);
         reg.add_component<const main_camera>(cam);
         auto tf = reg.get_components<transform>(cam);
-        tf->set_position(vec_back * 3.F + vec_up);
+        tf->set_position(vec_back * 3.F + 1.5F * vec_up);
     }
 
     void update(seconds delta, tree_context &ctx) {
         total_elapsed += delta;
         auto &reg = ctx.ecs();
         for(auto [en, mesh, tf]: reg.each<const rendered_mesh, transform>()) {
-            tf->rotate(vec_back, delta);
+            tf->set_orientation(vec_right, (PI / 2.F) + (std::cos(total_elapsed + 4.F) / 3.F));
+            // tf->set_scale(2.F + std::sin(total_elapsed));
         }
-        auto m1 = reg.get_components<mesh_data>(mesh1);
-        auto m2 = reg.get_components<mesh_data>(mesh2);
-        *m1 = mesh_plane(vec2f{std::max<float>(0.1F, std::fmod(total_elapsed, 1.F))});
-        *m2 = mesh_cube(vec3f{std::max<float>(0.1F, std::fmod((total_elapsed / 10.F) + 2.345345F, 1.F))});
     }
 
     entity mesh1;
