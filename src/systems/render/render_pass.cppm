@@ -70,14 +70,19 @@ struct create_render_pass_result {
     wgpu::RenderPassEncoder encoder;
 };
 
-export create_render_pass_result create_render_pass(const wgpu::Device &device, const wgpu::Surface &surface, const wgpu::TextureView &depth_texture_view) {
+export create_render_pass_result create_render_pass(const wgpu::Device &device, const wgpu::Surface &surface, const wgpu::TextureView &depth_texture_view, const vec4f &clear_color) {
     const texture_view color_texture_view{create_surface_texture_view(surface)};
     const wgpu::RenderPassColorAttachment color_attachment{
         .view = color_texture_view.view,
         .depthSlice = wgpu::kDepthSliceUndefined,
         .loadOp = wgpu::LoadOp::Clear,
         .storeOp = wgpu::StoreOp::Store,
-        .clearValue = {.r = 0.9, .g = 0.2, .b = 0.1, .a = 0.0},
+        .clearValue = {
+            .r = clear_color.r,
+            .g = clear_color.g,
+            .b = clear_color.b,
+            .a = clear_color.a,
+        },
     };
     const wgpu::RenderPassDepthStencilAttachment depth_stencil{
         .view = depth_texture_view,

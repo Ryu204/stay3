@@ -38,15 +38,19 @@ void render_system::start(tree_context &ctx) {
 
 void render_system::render(tree_context &ctx) {
     auto &reg = ctx.ecs();
-    const mat4f camera_view_projection = [](ecs_registry &reg) {
+    vec4f clear_color;
+    // Find main camera
+    {
         auto cameras = reg.each<const camera, const main_camera, const global_transform>();
         assert(cameras.begin() != cameras.end() && "No main camera found");
-        auto [en, cam, unused, tf] = *cameras.begin();
-        return perspective(cam->fov, cam->ratio, cam->near, cam->far) * tf->get().inv_matrix();
-    }(reg);
-    update_all_object_uniforms(reg, camera_view_projection);
+        auto [unused_en, cam, unused_tag, tf] = *cameras.begin();
+        clear_color = cam->clear_color;
+        const auto camera_view_projection = perspective(cam->fov, cam->ratio, cam->near, cam->far) * tf->get().inv_matrix();
+        update_all_object_uniforms(reg, camera_view_projection);
+    }
+
     // Draw commands
-    const auto &&[unused, encoder, render_pass_encoder] = create_render_pass(m_global.device, m_global.surface, m_depth_texture.view);
+    const auto &&[unused, encoder, render_pass_encoder] = create_render_pass(m_global.device, m_global.surface, m_depth_texture.view, clear_color);
     render_pass_encoder.SetPipeline(m_pipeline);
 
     entity material_entity;
