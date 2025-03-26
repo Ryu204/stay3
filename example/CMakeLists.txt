@@ -16,3 +16,5 @@ endfunction()
 
 add_example(app app.example.cpp "")
 add_example(input input.example.cpp "")
+
+add_subdirectory(dino)
