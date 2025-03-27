@@ -26,6 +26,7 @@ private:
     void update_all_object_uniforms(ecs_registry &reg, const mat4f &camera_view_projection);
     void setup_signals(ecs_registry &reg);
 
+    static void fix_camera_aspect(ecs_registry &reg, entity en);
     void initialize_mesh_state(ecs_registry &reg, entity en);
     void create_mesh_state_from_data(ecs_registry &reg, entity en) const;
     void initialize_rendered_mesh_state(ecs_registry &reg, entity en);

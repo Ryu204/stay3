@@ -8,6 +8,7 @@ module stay3.graphics;
 
 import stay3.core;
 import stay3.ecs;
+import :material;
 
 namespace st {
 
@@ -15,19 +16,50 @@ vec4f color_or_random(const std::optional<vec4f> &color) {
     return color.has_value() ? *(color) : random_color();
 }
 
-mesh_data mesh_plane(const vec2f &size, const std::optional<vec4f> &color) {
+mesh_data mesh_plane(const vec2f &size, const std::optional<vec4f> &color, const std::optional<rectf> &rect_normalized) {
     mesh_data result;
     // 01
     // 32
     result.vertices.reserve(4);
     result.maybe_indices = std::vector<std::uint32_t>{0, 2, 1, 0, 3, 2};
 
-    result.vertices.emplace_back(color_or_random(color), vec3f{-size.x / 2, size.y / 2, 0.F}, vec_back, vec2f{0.F, 0.F});
-    result.vertices.emplace_back(color_or_random(color), vec3f{size.x / 2, size.y / 2, 0.F}, vec_back, vec2f{1.F, 0.F});
-    result.vertices.emplace_back(color_or_random(color), vec3f{size.x / 2, -size.y / 2, 0.F}, vec_back, vec2f{1.F, 1.F});
-    result.vertices.emplace_back(color_or_random(color), vec3f{-size.x / 2, -size.y / 2, 0.F}, vec_back, vec2f{0.F, 1.F});
+    std::array<vec2f, 4> uvs;
+    if(rect_normalized.has_value()) {
+        const auto &[uv_pos, uv_size] = *rect_normalized;
+        uvs = {
+            uv_pos,
+            uv_pos + vec2f{uv_size.x, 0.F},
+            uv_pos + uv_size,
+            uv_pos + vec2f{0.F, uv_size.y},
+        };
+    } else {
+        uvs = {
+            vec2f{0.F},
+            vec2f{1.F, 0.F},
+            vec2f{1.F},
+            vec2f{0.F, 1.F},
+        };
+    }
+
+    result.vertices.emplace_back(color_or_random(color), vec3f{-size.x / 2, size.y / 2, 0.F}, vec_back, uvs[0]);
+    result.vertices.emplace_back(color_or_random(color), vec3f{size.x / 2, size.y / 2, 0.F}, vec_back, uvs[1]);
+    result.vertices.emplace_back(color_or_random(color), vec3f{size.x / 2, -size.y / 2, 0.F}, vec_back, uvs[2]);
+    result.vertices.emplace_back(color_or_random(color), vec3f{-size.x / 2, -size.y / 2, 0.F}, vec_back, uvs[3]);
 
     return result;
+}
+
+mesh_data mesh_sprite(const texture_2d_data &texture, float pixels_per_unit, const std::optional<vec4f> &color, const std::optional<rectf> &texture_rect) {
+    const auto full_size = vec2f{texture.size()} / pixels_per_unit;
+    if(!texture_rect.has_value()) {
+        return mesh_plane(full_size, color);
+    }
+    const auto &[rect_position, rect_size] = *texture_rect;
+    const rectf rect_normalized{
+        .position = rect_position / vec2f{texture.size()},
+        .size = rect_size / vec2f{texture.size()},
+    };
+    return mesh_plane(rect_size / pixels_per_unit, color, rect_normalized);
 }
 
 mesh_data mesh_cube(const vec3f &size, const std::optional<vec4f> &color) {

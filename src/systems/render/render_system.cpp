@@ -44,8 +44,9 @@ void render_system::render(tree_context &ctx) {
         auto cameras = reg.each<const camera, const main_camera, const global_transform>();
         assert(cameras.begin() != cameras.end() && "No main camera found");
         auto [unused_en, cam, unused_tag, tf] = *cameras.begin();
+        assert(cam->ratio.has_value() && "Camera aspect was not set by system");
         clear_color = cam->clear_color;
-        const auto camera_view_projection = perspective(cam->fov, cam->ratio, cam->near, cam->far) * tf->get().inv_matrix();
+        const auto camera_view_projection = perspective(cam->fov, cam->ratio.value(), cam->near, cam->far) * tf->get().inv_matrix();
         update_all_object_uniforms(reg, camera_view_projection);
     }
 
@@ -110,6 +111,7 @@ void render_system::setup_signals(ecs_registry &reg) {
     make_soft_dependency<transform, rendered_mesh>(reg);
 
     make_soft_dependency<transform, camera>(reg);
+    reg.on<comp_event::construct, camera>().connect<&render_system::fix_camera_aspect>();
 
     reg.on<comp_event::construct, texture_2d_data>().connect<&render_system::initialize_texture_2d_state>(*this);
     reg.on<comp_event::update, texture_2d_data>().connect<&render_system::create_texture_2d_state_from_data>(*this);
@@ -118,6 +120,13 @@ void render_system::setup_signals(ecs_registry &reg) {
     reg.on<comp_event::construct, material_data>().connect<&render_system::initialize_material_state>(*this);
     reg.on<comp_event::update, material_data>().connect<&render_system::create_material_state_from_data>(*this);
     reg.on<comp_event::destroy, material_data>().connect<&ecs_registry::remove_component<material_state>>();
+}
+
+void render_system::fix_camera_aspect(ecs_registry &reg, entity en) {
+    auto &window = reg.get_context<runtime_info>().window();
+    const auto aspect = static_cast<float>(window.size().x) / static_cast<float>(window.size().y);
+    auto cam = reg.get_components<camera>(en);
+    cam->ratio = aspect;
 }
 
 void render_system::initialize_mesh_state(ecs_registry &reg, entity en) {

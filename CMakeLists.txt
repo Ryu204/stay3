@@ -44,6 +44,7 @@ target_sources(${PROJECT_NAME}
     src/core/file.cppm
     src/core/color.cppm
     src/core/variant_helper.cppm
+    src/core/rect.cppm
 
     src/input/mod.cppm
     src/input/event.cppm

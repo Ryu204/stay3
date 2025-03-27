@@ -25,7 +25,7 @@ app &app::enable_default_systems() {
     m_ecs_systems
         .add<transform_sync_system>()
         .run_as<sys_type::start>(sys_priority::very_high)
-        .run_as<sys_type::post_update>(sys_priority::very_high);
+        .run_as<sys_type::post_update>(sys_priority::very_low);
     m_ecs_systems
         .add<render_system>(m_window.size(), m_assets_dir / "shaders" / "my_shader.wgsl")
         .run_as<sys_type::start>(sys_priority::high)

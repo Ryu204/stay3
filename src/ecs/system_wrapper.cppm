@@ -121,7 +121,7 @@ private:
             }
         }
 
-        // Cleanup
+        // Input
         if constexpr(is_input_system<sys, context>) {
             using return_t = decltype(std::declval<sys>().input(std::declval<const event &>(), std::declval<context &>()));
             if constexpr(std::is_convertible_v<return_t, sys_run_result>) {

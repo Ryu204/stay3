@@ -1,6 +1,5 @@
 module;
 
-#include <bit>
 #include <cassert>
 #include <cstdint>
 #include <filesystem>

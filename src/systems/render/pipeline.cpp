@@ -115,13 +115,13 @@ wgpu::RenderPipeline create_pipeline(
     wgpu::BlendState blend_state{
         .color = {
             .operation = wgpu::BlendOperation::Add,
-            .srcFactor = wgpu::BlendFactor::SrcAlpha,
+            .srcFactor = wgpu::BlendFactor::One,
             .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
         },
         .alpha = {
             .operation = wgpu::BlendOperation::Add,
-            .srcFactor = wgpu::BlendFactor::Zero,
-            .dstFactor = wgpu::BlendFactor::One,
+            .srcFactor = wgpu::BlendFactor::One,
+            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
         },
     };
     wgpu::ColorTargetState color_target{

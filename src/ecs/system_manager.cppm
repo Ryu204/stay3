@@ -27,6 +27,9 @@ class system_manager {
         std::reference_wrapper<system_wrapper<context>> system;
         sys_priority_t priority;
         bool operator<(const system_entry_per_type &other) const {
+            if(priority == other.priority) {
+                return std::addressof(system.get()) < std::addressof(other.system.get());
+            }
             constexpr auto has_higher_priority = [](const auto &higher, const auto &lower) {
                 return higher.priority > lower.priority;
             };
@@ -115,6 +118,9 @@ private:
     template<sys_type type, typename... args>
     sys_run_result apply_all(args &&...arguments) {
         auto res = sys_run_result::noop;
+        // debug
+        auto size = m_systems_by_type[type].size();
+        const auto &syss = m_systems_by_type[type];
         for(const auto &entry: m_systems_by_type[type]) {
             auto cur = entry.system.get().template call_method<type>(std::forward<args>(arguments)...);
             switch(cur) {
