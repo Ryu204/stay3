@@ -322,9 +322,9 @@ entity render_system::default_sampler_entity(ecs_registry &reg) const {
             .addressModeU = wgpu::AddressMode::ClampToEdge,
             .addressModeV = wgpu::AddressMode::ClampToEdge,
             .addressModeW = wgpu::AddressMode::ClampToEdge,
-            .magFilter = wgpu::FilterMode::Linear,
-            .minFilter = wgpu::FilterMode::Linear,
-            .mipmapFilter = wgpu::MipmapFilterMode::Linear,
+            .magFilter = render_config::from_enum(m_config.filter),
+            .minFilter = render_config::from_enum(m_config.filter),
+            .mipmapFilter = wgpu::MipmapFilterMode::Linear, // Currently mip map is not used
             .lodMinClamp = 0.F,
             .lodMaxClamp = 1.F,
             .maxAnisotropy = 1,
