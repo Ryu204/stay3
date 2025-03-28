@@ -50,8 +50,8 @@ mesh_data mesh_plane(const vec2f &size, const std::optional<vec4f> &color, const
 }
 
 mesh_data mesh_sprite(const texture_2d_data &texture, float pixels_per_unit, const std::optional<vec4f> &color, const std::optional<rectf> &texture_rect) {
-    const auto full_size = vec2f{texture.size()} / pixels_per_unit;
     if(!texture_rect.has_value()) {
+        const auto full_size = vec2f{texture.size()} / pixels_per_unit;
         return mesh_plane(full_size, color);
     }
     const auto &[rect_position, rect_size] = *texture_rect;
