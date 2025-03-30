@@ -16,7 +16,7 @@ namespace st {
 
 void mark_entity_dirty(ecs_registry &reg, entity en) {
     if(!reg.contains<dirty_flag>(en)) {
-        reg.emplace<const dirty_flag>(en);
+        reg.emplace<dirty_flag>(en);
     }
 }
 
@@ -79,7 +79,7 @@ void node_reparented_handler(tree_context &ctx, tree_context::node_reparented_ar
 
 void transform_constructed_handler(tree_context &ctx, ecs_registry &, entity en) {
     auto &reg = ctx.ecs();
-    reg.emplace<const global_transform>(en);
+    reg.emplace<global_transform>(en);
     mark_subtree_dirty(ctx, en);
 }
 
@@ -131,12 +131,12 @@ void sync_global_transform(tree_context &ctx) {
         return ancestor_count[ctx.get_node(prev).id()] < ancestor_count[ctx.get_node(later).id()];
     });
 
-    for(auto &&[en, unused]: reg.each<const dirty_flag>()) {
+    for(auto &&[en, unused]: reg.each<dirty_flag>()) {
         const auto &node = ctx.get_node(en);
         if(!reg.contains<transform>(en)) {
             continue;
         }
-        auto [local, global] = reg.get<const transform, global_transform>(en);
+        auto [local, global] = reg.get<transform, mut<global_transform>>(en);
         const auto has_parent_transform =
             !node.is_root()
             && !node.parent().entities().is_empty()
@@ -145,7 +145,7 @@ void sync_global_transform(tree_context &ctx) {
             global->global = *local;
             continue;
         }
-        auto parent_global = reg.get<const global_transform>(node.parent().entities()[0]);
+        auto parent_global = reg.get<global_transform>(node.parent().entities()[0]);
         global->global.set_matrix(parent_global->global.matrix() * local->matrix());
     }
     reg.destroy_all<dirty_flag>();
@@ -154,22 +154,22 @@ void sync_global_transform(tree_context &ctx) {
 const global_transform &sync_global_transform(tree_context &ctx, entity en) {
     auto &reg = ctx.ecs();
     if(!reg.contains<dirty_flag>(en)) {
-        return *reg.get<const global_transform>(en);
+        return *reg.get<global_transform>(en);
     }
     const auto &node = ctx.get_node(en);
     const auto has_parent_transform =
         !node.is_root()
         && !node.parent().entities().is_empty()
         && reg.contains<global_transform>(node.parent().entities()[0]);
-    auto [local, global] = reg.get<const transform, global_transform>(en);
+    auto [local, global] = reg.get<transform, mut<global_transform>>(en);
     if(!has_parent_transform) {
         global->global = *local;
     } else {
-        auto parent_global = reg.get<const global_transform>(node.parent().entities()[0]);
+        auto parent_global = reg.get<global_transform>(node.parent().entities()[0]);
         global->global.set_matrix(parent_global->global.matrix() * local->matrix());
     }
     reg.destroy<dirty_flag>(en);
-    return *reg.get<const global_transform>(en);
+    return *reg.get<global_transform>(en);
 }
 
 } // namespace st

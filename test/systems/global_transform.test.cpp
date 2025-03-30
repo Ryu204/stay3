@@ -28,25 +28,25 @@ entities set_up_entities(tree_context &ctx) {
     auto &root_child = root.add_child();
 
     auto root_en = root.entities().create();
-    auto root_tf = reg.emplace<transform>(root_en);
+    auto root_tf = reg.emplace<mut<transform>>(root_en);
     root_tf->scale(2.F).rotate(vec_up + vec_right, PI / 4.F).translate(2.F * vec_left);
 
     auto root_child_en = root_child.entities().create();
-    auto child_tf = reg.emplace<transform>(root_child_en);
+    auto child_tf = reg.emplace<mut<transform>>(root_child_en);
     child_tf->scale(3.F).rotate(vec_down, PI);
 
     auto &stray_parent = root.add_child();
     auto &stray = stray_parent.add_child();
     auto stray_en = stray.entities().create();
-    auto stray_tf = reg.emplace<transform>(stray_en);
+    auto stray_tf = reg.emplace<mut<transform>>(stray_en);
     stray_tf->scale(0.5F).rotate(vec_down + vec_left + vec_forward, PI * 3.5F).translate(vec_left + vec_back * 2.F);
 
     auto &sibling1 = stray.add_child();
     auto &sibling2 = stray.add_child();
     auto sib1_en = sibling1.entities().create();
     auto sib2_en = sibling2.entities().create();
-    auto sib1_tf = reg.emplace<transform>(sib1_en);
-    auto sib2_tf = reg.emplace<transform>(sib2_en);
+    auto sib1_tf = reg.emplace<mut<transform>>(sib1_en);
+    auto sib2_tf = reg.emplace<mut<transform>>(sib2_en);
     sib1_tf->translate(7.F * vec_forward);
     sib2_tf->translate(vec_down / 2.F);
 
@@ -61,7 +61,7 @@ void check_single_transform(const std::string &test_name, tree_context &ctx, ent
     if(!ctx.ecs().contains<global_transform>(id_to_check)) {
         throw std::runtime_error{"No global component"};
     }
-    const auto &global_tf = ctx.ecs().get<const global_transform>(id_to_check)->get();
+    const auto &global_tf = ctx.ecs().get<global_transform>(id_to_check)->get();
 
 #define THROW_IF_NOT_EQUAL(x, y, z) \
     if(!approx_equal((x), (y), (z))) { \

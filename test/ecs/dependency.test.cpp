@@ -74,10 +74,10 @@ TEST_CASE("Soft dependency") {
             REQUIRE_FALSE(reg.contains<comp_second>(en));
             reg.emplace<comp_second>(en);
             REQUIRE(reg.contains<comp_first>(en));
-            REQUIRE(*reg.get<const comp_first>(en) == value);
+            REQUIRE(*reg.get<comp_first>(en) == value);
             reg.destroy<comp_second>(en);
             REQUIRE(reg.contains<comp_first>(en));
-            REQUIRE(*reg.get<const comp_first>(en) == value);
+            REQUIRE(*reg.get<comp_first>(en) == value);
         }
 
         SECTION("Non default constructible") {
@@ -91,7 +91,7 @@ TEST_CASE("Soft dependency") {
             REQUIRE(reg.get<comp_third>(en)->val == value_add);
             reg.destroy<comp_second>(en);
             REQUIRE(reg.contains<comp_third>(en));
-            REQUIRE(reg.get<const comp_third>(en)->val == value_add);
+            REQUIRE(reg.get<comp_third>(en)->val == value_add);
         }
     }
 }

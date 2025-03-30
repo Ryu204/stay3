@@ -52,7 +52,7 @@ struct component { int value{}; };
 struct my_system {
     static void update(seconds, tree_context &ctx) {
         auto sum = 0;
-        for(auto &&[en, comp]: ctx.ecs().each<const component>()) {
+        for(auto &&[en, comp]: ctx.ecs().each<component>()) {
             // `comp` provides pointer-like interface to component
             sum -= comp->value;
             // Or dereference
@@ -62,11 +62,11 @@ struct my_system {
     }
 };
 ```
-If you want to modify the component, use non const template. This however may be a litle bit slower [^1].
+If you want to modify the component, replace `component` with `mut<component>`. This however may be a litle bit slower [^1].
 
 The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
 
-[^1]: In above example, `comp`'s destructor will invoke the update signal if somebody subcribed to it before.
+[^1]: mutable version will have the destructor invoke the update signal (if somebody subcribed to it before).
 
 7. System can add callback to certain events related to component, including `construct`, `update` and `destroy`.
 ```cpp
@@ -87,7 +87,7 @@ This is the (non exhaustive) list of available events.
 |-----|------------|------|
 |construct|**After** the component is created|`emplace`|
 |update|**After** the component is changed|`patch` or `replace`<br>`each` or `get` or `emplace` with a non const type parameter and the proxy goes out of scope|
-|destroy|**Before** the component is removed|`destroy`|
+|destroy|**Before** the component is removed|`destroy` (either the component or the whole entity)|
 
 8. To signal exit from inside a system method, use `sys_run_result` as a return type:
 
@@ -127,6 +127,7 @@ tl;dr:
 * Entity signals emitted from ecs registry do not have associations with scene tree anymore (`tree_context::get_node` will not work)
 * Never attach components to entity that is signaled to be destroyed
 * Never add or destroy component in signal handler of that component.
+* Components destruction order of a destroyed entity is not deterministic so you shouldn't perform arbitrary registry manipulation in the handler.
 
 11. Please don't destroy entity via `ecs_registry::destroy`, use `entities_holder::destroy` instead. The former does not allow disconnecting entity from its node.
 

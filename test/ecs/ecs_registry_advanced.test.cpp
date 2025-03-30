@@ -1,6 +1,7 @@
 #include <catch2/catch_all.hpp>
 
 import stay3.ecs;
+using st::mut;
 
 namespace {
 
@@ -94,16 +95,16 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
 
             SECTION("Read and write proxy") {
                 {
-                    auto dum = registry.get<dummy>(en);
+                    auto dum = registry.get<mut<dummy>>(en);
                     dum->value = 0;
                     // Out of scope
                 }
                 REQUIRE(tracker.update_count == 3);
-                REQUIRE(registry.get<const dummy>(en)->value == 0);
+                REQUIRE(registry.get<dummy>(en)->value == 0);
 
                 int do_not_optimize_out{};
                 {
-                    auto dum = registry.get<const dummy>(en);
+                    auto dum = registry.get<dummy>(en);
                     do_not_optimize_out = dum->value;
                     // Out of scope
                 }
@@ -115,20 +116,20 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
                 REQUIRE(tracker.update_count == 2);
                 registry.emplace<complex_component>(en, "hello", 42);
 
-                for(auto [e, d, cd]: registry.each<dummy, const complex_component>()) {
+                for(auto [e, d, cd]: registry.each<mut<dummy>, complex_component>()) {
                     d->value += cd->value;
                 }
                 REQUIRE(tracker.update_count == 3);
 
                 registry.on<st::comp_event::update, complex_component>()
                     .connect<&test_event_tracker::on_update>(tracker);
-                for(auto [e, d, cd]: registry.each<const dummy, complex_component>()) {
+                for(auto [e, d, cd]: registry.each<dummy, mut<complex_component>>()) {
                     cd->value += d->value;
                 }
                 REQUIRE(tracker.update_count == 4);
 
                 int do_not_optimize_out{};
-                for(auto [e, d, cd]: registry.each<const dummy, const complex_component>()) {
+                for(auto [e, d, cd]: registry.each<dummy, complex_component>()) {
                     do_not_optimize_out += cd->value + d->value;
                 }
                 REQUIRE(tracker.update_count == 4);
@@ -139,17 +140,14 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
                 REQUIRE(tracker.update_count == 2);
 
                 en = registry.create();
-                {
-                    auto dum = registry.emplace<dummy>(en);
-                    // Out of scope
-                }
+                registry.emplace<mut<dummy>>(en);
                 REQUIRE(tracker.update_count == 3);
 
                 registry.destroy_all<dummy>();
 
                 int do_not_optimize_out{};
                 {
-                    auto dum = registry.emplace<const dummy>(en);
+                    auto dum = registry.emplace<dummy>(en);
                     do_not_optimize_out = dum->value;
                     // Out of scope
                 }
@@ -176,7 +174,7 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
             registry.emplace<dummy>(en, 10);
             registry.emplace<complex_component>(en, "multi", 20);
 
-            auto [e, d, c] = *registry.each<dummy, complex_component>().begin();
+            auto [e, d, c] = *registry.each<mut<dummy>, mut<complex_component>>().begin();
 
             REQUIRE(d->value == 10);
             REQUIRE(c->name == "multi");
@@ -185,8 +183,8 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
             d->value = 100;
             c->value = 200;
 
-            auto rd = registry.get<const dummy>(en);
-            auto rc = registry.get<const complex_component>(en);
+            auto rd = registry.get<dummy>(en);
+            auto rc = registry.get<complex_component>(en);
 
             REQUIRE(rd->value == 100);
             REQUIRE(rc->value == 200);

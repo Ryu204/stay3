@@ -19,39 +19,39 @@ struct setup_system {
         auto entity2 = scene.entities().create();
         auto cam = scene.entities().create();
 
-        reg.emplace<const mesh_data>(mesh2, mesh_cube(vec3f{1.5F, 0.2F, 1.F}));
-        reg.emplace<const mesh_data>(mesh1, mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
-        auto texture1 = reg.emplace<const texture_2d_data>(mesh1, "assets/textures/example.jpg");
-        auto material1 = reg.emplace<const material_data>(mesh1, material_data{.texture_holder = mesh1});
-        auto material2 = reg.emplace<const material_data>(mesh2);
+        reg.emplace<mesh_data>(mesh2, mesh_cube(vec3f{1.5F, 0.2F, 1.F}));
+        reg.emplace<mesh_data>(mesh1, mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
+        auto texture1 = reg.emplace<texture_2d_data>(mesh1, "assets/textures/example.jpg");
+        auto material1 = reg.emplace<material_data>(mesh1, material_data{.texture_holder = mesh1});
+        auto material2 = reg.emplace<material_data>(mesh2);
 
-        reg.emplace<const rendered_mesh>(
+        reg.emplace<rendered_mesh>(
             entity1,
             rendered_mesh{
                 .mesh_holder = mesh1,
                 .material_holder = mesh1,
             });
         {
-            auto tf = reg.get<transform>(entity1);
+            auto tf = reg.get<mut<transform>>(entity1);
             tf->scale(5.F);
         }
-        reg.emplace<const rendered_mesh>(
+        reg.emplace<rendered_mesh>(
             entity2,
             rendered_mesh{
                 .mesh_holder = mesh2,
                 .material_holder = mesh2,
             });
 
-        reg.emplace<const camera>(cam);
-        reg.emplace<const main_camera>(cam);
-        auto tf = reg.get<transform>(cam);
+        reg.emplace<camera>(cam);
+        reg.emplace<main_camera>(cam);
+        auto tf = reg.get<mut<transform>>(cam);
         tf->set_position(vec_back * 3.F + 1.5F * vec_up);
     }
 
     void update(seconds delta, tree_context &ctx) {
         total_elapsed += delta;
         auto &reg = ctx.ecs();
-        for(auto [en, mesh, tf]: reg.each<const rendered_mesh, transform>()) {
+        for(auto [en, mesh, tf]: reg.each<rendered_mesh, mut<transform>>()) {
             tf->set_orientation(vec_right, (PI / 2.F) + (std::cos(total_elapsed + 4.F) / 3.F));
             tf->set_scale(2.F + std::sin(total_elapsed));
         }

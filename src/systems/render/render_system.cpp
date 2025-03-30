@@ -41,7 +41,7 @@ void render_system::render(tree_context &ctx) {
     vec4f clear_color;
     // Find main camera
     {
-        auto cameras = reg.each<const camera, const main_camera, const global_transform>();
+        auto cameras = reg.each<camera, main_camera, global_transform>();
         assert(cameras.begin() != cameras.end() && "No main camera found");
         auto [unused_en, cam, unused_tag, tf] = *cameras.begin();
         assert(cam->ratio.has_value() && "Camera aspect was not set by system");
@@ -55,14 +55,13 @@ void render_system::render(tree_context &ctx) {
     render_pass_encoder.SetPipeline(m_pipeline);
 
     entity material_entity;
-    for(auto &&[unused, data, state]: reg.each<const rendered_mesh, const rendered_mesh_state>()) {
+    for(auto &&[unused, data, state]: reg.each<rendered_mesh, rendered_mesh_state>()) {
         if(data->material_holder != material_entity) {
             material_entity = data->material_holder;
-            const auto material_bind_group = reg.get<const material_state>(material_entity)->material_bind_group;
+            const auto material_bind_group = reg.get<material_state>(material_entity)->material_bind_group;
             render_pass_encoder.SetBindGroup(bind_group_layouts_data::material::group, material_bind_group);
         }
-        auto [geometry_data, geometry_state] = reg.get<const mesh_data, const mesh_state>(data->mesh_holder);
-        auto material_state = reg.get<const mesh_data, const mesh_state>(data->mesh_holder);
+        auto [geometry_data, geometry_state] = reg.get<mesh_data, mesh_state>(data->mesh_holder);
         render_pass_encoder.SetVertexBuffer(0, geometry_state->vertex_buffer);
         render_pass_encoder.SetBindGroup(bind_group_layouts_data::object::group, state->object_bind_group);
         if(geometry_state->index_buffer) {
@@ -88,11 +87,11 @@ void render_system::cleanup(tree_context &) const {
 }
 
 void render_system::update_all_object_uniforms(ecs_registry &reg, const mat4f &camera_view_projection) {
-    assert(std::ranges::all_of(reg.each<const rendered_mesh_state>(), [&reg](const auto &tuple) {
+    assert(std::ranges::all_of(reg.each<rendered_mesh_state>(), [&reg](const auto &tuple) {
                return reg.contains<global_transform>(std::get<0>(tuple));
            })
            && "rendered_mesh_state without global_transform");
-    for(auto &&[unused, global_tf, state]: reg.each<const global_transform, const rendered_mesh_state>()) {
+    for(auto &&[unused, global_tf, state]: reg.each<global_transform, rendered_mesh_state>()) {
         const auto &mat = global_tf->get().matrix();
         static_assert(std::is_same_v<std::decay_t<decltype(mat)>, mat4f>);
         const mat4f mvp_matrix_uniform = camera_view_projection * global_tf->get().matrix();
@@ -125,17 +124,17 @@ void render_system::setup_signals(ecs_registry &reg) {
 void render_system::fix_camera_aspect(ecs_registry &reg, entity en) {
     auto &window = reg.get_context<runtime_info>().window();
     const auto aspect = static_cast<float>(window.size().x) / static_cast<float>(window.size().y);
-    auto cam = reg.get<camera>(en);
+    auto cam = reg.get<mut<camera>>(en);
     cam->ratio = aspect;
 }
 
 void render_system::initialize_mesh_state(ecs_registry &reg, entity en) {
-    reg.emplace<const mesh_state>(en);
+    reg.emplace<mesh_state>(en);
     create_mesh_state_from_data(reg, en);
 }
 
 void render_system::create_mesh_state_from_data(ecs_registry &reg, entity en) const {
-    auto [state, data] = reg.get<mesh_state, const mesh_data>(en);
+    auto [state, data] = reg.get<mut<mesh_state>, mesh_data>(en);
     // Vertex buffer
     {
         const auto vertex_size_byte = data->vertices.size() * sizeof(std::decay_t<decltype(data->vertices)>::value_type);
@@ -166,12 +165,12 @@ void render_system::create_mesh_state_from_data(ecs_registry &reg, entity en) co
 }
 
 void render_system::initialize_rendered_mesh_state(ecs_registry &reg, entity en) {
-    assert(reg.contains<mesh_data>(reg.get<const rendered_mesh>(en)->mesh_holder)
+    assert(reg.contains<mesh_data>(reg.get<rendered_mesh>(en)->mesh_holder)
            && "rendered_mesh without mesh_data");
-    assert(reg.contains<material_data>(reg.get<const rendered_mesh>(en)->material_holder)
+    assert(reg.contains<material_data>(reg.get<rendered_mesh>(en)->material_holder)
            && "rendered_mesh without material_data");
 
-    auto state = reg.emplace<rendered_mesh_state>(en);
+    auto state = reg.emplace<mut<rendered_mesh_state>>(en);
     state->object_uniform_buffer = create_object_uniform_buffer();
     state->object_bind_group = create_object_bind_group(state->object_uniform_buffer);
 }
@@ -203,12 +202,12 @@ void render_system::initialize_rendered_mesh_state(ecs_registry &reg, entity en)
 }
 
 void render_system::initialize_texture_2d_state(ecs_registry &reg, entity en) const {
-    reg.emplace<const texture_2d_state>(en);
+    reg.emplace<texture_2d_state>(en);
     create_texture_2d_state_from_data(reg, en);
 }
 
 void render_system::create_texture_2d_state_from_data(ecs_registry &reg, entity en) const {
-    auto [data, state] = reg.get<const texture_2d_data, texture_2d_state>(en);
+    auto [data, state] = reg.get<texture_2d_data, mut<texture_2d_state>>(en);
     const wgpu::Extent3D texture_size{.width = data->size().x, .height = data->size().y, .depthOrArrayLayers = 1};
     // Create
     {
@@ -259,22 +258,22 @@ void render_system::create_texture_2d_state_from_data(ecs_registry &reg, entity 
 }
 
 void render_system::initialize_material_state(ecs_registry &reg, entity en) const {
-    reg.emplace<const material_state>(en);
+    reg.emplace<material_state>(en);
     create_material_state_from_data(reg, en);
 }
 
 void render_system::create_material_state_from_data(ecs_registry &reg, entity en) const {
-    auto [state, data] = reg.get<material_state, const material_data>(en);
+    auto [state, data] = reg.get<mut<material_state>, material_data>(en);
 
     wgpu::TextureView texture_view;
     {
         if(data->texture_holder.is_null()) {
-            texture_view = reg.get<const texture_2d_state>(default_texture_entity(reg))->view;
+            texture_view = reg.get<texture_2d_state>(default_texture_entity(reg))->view;
         } else {
-            texture_view = reg.get<const texture_2d_state>(data->texture_holder)->view;
+            texture_view = reg.get<texture_2d_state>(data->texture_holder)->view;
         }
     }
-    const auto sampler_comp = reg.get<const sampler>(default_sampler_entity(reg));
+    const auto sampler_comp = reg.get<sampler>(default_sampler_entity(reg));
     const std::array<wgpu::BindGroupEntry, bind_group_layouts_data::material::binding_count> entries{
         wgpu::BindGroupEntry{
             .binding = bind_group_layouts_data::material::texture::binding,
@@ -295,18 +294,18 @@ void render_system::create_material_state_from_data(ecs_registry &reg, entity en
 
 struct default_texture_tag {};
 entity render_system::default_texture_entity(ecs_registry &reg) {
-    auto tagged_entities = reg.each<const default_texture_tag>();
+    auto tagged_entities = reg.each<default_texture_tag>();
     const auto is_initialized = tagged_entities.begin() != tagged_entities.end();
     if(!is_initialized) {
         auto result = reg.create();
         constexpr auto max_value = std::numeric_limits<std::uint8_t>::max();
-        reg.emplace<const texture_2d_data>(
+        reg.emplace<texture_2d_data>(
             result,
             std::vector<std::uint8_t>(4, max_value),
             texture_2d_data::format::rgba8u_norm,
             vec2u{1, 1},
             4);
-        reg.emplace<const default_texture_tag>(result);
+        reg.emplace<default_texture_tag>(result);
         return result;
     }
     return std::get<0>(*tagged_entities.begin());
@@ -314,7 +313,7 @@ entity render_system::default_texture_entity(ecs_registry &reg) {
 
 struct default_sampler_tag {};
 entity render_system::default_sampler_entity(ecs_registry &reg) const {
-    auto tagged_entities = reg.each<const default_sampler_tag>();
+    auto tagged_entities = reg.each<default_sampler_tag>();
     const auto is_initialized = tagged_entities.begin() != tagged_entities.end();
     if(!is_initialized) {
         auto result = reg.create();
@@ -329,7 +328,7 @@ entity render_system::default_sampler_entity(ecs_registry &reg) const {
             .lodMaxClamp = 1.F,
             .maxAnisotropy = 1,
         };
-        reg.emplace<const sampler>(result, m_global.device.CreateSampler(&desc));
+        reg.emplace<sampler>(result, m_global.device.CreateSampler(&desc));
         return result;
     }
     return std::get<0>(*tagged_entities.begin());

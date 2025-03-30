@@ -17,7 +17,7 @@ struct ecs_dependency {};
 template<typename deps, typename... args>
 void add_dependency(args &&...arguments, ecs_registry &reg, entity en) {
     assert(!reg.contains<deps>(en) && "Dependency already exists, consider soft dependency");
-    reg.emplace<const deps>(en, std::forward<args>(arguments)...);
+    reg.emplace<deps>(en, std::forward<args>(arguments)...);
 }
 
 template<typename deps>
@@ -31,8 +31,8 @@ template<typename deps, typename base, typename... args>
 void add_soft_dependency(args &&...arguments, ecs_registry &reg, entity en) {
     const auto is_deps = !reg.contains<deps>(en);
     if(!is_deps) { return; }
-    reg.emplace<const ecs_dependency<deps, base>>(en);
-    reg.emplace<const deps>(en, std::forward<args>(arguments)...);
+    reg.emplace<ecs_dependency<deps, base>>(en);
+    reg.emplace<deps>(en, std::forward<args>(arguments)...);
 }
 
 template<typename deps, typename base>

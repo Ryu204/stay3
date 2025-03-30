@@ -1,6 +1,7 @@
 #include <iterator>
 #include <type_traits>
 #include <catch2/catch_all.hpp>
+#include "catch2/catch_test_macros.hpp"
 
 import stay3.ecs;
 using Catch::Approx;
@@ -19,10 +20,23 @@ struct entity_destroyed_handler {
     bool signaled{false};
 };
 
-TEST_CASE("Concepts are satisfied") {
-    using each_t = std::decay_t<decltype(std::declval<st::ecs_registry>().each<dummy, empty_dummy>())>;
-    STATIC_REQUIRE(std::input_iterator<each_t::iterator>);
-    STATIC_REQUIRE(std::ranges::range<each_t>);
+TEST_CASE("Traits") {
+    SECTION("Concepts are satisfied") {
+        using each_t = std::decay_t<decltype(std::declval<st::ecs_registry>().each<dummy, empty_dummy>())>;
+        STATIC_REQUIRE(std::input_iterator<each_t::iterator>);
+        STATIC_REQUIRE(std::ranges::range<each_t>);
+    }
+    SECTION("Type traits work correctly") {
+        STATIC_REQUIRE(st::is_mut_v<st::mut<dummy>>);
+        STATIC_REQUIRE(st::is_mut_v<st::mut<empty_dummy>>);
+        STATIC_REQUIRE_FALSE(st::is_mut_v<dummy>);
+        STATIC_REQUIRE_FALSE(st::is_mut_v<empty_dummy>);
+
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<st::mut<dummy>>, dummy>);
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<st::mut<empty_dummy>>, empty_dummy>);
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<dummy>, dummy>);
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<empty_dummy>, empty_dummy>);
+    }
 }
 
 TEST_CASE("Entity and Component Management") {
@@ -67,17 +81,17 @@ TEST_CASE("Entity and Component Management") {
         }
 
         SECTION("Get component") {
-            registry.emplace<const dummy>(en, 42);
+            registry.emplace<dummy>(en, 42);
             registry.emplace<empty_dummy>(en);
             SECTION("Read proxy") {
-                auto comp = registry.get<const dummy>(en);
+                auto comp = registry.get<dummy>(en);
                 REQUIRE(comp->value == 42);
             }
             SECTION("Write proxy") {
-                auto comp = registry.get<dummy>(en);
+                auto comp = registry.get<st::mut<dummy>>(en);
                 REQUIRE(comp->value == 42);
                 comp->value = 50;
-                REQUIRE(registry.get<const dummy>(en)->value == 50);
+                REQUIRE(registry.get<dummy>(en)->value == 50);
             }
             SECTION("Empty proxy") {
                 REQUIRE_NOTHROW(registry.get<empty_dummy>(en));
@@ -100,14 +114,14 @@ TEST_CASE("Entity and Component Management") {
             registry.patch<dummy>(en, [](dummy &comp) {
                 comp.value = 84;
             });
-            auto comp = registry.get<const dummy>(en);
+            auto comp = registry.get<dummy>(en);
             REQUIRE(comp->value == 84);
         }
 
         SECTION("Replace component") {
             registry.emplace<dummy>(en, 30);
             registry.replace<dummy>(en, 150);
-            auto comp = registry.get<const dummy>(en);
+            auto comp = registry.get<dummy>(en);
             REQUIRE(comp->value == 150);
         }
 
@@ -143,7 +157,7 @@ TEST_CASE("Sort and iteration") {
         SECTION("Single component iteration") {
             int count = 0;
             int sum = 0;
-            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+            for(auto &&[entity, comp]: registry.each<dummy>()) {
                 count++;
                 sum += comp->value;
             }
@@ -154,7 +168,7 @@ TEST_CASE("Sort and iteration") {
         SECTION("Multiple component iteration") {
             int count = 0;
 
-            for(auto &&[entity, d, s]: registry.each<dummy, second_comp>()) {
+            for(auto &&[entity, d, s]: registry.each<st::mut<dummy>, st::mut<second_comp>>()) {
                 count++;
                 REQUIRE(((d->value == 10 && s->value == 1.0f) || (d->value == 30 && s->value == 3.0f)));
 
@@ -164,13 +178,13 @@ TEST_CASE("Sort and iteration") {
 
             REQUIRE(count == 2);
 
-            auto d1 = registry.get<const dummy>(en1);
-            auto s1 = registry.get<const second_comp>(en1);
+            auto d1 = registry.get<dummy>(en1);
+            auto s1 = registry.get<second_comp>(en1);
             REQUIRE(d1->value == 20);
             REQUIRE(s1->value == 10.0f);
 
-            auto d3 = registry.get<const dummy>(en3);
-            auto s3 = registry.get<const second_comp>(en3);
+            auto d3 = registry.get<dummy>(en3);
+            auto s3 = registry.get<second_comp>(en3);
             REQUIRE(d3->value == 60);
             REQUIRE(s3->value == 30.0f);
         }
@@ -183,7 +197,7 @@ TEST_CASE("Sort and iteration") {
             });
 
             std::vector<int> values;
-            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+            for(auto &&[entity, comp]: registry.each<dummy>()) {
                 values.push_back(comp->value);
             }
 
@@ -191,11 +205,11 @@ TEST_CASE("Sort and iteration") {
         }
         SECTION("Sort by entity") {
             registry.sort<dummy>([&registry](const st::entity &lhs, const st::entity &rhs) {
-                return registry.get<const dummy>(lhs)->value > registry.get<const dummy>(rhs)->value;
+                return registry.get<dummy>(lhs)->value > registry.get<dummy>(rhs)->value;
             });
 
             std::vector<int> values;
-            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+            for(auto &&[entity, comp]: registry.each<dummy>()) {
                 values.push_back(comp->value);
             }
 
@@ -217,7 +231,7 @@ TEST_CASE("Context Management") {
     SECTION("Add context") {
         REQUIRE_NOTHROW(registry.add_context<physics_context>(3.711F, true));
 
-        const auto &physics = registry.get_context<const physics_context>();
+        const auto &physics = registry.get_context<physics_context>();
         REQUIRE(physics.gravity == Approx(3.711f));
         REQUIRE(physics.enable_collision == true);
 
@@ -231,13 +245,13 @@ TEST_CASE("Context Management") {
         registry.add_context<physics_context>(3.711F, true);
         auto &phys = registry.get_context<physics_context>();
         phys.enable_collision = false;
-        REQUIRE_FALSE(registry.get_context<const physics_context>().enable_collision);
+        REQUIRE_FALSE(registry.get_context<physics_context>().enable_collision);
     }
 
     SECTION("Modify on creation") {
         auto &phys = registry.add_context<physics_context>(3.123F, false);
-        REQUIRE_FALSE(registry.get_context<const physics_context>().enable_collision);
+        REQUIRE_FALSE(registry.get_context<physics_context>().enable_collision);
         phys.enable_collision = true;
-        REQUIRE(registry.get_context<const physics_context>().enable_collision);
+        REQUIRE(registry.get_context<physics_context>().enable_collision);
     }
 }

@@ -22,19 +22,19 @@ struct input_system {
         auto en = scene.entities().create();
         auto cam = scene.entities().create();
 
-        reg.emplace<const mesh_data>(mesh_holders[0], mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
-        reg.emplace<const mesh_data>(mesh_holders[1], mesh_plane(vec2f{0.5F, 2.F}));
-        reg.emplace<const material_data>(material);
-        reg.emplace<const rendered_mesh>(
+        reg.emplace<mesh_data>(mesh_holders[0], mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
+        reg.emplace<mesh_data>(mesh_holders[1], mesh_plane(vec2f{0.5F, 2.F}));
+        reg.emplace<material_data>(material);
+        reg.emplace<rendered_mesh>(
             en,
             rendered_mesh{
                 .mesh_holder = mesh_holders[0],
                 .material_holder = material,
             });
 
-        reg.emplace<const camera>(cam);
-        reg.emplace<const main_camera>(cam);
-        auto tf = reg.get<transform>(cam);
+        reg.emplace<camera>(cam);
+        reg.emplace<main_camera>(cam);
+        auto tf = reg.get<mut<transform>>(cam);
         tf->set_position(vec_back * 2.F);
     }
 
@@ -50,7 +50,7 @@ struct input_system {
         } else {
             current_mesh = mesh_holders[0];
         }
-        for(auto [unused, data]: ctx.ecs().each<rendered_mesh>()) {
+        for(auto [unused, data]: ctx.ecs().each<mut<rendered_mesh>>()) {
             data->mesh_holder = current_mesh;
         }
     }

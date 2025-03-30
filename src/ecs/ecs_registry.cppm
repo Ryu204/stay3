@@ -16,34 +16,63 @@ import :component;
 
 export namespace st {
 
+/**
+ * @brief tag class for mutable reference to component
+ */
+template<typename comp>
+struct mut {};
+template<typename comp>
+struct is_mut {
+    static constexpr auto value = false;
+};
+template<component comp>
+struct is_mut<mut<comp>> {
+    static constexpr auto value = true;
+};
+template<typename type>
+constexpr auto is_mut_v = is_mut<type>::value;
+template<typename t>
+struct remove_mut {
+    using type = t;
+};
+template<component comp>
+struct remove_mut<mut<comp>> {
+    using type = comp;
+};
+template<typename t>
+using remove_mut_t = remove_mut<t>::type;
+
 class ecs_registry {
     template<component ecomp>
     class empty_proxy {
+        static_assert(!is_mut_v<ecomp>);
         static_assert(std::is_empty_v<ecomp>);
     };
 
-    template<component ccomp>
+    template<component comp>
     class read_access_proxy {
-        static_assert(std::is_const_v<std::remove_reference_t<ccomp>>);
+        static_assert(!is_mut_v<comp>);
+        static_assert(std::is_const_v<std::remove_reference_t<comp>>);
 
     public:
-        read_access_proxy(ccomp &data)
+        read_access_proxy(comp &data)
             : m_data{data} {}
 
-        ccomp *operator->() const {
+        comp *operator->() const {
             return std::addressof(m_data.get());
         }
-        ccomp &operator*() const {
+        comp &operator*() const {
             return m_data.get();
         }
 
     private:
-        std::reference_wrapper<ccomp>
-            m_data;
+        std::reference_wrapper<comp> m_data;
     };
 
+    template<typename comp>
+    class write_access_proxy {};
     template<component comp>
-    class write_access_proxy {
+    class write_access_proxy<mut<comp>> {
         static_assert(!std::is_const_v<std::remove_reference_t<comp>>);
 
     public:
@@ -89,22 +118,20 @@ class ecs_registry {
     };
 
     template<component comp>
-    using proxy = std::conditional_t<
-        std::is_empty_v<comp>,
-        empty_proxy<comp>,
-        std::conditional_t<
-            std::is_const_v<std::remove_reference_t<comp>>,
-            read_access_proxy<comp>,
-            write_access_proxy<comp>>>;
+    using proxy = std::conditional_t<is_mut_v<comp>,
+                                     write_access_proxy<comp>,
+                                     std::conditional_t<std::is_empty_v<comp>,
+                                                        empty_proxy<comp>,
+                                                        read_access_proxy<std::add_const_t<comp>>>>;
 
     template<component comp>
     proxy<comp> make_proxy(entity en) {
-        if constexpr(std::is_empty_v<comp>) {
-            return empty_proxy<comp>{};
-        } else if constexpr(std::is_const_v<std::remove_reference_t<comp>>) {
-            return m_registry.get<std::decay_t<comp>>(en);
+        if constexpr(is_mut_v<comp>) {
+            return write_access_proxy<comp>{*this, en};
+        } else if constexpr(std::is_empty_v<comp>) {
+            return {};
         } else {
-            return {*this, en};
+            return m_registry.get<std::decay_t<comp>>(en);
         }
     }
 
@@ -184,7 +211,7 @@ public:
      */
     template<component comp, typename... arguments>
     proxy<comp> emplace(entity en, arguments &&...args) {
-        m_registry.emplace<std::decay_t<comp>>(en, std::forward<arguments>(args)...);
+        m_registry.emplace<std::decay_t<remove_mut_t<comp>>>(en, std::forward<arguments>(args)...);
         return get<comp>(en);
     }
 
@@ -240,10 +267,10 @@ public:
     template<component... comps>
     auto each() {
         using result = entity_view<
-            std::decay_t<decltype(std::declval<entt::registry>().view<comps...>())>,
+            std::decay_t<decltype(std::declval<entt::registry>().view<remove_mut_t<comps>...>())>,
             comps...>;
         static_assert(std::ranges::range<result>);
-        return result{m_registry.view<comps...>(), *this};
+        return result{m_registry.view<remove_mut_t<comps>...>(), *this};
     }
 
     template<component comp, typename pred>
