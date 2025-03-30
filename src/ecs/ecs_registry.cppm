@@ -167,15 +167,15 @@ public:
         m_registry.on_destroy<entt::entity>().connect<&ecs_registry::entity_destroyed_handler>(*this);
     }
 
-    [[nodiscard]] entity create_entity() {
+    [[nodiscard]] entity create() {
         return m_registry.create();
     }
 
-    void destroy_entity(entity en) {
+    void destroy(entity en) {
         m_registry.destroy(en);
     }
 
-    [[nodiscard]] bool contains_entity(entity en) const {
+    [[nodiscard]] bool contains(entity en) const {
         return m_registry.valid(en);
     }
 
@@ -183,34 +183,35 @@ public:
      * @return A read or write proxy to created component based on constness of `comp`
      */
     template<component comp, typename... arguments>
-    proxy<comp> add_component(entity en, arguments &&...args) {
+    proxy<comp> emplace(entity en, arguments &&...args) {
         m_registry.emplace<std::decay_t<comp>>(en, std::forward<arguments>(args)...);
-        return get_components<comp>(en);
+        return get<comp>(en);
     }
 
     template<component comp>
-    void remove_component(entity en) {
+    void destroy(entity en) {
         m_registry.remove<comp>(en);
     }
 
     template<component comp>
-    void clear_component() {
+    void destroy_all() {
         m_registry.clear<comp>();
     }
 
     template<component comp, typename func>
         requires std::invocable<func, comp &>
-    void patch_component(entity en, func &&patcher) {
+    void patch(entity en, func &&patcher) {
         m_registry.patch<comp>(en, std::forward<func>(patcher));
     }
 
     template<component comp, typename... arguments>
-    void replace_component(entity en, arguments &&...args) {
+    void replace(entity en, arguments &&...args) {
         m_registry.replace<comp>(en, std::forward<arguments>(args)...);
     }
 
     template<component... comps>
-    bool has_components(entity en) {
+        requires(sizeof...(comps) > 0)
+    [[nodiscard]] bool contains(entity en) const {
         return m_registry.all_of<comps...>(en);
     }
 
@@ -220,7 +221,7 @@ public:
      */
     template<component... comps>
         requires(sizeof...(comps) > 0)
-    auto get_components(entity en) {
+    auto get(entity en) {
         if constexpr(sizeof...(comps) == 1) {
             return make_proxy<comps...>(en);
         } else {

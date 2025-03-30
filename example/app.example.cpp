@@ -19,32 +19,32 @@ struct setup_system {
         auto entity2 = scene.entities().create();
         auto cam = scene.entities().create();
 
-        reg.add_component<const mesh_data>(mesh2, mesh_cube(vec3f{1.5F, 0.2F, 1.F}));
-        reg.add_component<const mesh_data>(mesh1, mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
-        auto texture1 = reg.add_component<const texture_2d_data>(mesh1, "assets/textures/example.jpg");
-        auto material1 = reg.add_component<const material_data>(mesh1, material_data{.texture_holder = mesh1});
-        auto material2 = reg.add_component<const material_data>(mesh2);
+        reg.emplace<const mesh_data>(mesh2, mesh_cube(vec3f{1.5F, 0.2F, 1.F}));
+        reg.emplace<const mesh_data>(mesh1, mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
+        auto texture1 = reg.emplace<const texture_2d_data>(mesh1, "assets/textures/example.jpg");
+        auto material1 = reg.emplace<const material_data>(mesh1, material_data{.texture_holder = mesh1});
+        auto material2 = reg.emplace<const material_data>(mesh2);
 
-        reg.add_component<const rendered_mesh>(
+        reg.emplace<const rendered_mesh>(
             entity1,
             rendered_mesh{
                 .mesh_holder = mesh1,
                 .material_holder = mesh1,
             });
         {
-            auto tf = reg.get_components<transform>(entity1);
+            auto tf = reg.get<transform>(entity1);
             tf->scale(5.F);
         }
-        reg.add_component<const rendered_mesh>(
+        reg.emplace<const rendered_mesh>(
             entity2,
             rendered_mesh{
                 .mesh_holder = mesh2,
                 .material_holder = mesh2,
             });
 
-        reg.add_component<const camera>(cam);
-        reg.add_component<const main_camera>(cam);
-        auto tf = reg.get_components<transform>(cam);
+        reg.emplace<const camera>(cam);
+        reg.emplace<const main_camera>(cam);
+        auto tf = reg.get<transform>(cam);
         tf->set_position(vec_back * 3.F + 1.5F * vec_up);
     }
 

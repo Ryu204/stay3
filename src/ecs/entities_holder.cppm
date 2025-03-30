@@ -57,7 +57,7 @@ public:
      * @brief Creates new entity
      */
     entity create() {
-        const auto result = m_registry.get().create_entity();
+        const auto result = m_registry.get().create();
         m_entities.emplace_back(result);
         m_entity_created.publish(result);
         return result;
@@ -74,7 +74,7 @@ public:
             && "Entity at index 0 must be destroyed last");
         const auto destroyed_entity = m_entities[index];
         m_on_entity_destroy.publish(destroyed_entity);
-        m_registry.get().destroy_entity(destroyed_entity);
+        m_registry.get().destroy(destroyed_entity);
         m_entities.erase(m_entities.begin() + index);
     }
 

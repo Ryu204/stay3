@@ -13,21 +13,21 @@ TEST_CASE("Entity manipulation") {
 
     SECTION("Push and erase") {
         const auto en = es.create();
-        REQUIRE(reg.contains_entity(en));
+        REQUIRE(reg.contains(en));
 
         const auto en2 = es.create();
         es.destroy(1);
-        REQUIRE_FALSE(reg.contains_entity(en2));
-        REQUIRE(reg.contains_entity(en));
+        REQUIRE_FALSE(reg.contains(en2));
+        REQUIRE(reg.contains(en));
 
         es.destroy(0);
-        REQUIRE_FALSE(reg.contains_entity(en));
+        REQUIRE_FALSE(reg.contains(en));
 
         auto en3 = es.create();
         auto en4 = es.create();
         es.destroy(en4);
-        REQUIRE_FALSE(reg.contains_entity(en4));
-        REQUIRE(reg.contains_entity(en3));
+        REQUIRE_FALSE(reg.contains(en4));
+        REQUIRE(reg.contains(en3));
     }
 
     SECTION("Size and empty check") {
@@ -57,11 +57,11 @@ TEST_CASE("Entity manipulation") {
             entities.insert(es.create());
         }
         es.each([](ecs_registry &reg, entity en) {
-            reg.add_component<int>(en, 10);
+            reg.emplace<int>(en, 10);
         });
 
         for(const auto &en: es) {
-            REQUIRE(reg.has_components<int>(en));
+            REQUIRE(reg.contains<int>(en));
         }
     }
 
@@ -122,7 +122,7 @@ TEST_CASE("Signal emission") {
                 es2.on_destroy().connect<&listener::on_other_entity_update>(lis);
             }
             for(auto en: entities) {
-                REQUIRE_FALSE(reg.contains_entity(en));
+                REQUIRE_FALSE(reg.contains(en));
             }
             REQUIRE_THAT(entities, Contains(lis.en));
         }

@@ -64,7 +64,7 @@ struct my_system {
 ```
 If you want to modify the component, use non const template. This however may be a litle bit slower [^1].
 
-The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get_components`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
+The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
 
 [^1]: In above example, `comp`'s destructor will invoke the update signal if somebody subcribed to it before.
 
@@ -85,9 +85,9 @@ struct my_system {
 This is the (non exhaustive) list of available events.
 |Event|Trigger time|Causes|
 |-----|------------|------|
-|construct|**After** the component is created|`add_component`|
-|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get_components` or `add_component` with a non const type parameter and the proxy goes out of scope|
-|destroy|**Before** the component is removed|`remove_component`|
+|construct|**After** the component is created|`emplace`|
+|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get` or `emplace` with a non const type parameter and the proxy goes out of scope|
+|destroy|**Before** the component is removed|`destroy`|
 
 8. To signal exit from inside a system method, use `sys_run_result` as a return type:
 
@@ -128,7 +128,7 @@ tl;dr:
 * Never attach components to entity that is signaled to be destroyed
 * Never add or destroy component in signal handler of that component.
 
-11. Please don't destroy entity via `ecs_registry::destroy_entity`, use `entities_holder::destroy` instead. The former does not allow disconnecting entity from its node.
+11. Please don't destroy entity via `ecs_registry::destroy`, use `entities_holder::destroy` instead. The former does not allow disconnecting entity from its node.
 
 12. There is currently a primitive way to specify a dependency relationship between components. Definition:
 

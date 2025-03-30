@@ -16,31 +16,31 @@ struct ecs_dependency {};
 
 template<typename deps, typename... args>
 void add_dependency(args &&...arguments, ecs_registry &reg, entity en) {
-    assert(!reg.has_components<deps>(en) && "Dependency already exists, consider soft dependency");
-    reg.add_component<const deps>(en, std::forward<args>(arguments)...);
+    assert(!reg.contains<deps>(en) && "Dependency already exists, consider soft dependency");
+    reg.emplace<const deps>(en, std::forward<args>(arguments)...);
 }
 
 template<typename deps>
 void remove_dependency(ecs_registry &reg, entity en) {
-    if(reg.has_components<deps>(en)) {
-        reg.remove_component<deps>(en);
+    if(reg.contains<deps>(en)) {
+        reg.destroy<deps>(en);
     }
 }
 
 template<typename deps, typename base, typename... args>
 void add_soft_dependency(args &&...arguments, ecs_registry &reg, entity en) {
-    const auto is_deps = !reg.has_components<deps>(en);
+    const auto is_deps = !reg.contains<deps>(en);
     if(!is_deps) { return; }
-    reg.add_component<const ecs_dependency<deps, base>>(en);
-    reg.add_component<const deps>(en, std::forward<args>(arguments)...);
+    reg.emplace<const ecs_dependency<deps, base>>(en);
+    reg.emplace<const deps>(en, std::forward<args>(arguments)...);
 }
 
 template<typename deps, typename base>
 void remove_soft_dependency(ecs_registry &reg, entity en) {
-    const auto is_deps = reg.has_components<ecs_dependency<deps, base>>(en);
+    const auto is_deps = reg.contains<ecs_dependency<deps, base>>(en);
     if(!is_deps) { return; }
-    if(reg.has_components<deps>(en)) {
-        reg.remove_component<deps>(en);
+    if(reg.contains<deps>(en)) {
+        reg.destroy<deps>(en);
     }
 }
 
