@@ -18,6 +18,7 @@ enum class sprite : std::uint8_t {
     dino_run_duck_1,
     dino_run_duck_2,
     dino_jump,
+    ground,
 };
 const std::unordered_map<sprite, rectf> rects = {
     {sprite::dino_wait, {.position = {76.F, 2.F}, .size = {88.F, 94.F}}},
@@ -26,6 +27,7 @@ const std::unordered_map<sprite, rectf> rects = {
     {sprite::dino_run_duck_1, {.position = {2324.F, 2.F}, .size = {118.F, 94.F}}},
     {sprite::dino_run_duck_2, {.position = {2206.F, 2.F}, .size = {118.F, 94.F}}},
     {sprite::dino_jump, {.position = {1678.F, 2.F}, .size = {88.F, 94.F}}},
+    {sprite::ground, {.position = {2.F, 104.F}, .size = {2400.F, 24.F}}},
 };
 constexpr auto pixels_per_unit = 100.F;
 constexpr vec3f gravity{0.F, -30.F, 0.F};
@@ -50,8 +52,7 @@ void create_mesh_data(data::sprite id, const texture_2d_data &texture, entity en
 
 std::unordered_map<data::sprite, entity> create_meshes(ecs_registry &reg, node &resource_node, const texture_2d_data &texture) {
     std::unordered_map<data::sprite, entity> result;
-    std::array sprites = {data::sprite::dino_wait};
-    for(auto spr: sprites) {
+    for(auto spr: {data::sprite::dino_wait, data::sprite::ground}) {
         const auto en = resource_node.entities().create();
         create_mesh_data(spr, texture, en, reg);
         result.emplace(spr, en);
@@ -78,6 +79,7 @@ bool is_duck_button_pressed(glfw_window &window) {
 
 struct velocity {
     vec3f value;
+    vec3f accel{data::gravity};
 };
 struct jumpable {
     float height{};
@@ -86,6 +88,9 @@ struct can_jump {};
 struct jumped {};
 struct bounding_box {
     vec2f size;
+};
+struct bounding_box_debug {
+    entity renderer;
 };
 
 struct animation {
@@ -96,7 +101,14 @@ struct animation_status {
     decltype(animation::frames)::size_type index{};
     float current_time{};
 };
-
+enum class ground_status : std::uint8_t {
+    started,
+    scrolling,
+};
+using mesh_holders = std::unordered_map<data::sprite, entity>;
+struct texture_holder {
+    entity holder;
+};
 enum class dino_state : std::uint8_t {
     idle,
     run,
@@ -107,10 +119,8 @@ enum class dino_state : std::uint8_t {
 class movement_system {
 public:
     static void update(seconds delta, tree_context &ctx) {
-        for(auto [en, vel]: ctx.ecs().each<velocity>()) {
-            vel->value += data::gravity * delta;
-        }
-        for(auto [en, tf, vel]: ctx.ecs().each<transform, const velocity>()) {
+        for(auto [en, tf, vel]: ctx.ecs().each<transform, velocity>()) {
+            vel->value += vel->accel * delta;
             tf->translate(vel->value * delta);
         }
     }
@@ -172,6 +182,42 @@ public:
                     }
                 }
             }
+        }
+    }
+};
+
+class bound_debug_system {
+    static void add_shape_entity(tree_context &ctx, ecs_registry &reg, entity en) {
+        const auto box = reg.get_components<const bounding_box>(en);
+        auto db = reg.add_component<bounding_box_debug>(en);
+        db->renderer = ctx.get_node(en).entities().create();
+        reg.add_component<const mesh_data>(db->renderer, mesh_plane(box->size, vec4f{0.F, 1.F, 0.F, 1.F}));
+        reg.add_component<const material_data>(db->renderer);
+        reg.add_component<const rendered_mesh>(db->renderer, rendered_mesh{.mesh_holder = db->renderer, .material_holder = db->renderer});
+    }
+    static void remove_shape_entity(tree_context &ctx, ecs_registry &reg, entity en) {
+        const auto db_entity = reg.get_components<const bounding_box_debug>(en)->renderer;
+        if(reg.contains_entity(db_entity)) {
+            ctx.get_node(en).entities().destroy(db_entity);
+        }
+    }
+
+public:
+    static void start(tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        reg.on<comp_event::construct, bounding_box>().connect<&bound_debug_system::add_shape_entity>(ctx);
+        reg.on<comp_event::construct, bounding_box>().connect<+[](ecs_registry &reg, entity en) {
+            if(reg.has_components<bounding_box_debug>(en)) {
+                reg.remove_component<bounding_box_debug>(en);
+            }
+        }>();
+        reg.on<comp_event::destroy, bounding_box_debug>().connect<&bound_debug_system::remove_shape_entity>(ctx);
+    }
+    static void update(seconds, tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        for(auto [en, db, tf]: reg.each<const bounding_box_debug, const transform>()) {
+            auto renderer_tf = reg.get_components<transform>(db->renderer);
+            *renderer_tf = *tf;
         }
     }
 };
@@ -257,6 +303,66 @@ private:
     }
 };
 
+class ground_system {
+    struct ground_hider {};
+
+    static void on_change(tree_context &ctx, ecs_registry &reg, entity en) {
+        auto status = *reg.get_components<const ground_status>(en);
+        if(status == ground_status::started) {
+            const auto &meshes = reg.get_context<mesh_holders>();
+            const auto texture = reg.get_context<texture_holder>().holder;
+            reg.add_component<const material_data>(en, material_data{.texture_holder = texture});
+            reg.add_component<const rendered_mesh>(
+                en,
+                rendered_mesh{
+                    .mesh_holder = meshes.at(data::sprite::ground),
+                    .material_holder = en,
+                });
+            auto ground_tf = reg.get_components<transform>(en);
+            ground_tf
+                ->translate(vec_up * (data::rects.at(data::sprite::ground).size.y / data::pixels_per_unit / 2.F))
+                .translate(vec_forward * 0.0001F)
+                .translate(vec_right * (data::rects.at(data::sprite::ground).size.x / data::pixels_per_unit / 2.F))
+                .translate(vec_left * 4.F)
+                .translate(vec_left * (data::rects.at(data::sprite::dino_wait).size.x / data::pixels_per_unit / 2.F));
+
+            auto hider = ctx.root().add_child().entities().create();
+            reg.add_component<ground_hider>(hider);
+            reg.add_component<const mesh_data>(hider, mesh_plane(vec2f{15.F}, vec4f{1.F}));
+            reg.add_component<const material_data>(hider);
+            reg.add_component<const rendered_mesh>(hider, rendered_mesh{.mesh_holder = hider, .material_holder = hider});
+            auto hider_tf = reg.get_components<transform>(hider);
+            hider_tf->set_position(vec3f{4.F, 0.F, -0.1F});
+            reg.add_component<const velocity>(hider, velocity{.value = 10.F * vec_right, .accel = {}});
+        }
+    }
+
+public:
+    static void start(tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        reg.on<comp_event::update, ground_status>().connect<&ground_system::on_change>(ctx);
+    }
+    static void update(seconds, tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        for(auto [en, gr]: reg.each<const ground_status>()) {
+            switch(*gr) {
+            case ground_status::started: {
+                break;
+            }
+            case ground_status::scrolling: {
+            }
+            default:
+                break;
+            }
+        }
+        for(auto [en, hider, tf]: reg.each<const ground_hider, const transform>()) {
+            if(tf->position().x >= 11.5F) {
+                reg.remove_component<velocity>(en);
+            }
+        }
+    }
+};
+
 class game_system {
 public:
     void start(tree_context &ctx) {
@@ -265,11 +371,12 @@ public:
         auto &res = ctx.root().add_child();
         auto &scene = ctx.root().add_child();
 
-        const auto material_holder = res.entities().create();
-        const auto &texture = *reg.add_component<const texture_2d_data>(material_holder, "assets/base64.png");
-        reg.add_component<const material_data>(material_holder, material_data{.texture_holder = material_holder});
-
-        m_mesh_holders = create_meshes(reg, res, texture);
+        auto texture_en = res.entities().create();
+        const auto &texture = *reg.add_component<const texture_2d_data>(texture_en, "assets/base64.png");
+        reg.add_context<texture_holder>(texture_holder{.holder = texture_en});
+        auto material = res.entities().create();
+        reg.add_component<const material_data>(material, material_data{.texture_holder = texture_en});
+        const auto &meshes = reg.add_context<mesh_holders>(create_meshes(reg, res, texture));
 
         auto cam = scene.entities().create();
         reg.add_component<const camera>(cam, camera{.clear_color = vec4f{1.F}});
@@ -281,12 +388,14 @@ public:
         reg.add_component<const rendered_mesh>(
             m_dino,
             rendered_mesh{
-                .mesh_holder = m_mesh_holders[data::sprite::dino_wait],
-                .material_holder = material_holder,
+                .mesh_holder = meshes.at(data::sprite::dino_wait),
+                .material_holder = material,
             });
         reg.add_component<const dino_state>(m_dino, dino_state::idle);
         auto dino_tf = reg.get_components<transform>(m_dino);
         dino_tf->translate(4.F * vec_left + vec_up * data::dino_bounding_box.y / 2.F);
+
+        m_ground = scene.entities().create();
     }
 
     void input(const event &ev, tree_context &ctx) {
@@ -313,13 +422,15 @@ private:
         m_current_state = state::transition;
         reg.add_component<const velocity>(m_dino);
         reg.add_component<const jumpable>(m_dino, jumpable{.height = data::dino_jump_height});
-        reg.add_component<const bounding_box>(m_dino, vec2f{1.F, 1.F});
+        reg.add_component<const bounding_box>(m_dino, data::dino_bounding_box);
         reg.add_component<const animation>(m_dino, animation{.frames = data::dino_run_frames, .fps = data::dino_fps});
+
+        reg.add_component<ground_status>(m_ground, ground_status::started);
     }
 
     state m_current_state{state::idle};
-    std::unordered_map<data::sprite, entity> m_mesh_holders;
     entity m_dino;
+    entity m_ground;
 };
 
 int main() {
@@ -357,6 +468,11 @@ int main() {
             .run_as<sys_type::post_update>();
         my_app
             .systems()
+            .add<bound_debug_system>()
+            .run_as<sys_type::start>()
+            .run_as<sys_type::update>();
+        my_app
+            .systems()
             .add<animation_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::post_update>();
@@ -365,6 +481,11 @@ int main() {
             .add<dino_system>()
             .run_as<sys_type::update>()
             .run_as<sys_type::start>();
+        my_app
+            .systems()
+            .add<ground_system>()
+            .run_as<sys_type::start>()
+            .run_as<sys_type::update>();
         my_app.run();
     } catch(std::exception &e) {
         std::cerr << "Exception happened: " << e.what() << '\n';
