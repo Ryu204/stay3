@@ -202,6 +202,12 @@ public:
         m_registry.destroy(en);
     }
 
+    void destroy_if_exist(entity en) {
+        if(m_registry.valid(en)) {
+            m_registry.destroy(en);
+        }
+    }
+
     [[nodiscard]] bool contains(entity en) const {
         return m_registry.valid(en);
     }
@@ -215,9 +221,29 @@ public:
         return get<comp>(en);
     }
 
-    template<component comp>
+    template<component comp, typename... arguments>
+    proxy<comp> emplace_or_replace(entity en, arguments &&...args) {
+        m_registry.emplace_or_replace<std::decay_t<remove_mut_t<comp>>>(en, std::forward<arguments>(args)...);
+        return get<comp>(en);
+    }
+
+    template<component comp, typename... arguments>
+    proxy<comp> emplace_if_not_exist(entity en, arguments &&...args) {
+        using raw_comp = std::decay_t<remove_mut_t<comp>>;
+        if(!m_registry.all_of<raw_comp>(en)) {
+            m_registry.emplace<raw_comp>(en, std::forward<arguments>(args)...);
+        }
+        return get<comp>(en);
+    }
+
+    template<component... comps>
     void destroy(entity en) {
-        m_registry.remove<comp>(en);
+        m_registry.erase<comps...>(en);
+    }
+
+    template<component... comps>
+    void destroy_if_exist(entity en) {
+        m_registry.remove<comps...>(en);
     }
 
     template<component comp>

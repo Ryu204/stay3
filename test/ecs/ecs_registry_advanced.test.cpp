@@ -159,8 +159,7 @@ TEST_CASE("Advanced Entity and Component Scenarios") {
         SECTION("Destroy Event") {
             registry.emplace<dummy>(en);
 
-            registry.on<st::comp_event::destroy, dummy>()
-                .connect<&test_event_tracker::on_destroy>(tracker);
+            registry.on<st::comp_event::destroy, dummy>().connect<&test_event_tracker::on_destroy>(tracker);
 
             registry.destroy<dummy>(en);
             REQUIRE(tracker.destroy_count == 1);

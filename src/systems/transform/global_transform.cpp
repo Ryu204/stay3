@@ -14,19 +14,13 @@ struct dirty_flag {};
 
 namespace st {
 
-void mark_entity_dirty(ecs_registry &reg, entity en) {
-    if(!reg.contains<dirty_flag>(en)) {
-        reg.emplace<dirty_flag>(en);
-    }
-}
-
 void mark_subtree_dirty(tree_context &ctx, entity en) {
     auto &reg = ctx.ecs();
     assert(reg.contains<transform>(en));
     const auto &node = ctx.get_node(en);
 
     if(node.entities()[0] != en) {
-        mark_entity_dirty(reg, en);
+        reg.emplace_if_not_exist<dirty_flag>(en);
         return;
     }
     if(reg.contains<dirty_flag>(en)) {
@@ -42,7 +36,7 @@ void mark_subtree_dirty(tree_context &ctx, entity en) {
         const auto will_mark_children = children_needs_mark(reg, node);
         for(auto en: node.entities()) {
             if(reg.contains<transform>(en)) {
-                mark_entity_dirty(reg, en);
+                reg.emplace_if_not_exist<dirty_flag>(en);
             }
         }
         if(will_mark_children) {
@@ -88,10 +82,8 @@ void transform_destroyed_handler(tree_context &ctx, ecs_registry &, entity en) {
     if(en == ctx.get_node(en).entities()[0]) {
         mark_subtree_dirty_except_root(ctx, en);
     }
-    reg.destroy<global_transform>(en);
-    if(reg.contains<dirty_flag>(en)) {
-        reg.destroy<dirty_flag>(en);
-    }
+    reg.destroy_if_exist<global_transform>(en);
+    reg.destroy_if_exist<dirty_flag>(en);
 }
 
 void transform_updated_handler(tree_context &ctx, ecs_registry &, entity en) {

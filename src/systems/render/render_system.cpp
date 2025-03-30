@@ -103,10 +103,10 @@ void render_system::update_all_object_uniforms(ecs_registry &reg, const mat4f &c
 void render_system::setup_signals(ecs_registry &reg) {
     reg.on<comp_event::construct, mesh_data>().connect<&render_system::initialize_mesh_state>(*this);
     reg.on<comp_event::update, mesh_data>().connect<&render_system::create_mesh_state_from_data>(*this);
-    reg.on<comp_event::destroy, mesh_data>().connect<&ecs_registry::destroy<mesh_state>>();
+    reg.on<comp_event::destroy, mesh_data>().connect<&ecs_registry::destroy_if_exist<mesh_state>>();
 
     reg.on<comp_event::construct, rendered_mesh>().connect<&render_system::initialize_rendered_mesh_state>(*this);
-    reg.on<comp_event::destroy, rendered_mesh>().connect<&ecs_registry::destroy<rendered_mesh_state>>();
+    reg.on<comp_event::destroy, rendered_mesh>().connect<&ecs_registry::destroy_if_exist<rendered_mesh_state>>();
     make_soft_dependency<transform, rendered_mesh>(reg);
 
     make_soft_dependency<transform, camera>(reg);
@@ -114,11 +114,11 @@ void render_system::setup_signals(ecs_registry &reg) {
 
     reg.on<comp_event::construct, texture_2d_data>().connect<&render_system::initialize_texture_2d_state>(*this);
     reg.on<comp_event::update, texture_2d_data>().connect<&render_system::create_texture_2d_state_from_data>(*this);
-    reg.on<comp_event::destroy, texture_2d_data>().connect<&ecs_registry::destroy<texture_2d_state>>();
+    reg.on<comp_event::destroy, texture_2d_data>().connect<&ecs_registry::destroy_if_exist<texture_2d_state>>();
 
     reg.on<comp_event::construct, material_data>().connect<&render_system::initialize_material_state>(*this);
     reg.on<comp_event::update, material_data>().connect<&render_system::create_material_state_from_data>(*this);
-    reg.on<comp_event::destroy, material_data>().connect<&ecs_registry::destroy<material_state>>();
+    reg.on<comp_event::destroy, material_data>().connect<&ecs_registry::destroy_if_exist<material_state>>();
 }
 
 void render_system::fix_camera_aspect(ecs_registry &reg, entity en) {

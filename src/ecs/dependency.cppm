@@ -20,13 +20,6 @@ void add_dependency(args &&...arguments, ecs_registry &reg, entity en) {
     reg.emplace<deps>(en, std::forward<args>(arguments)...);
 }
 
-template<typename deps>
-void remove_dependency(ecs_registry &reg, entity en) {
-    if(reg.contains<deps>(en)) {
-        reg.destroy<deps>(en);
-    }
-}
-
 template<typename deps, typename base, typename... args>
 void add_soft_dependency(args &&...arguments, ecs_registry &reg, entity en) {
     const auto is_deps = !reg.contains<deps>(en);
@@ -39,9 +32,8 @@ template<typename deps, typename base>
 void remove_soft_dependency(ecs_registry &reg, entity en) {
     const auto is_deps = reg.contains<ecs_dependency<deps, base>>(en);
     if(!is_deps) { return; }
-    if(reg.contains<deps>(en)) {
-        reg.destroy<deps>(en);
-    }
+    reg.destroy_if_exist<deps>(en);
+    reg.destroy<ecs_dependency<deps, base>>(en);
 }
 
 /**
@@ -52,7 +44,7 @@ export template<component deps, component base, typename... args>
 void make_hard_dependency(ecs_registry &reg, args &&...arguments) {
     reg.template on<comp_event::construct, base>().template connect<&add_dependency<deps, args...>>(std::forward<args>(arguments)...);
 
-    reg.template on<comp_event::destroy, base>().template connect<&remove_dependency<deps>>();
+    reg.template on<comp_event::destroy, base>().template connect<&ecs_registry::destroy_if_exist<deps>>();
 }
 
 /**

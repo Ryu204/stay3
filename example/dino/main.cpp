@@ -176,10 +176,8 @@ public:
                     vel->value.y = std::max(0.F, vel->value.y);
                 }
                 if(reg.contains<jumpable>(en)) {
-                    if(reg.contains<jumped>(en)) { reg.destroy<jumped>(en); }
-                    if(!reg.contains<can_jump>(en)) {
-                        reg.emplace<can_jump>(en);
-                    }
+                    reg.destroy_if_exist<jumped>(en);
+                    reg.emplace_if_not_exist<can_jump>(en);
                 }
             }
         }
@@ -206,11 +204,6 @@ public:
     static void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
         reg.on<comp_event::construct, bounding_box>().connect<&bound_debug_system::add_shape_entity>(ctx);
-        reg.on<comp_event::construct, bounding_box>().connect<+[](ecs_registry &reg, entity en) {
-            if(reg.contains<bounding_box_debug>(en)) {
-                reg.destroy<bounding_box_debug>(en);
-            }
-        }>();
         reg.on<comp_event::destroy, bounding_box_debug>().connect<&bound_debug_system::remove_shape_entity>(ctx);
     }
     static void update(seconds, tree_context &ctx) {
@@ -357,7 +350,7 @@ public:
         }
         for(auto [en, hider, tf]: reg.each<ground_hider, transform>()) {
             if(tf->position().x >= 11.5F) {
-                reg.destroy<velocity>(en);
+                reg.destroy_if_exist<velocity>(en);
             }
         }
     }

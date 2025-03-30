@@ -56,12 +56,26 @@ TEST_CASE("Entity and Component Management") {
         registry.destroy(en);
         REQUIRE_FALSE(registry.contains(en));
 
+        SECTION("destroy if exist") {
+            REQUIRE_NOTHROW(registry.destroy_if_exist(en));
+            auto en2 = registry.create();
+            registry.destroy_if_exist(en2);
+            REQUIRE_FALSE(registry.contains(en2));
+        }
+
         SECTION("On entity destroyed signal") {
             entity_destroyed_handler handler;
             registry.on_entity_destroyed().connect<&entity_destroyed_handler::on_event>(handler);
             REQUIRE_FALSE(handler.signaled);
-            registry.destroy(registry.create());
-            REQUIRE(handler.signaled);
+
+            SECTION("Destroy") {
+                registry.destroy(registry.create());
+                REQUIRE(handler.signaled);
+            }
+            SECTION("Destroy if exist") {
+                registry.destroy_if_exist(registry.create());
+                REQUIRE(handler.signaled);
+            }
         }
     }
 
@@ -72,11 +86,26 @@ TEST_CASE("Entity and Component Management") {
             REQUIRE_FALSE(registry.contains<dummy>(en));
             registry.emplace<dummy>(en, 42);
             REQUIRE(registry.contains<dummy>(en));
+
             SECTION("Empty component") {
                 REQUIRE_FALSE(registry.contains<empty_dummy>(en));
                 registry.emplace<empty_dummy>(en);
                 REQUIRE(registry.contains<empty_dummy>(en));
                 REQUIRE(registry.contains<dummy, empty_dummy>(en));
+            }
+
+            SECTION("Conditional emplaces") {
+                registry.emplace_or_replace<dummy>(en, 100);
+                REQUIRE(registry.get<dummy>(en)->value == 100);
+                auto dum = registry.emplace_if_not_exist<dummy>(en, 200);
+                REQUIRE(dum->value == 100);
+
+                SECTION("Emplace with no prior component") {
+                    auto en2 = registry.create();
+                    REQUIRE(registry.emplace_or_replace<dummy>(en2, 42)->value == 42);
+                    auto en3 = registry.create();
+                    REQUIRE(registry.emplace_if_not_exist<dummy>(en3, 45)->value == 45);
+                }
             }
         }
 
@@ -98,15 +127,31 @@ TEST_CASE("Entity and Component Management") {
                 STATIC_REQUIRE(std::is_empty_v<std::decay_t<decltype(registry.get<empty_dummy>(en))>>);
             }
             SECTION("Multiple components") {
-                auto [comp, ecomp] = registry.get<dummy, empty_dummy>(en);
+                auto [comp, ecomp] = registry.get<st::mut<dummy>, empty_dummy>(en);
                 REQUIRE(comp->value == 42);
             }
         }
 
         SECTION("Remove component") {
-            registry.emplace<dummy>(en, 10);
-            registry.destroy<dummy>(en);
-            REQUIRE_FALSE(registry.contains<dummy>(en));
+            SECTION("Single") {
+                registry.emplace<dummy>(en, 10);
+                registry.destroy<dummy>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+            }
+            SECTION("Multiple") {
+                registry.emplace<dummy>(en, 10);
+                registry.emplace<float>(en, 10.F);
+                registry.destroy<dummy, float>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+                REQUIRE_FALSE(registry.contains<float>(en));
+            }
+            SECTION("Conditional remove") {
+                registry.emplace<dummy>(en);
+                registry.destroy_if_exist<dummy>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+                registry.destroy_if_exist<dummy>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+            }
         }
 
         SECTION("Patch component") {

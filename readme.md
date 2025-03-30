@@ -85,9 +85,9 @@ struct my_system {
 This is the (non exhaustive) list of available events.
 |Event|Trigger time|Causes|
 |-----|------------|------|
-|construct|**After** the component is created|`emplace`|
-|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get` or `emplace` with a non const type parameter and the proxy goes out of scope|
-|destroy|**Before** the component is removed|`destroy` (either the component or the whole entity)|
+|construct|**After** the component is created|`emplace`, `emplace_if_not_exist`, `emplace_or_replace`|
+|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get` or `emplace` variants with a non const type parameter and the proxy goes out of scope|
+|destroy|**Before** the component is removed|`destroy`, `destroy_if_exist` (either the component or the whole entity)|
 
 8. To signal exit from inside a system method, use `sys_run_result` as a return type:
 
