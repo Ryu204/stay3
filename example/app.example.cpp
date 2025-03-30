@@ -6,7 +6,7 @@ import stay3;
 
 using namespace st;
 
-struct game_system {
+struct setup_system {
     void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
 
@@ -57,7 +57,7 @@ struct game_system {
         }
     }
 
-    entity mesh_holder;
+    entity mesh1;
     entity mesh2;
     seconds total_elapsed{};
 };

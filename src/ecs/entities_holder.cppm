@@ -78,6 +78,18 @@ public:
         m_entities.erase(m_entities.begin() + index);
     }
 
+    /**
+     * @brief Erases entity by value
+     * @note Entity at index 0 must be destroyed last
+     */
+    void destroy(entity en) {
+        auto it = std::ranges::find(m_entities, en);
+        assert(it != m_entities.end() && "Entity not found");
+
+        std::ptrdiff_t index = std::distance(m_entities.begin(), it);
+        destroy(index);
+    }
+
     [[nodiscard]] std::size_t size() const {
         return m_entities.size();
     }
