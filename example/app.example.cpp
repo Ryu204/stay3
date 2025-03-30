@@ -74,7 +74,6 @@ int main() {
             .updates_per_second = updates_per_sec,
             .render = {.power_pref = render_config::power_preference::low},
         }};
-        my_app.enable_default_systems();
         my_app
             .systems()
             .add<setup_system>()

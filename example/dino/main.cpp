@@ -448,7 +448,6 @@ int main() {
                 .filter = filter_mode::nearest,
             },
         }};
-        my_app.enable_default_systems();
         my_app
             .systems()
             .add<game_system>()

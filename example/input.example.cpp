@@ -61,7 +61,6 @@ struct input_system {
 int main() {
     try {
         app my_app;
-        my_app.enable_default_systems();
         my_app
             .systems()
             .add<input_system>()

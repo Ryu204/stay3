@@ -15,7 +15,11 @@ import :config;
 namespace st {
 
 app::app(const app_config &config)
-    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render}, m_assets_dir{config.assets_dir} {}
+    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render}, m_assets_dir{config.assets_dir} {
+    if(config.use_default_systems) {
+        enable_default_systems();
+    }
+}
 
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
