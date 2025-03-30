@@ -233,4 +233,11 @@ TEST_CASE("Context Management") {
         phys.enable_collision = false;
         REQUIRE_FALSE(registry.get_context<const physics_context>().enable_collision);
     }
+
+    SECTION("Modify on creation") {
+        auto &phys = registry.add_context<physics_context>(3.123F, false);
+        REQUIRE_FALSE(registry.get_context<const physics_context>().enable_collision);
+        phys.enable_collision = true;
+        REQUIRE(registry.get_context<const physics_context>().enable_collision);
+    }
 }
