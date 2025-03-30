@@ -27,6 +27,7 @@ However, currently `EnTT` failed to build if used inside a module with MSVC.
 |`sys_type::post_update`|`post_update`|`seconds`, `tree_context&`|
 |`sys_type::render`|`render`|`tree_context&`|
 |`sys_type::cleanup`|`cleanup`|`tree_context&`|
+|`sys_type::input`|`input`|`const event&`,`tree_context&`|
 
 ```cpp
 import stay3;
@@ -85,7 +86,7 @@ This is the (non exhaustive) list of available events.
 |Event|Trigger time|Causes|
 |-----|------------|------|
 |construct|**After** the component is created|`add_component`|
-|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get_components` with a non const type parameter and the proxy goes out of scope|
+|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get_components` or `add_component` with a non const type parameter and the proxy goes out of scope|
 |destroy|**Before** the component is removed|`remove_component`|
 
 8. To signal exit from inside a system method, use `sys_run_result` as a return type:
@@ -158,13 +159,28 @@ In soft version, when `base` is added to `e`, if it already has a `deps`, deleti
 * There can be multiple cameras, but only the one with `main_camera` tag component will be used for rendering final image.
 * Camera initially looks at Z+ direction, with its up vector being Y+.
 
+14. Input
+* Input systems will have their methods called for every event, unless one of them explicitly wants to exit. 
+* The `event` paramter does not reflect realtime keyboard info. If you want to query realtime status:
+```cpp
+struct input_system {
+    static void input(const event&, tree_context& ctx) {
+        auto& window = ctx.ecs().get_context<runtime_info>().window();
+        if (window.get_key(scancode::enter) == key_status::pressed) {
+            std::cout << "Enter pressed\n";
+        }
+    }
+};
+```
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
 * `clang >= 19`
-* `emscripten>=4`
+* <del>`emscripten>=4`
 * <del>`msvc >= v17.14`
 * <del>`gcc>=14`
+
+Currently, most major compilers cannot build and I'm developing with Clang.
 
 (Linux only) Install dependencies:
 ```

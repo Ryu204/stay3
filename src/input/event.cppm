@@ -6,6 +6,8 @@ module;
 
 export module stay3.input:event;
 
+import :keyboard;
+
 namespace st {
 
 template<typename ev, typename all>
@@ -19,14 +21,15 @@ struct is_variant_member<ev, std::variant<evs...>>
 export class event {
 public:
     struct none {};
-
     struct close_requested {};
-
-    struct event_b {
-        int foo{};
+    struct key_pressed {
+        scancode code;
+    };
+    struct key_released {
+        scancode code;
     };
 
-    using data_type = std::variant<none, close_requested, event_b>;
+    using data_type = std::variant<none, close_requested, key_pressed, key_released>;
     template<typename t>
     constexpr static bool is_event_type = is_variant_member<t, data_type>::value;
 

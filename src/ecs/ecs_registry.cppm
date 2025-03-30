@@ -76,7 +76,8 @@ class ecs_registry {
                     m_registry->publish_event<comp_event::update, comp>(m_registry->m_registry, m_entity);
                 }
             } catch(std::exception &e) {
-                assert(false && "Unknown exception");
+                log::error("Error at component event listener: ", e.what());
+                assert(false);
             } catch(...) {
                 assert(false && "Unknown error");
             }
@@ -264,8 +265,8 @@ public:
     }
 
     template<typename context, typename... args>
-    void add_context(args &&...arguments) {
-        m_registry.ctx().emplace<context>(std::forward<args>(arguments)...);
+    std::add_lvalue_reference_t<context> add_context(args &&...arguments) {
+        return m_registry.ctx().emplace<context>(std::forward<args>(arguments)...);
     }
 
     template<typename context>

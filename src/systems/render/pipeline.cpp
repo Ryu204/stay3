@@ -66,8 +66,8 @@ wgpu::RenderPipeline create_pipeline(
 
 ) {
     wgpu::PipelineLayoutDescriptor layout_desc{
-        .bindGroupLayoutCount = layouts.layouts().size(),
-        .bindGroupLayouts = layouts.layouts().data(),
+        .bindGroupLayoutCount = layouts.all_layouts().size(),
+        .bindGroupLayouts = layouts.all_layouts().data(),
     };
     const auto layout = device.CreatePipelineLayout(&layout_desc);
     const auto shader_modules = [](const auto &device, const auto &path) {
@@ -115,13 +115,13 @@ wgpu::RenderPipeline create_pipeline(
     wgpu::BlendState blend_state{
         .color = {
             .operation = wgpu::BlendOperation::Add,
-            .srcFactor = wgpu::BlendFactor::SrcAlpha,
+            .srcFactor = wgpu::BlendFactor::One,
             .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
         },
         .alpha = {
             .operation = wgpu::BlendOperation::Add,
-            .srcFactor = wgpu::BlendFactor::Zero,
-            .dstFactor = wgpu::BlendFactor::One,
+            .srcFactor = wgpu::BlendFactor::One,
+            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
         },
     };
     wgpu::ColorTargetState color_target{

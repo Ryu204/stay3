@@ -27,6 +27,7 @@ target_sources(${PROJECT_NAME}
     src/graphics/vertex.cppm
     src/graphics/glfw_window.cppm
     src/graphics/camera.cppm
+    src/graphics/material.cppm
 
     src/core/mod.cppm
     src/core/error.cppm
@@ -42,9 +43,12 @@ target_sources(${PROJECT_NAME}
     src/core/logger.cppm
     src/core/file.cppm
     src/core/color.cppm
+    src/core/variant_helper.cppm
+    src/core/rect.cppm
 
     src/input/mod.cppm
     src/input/event.cppm
+    src/input/keyboard.cppm
 
     src/node/mod.cppm
     src/node/node.cppm
@@ -71,6 +75,7 @@ target_sources(${PROJECT_NAME}
     src/systems/render/pipeline.cppm
     src/systems/render/bind_group_layouts.cppm
     src/systems/render/render_pass.cppm
+    src/systems/render/material.cppm
 
     PRIVATE
 
@@ -87,9 +92,10 @@ target_sources(${PROJECT_NAME}
     src/systems/transform/global_transform.cpp
     src/systems/render/init_result.cpp
     src/systems/render/pipeline.cpp
+    src/systems/render/render_system.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT stb)
 if(EMSCRIPTEN)
     target_compile_options(${PROJECT_NAME} PUBLIC -fexceptions)
     target_link_options(${PROJECT_NAME} PUBLIC -fexceptions -sASYNCIFY)

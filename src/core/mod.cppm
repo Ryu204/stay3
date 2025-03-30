@@ -13,3 +13,5 @@ export import :signal;
 export import :logger;
 export import :file;
 export import :color;
+export import :variant_helper;
+export import :rect;

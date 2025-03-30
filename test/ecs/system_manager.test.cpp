@@ -4,6 +4,10 @@
 
 import stay3.core;
 import stay3.ecs;
+import stay3.input;
+
+using namespace st;
+using Catch::Matchers::RangeEquals;
 
 struct test_context {
     int start_count{};
@@ -11,6 +15,7 @@ struct test_context {
     int cleanup_count{};
     int render_count{};
     int post_update_count{};
+    int input_count{};
 
     std::vector<std::string> messages;
 };
@@ -54,8 +59,13 @@ struct post_update_system {
     }
 };
 
-using namespace st;
-using Catch::Matchers::RangeEquals;
+struct input_system {
+    static sys_run_result input(event, test_context &ctx) {
+        ctx.input_count++;
+        ctx.messages.emplace_back("input");
+        return sys_run_result::noop;
+    }
+};
 
 TEST_CASE("Added systems does not run automatically") {
     test_context ctx;
@@ -65,8 +75,10 @@ TEST_CASE("Added systems does not run automatically") {
     manager.add<render_system>("webgpu");
     manager.add<update_and_cleanup_system>();
     manager.add<post_update_system>();
+    manager.add<input_system>();
 
     manager.start(ctx);
+    manager.input(event::close_requested{}, ctx);
     manager.update(seconds{1.F}, ctx);
     manager.post_update(seconds{1.F}, ctx);
     manager.render(ctx);
@@ -77,6 +89,7 @@ TEST_CASE("Added systems does not run automatically") {
     REQUIRE(ctx.post_update_count == 0);
     REQUIRE(ctx.render_count == 0);
     REQUIRE(ctx.cleanup_count == 0);
+    REQUIRE(ctx.input_count == 0);
     REQUIRE(ctx.messages.empty());
 }
 
@@ -97,8 +110,12 @@ TEST_CASE("Added system run when registered") {
     manager
         .add<post_update_system>()
         .run_as<sys_type::post_update>();
+    manager
+        .add<input_system>()
+        .run_as<sys_type::input>();
 
     manager.start(ctx);
+    manager.input(event::close_requested{}, ctx);
     manager.update(seconds{1.F}, ctx);
     manager.post_update(seconds{1.F}, ctx);
     manager.render(ctx);
@@ -109,7 +126,8 @@ TEST_CASE("Added system run when registered") {
     REQUIRE(ctx.post_update_count == 1);
     REQUIRE(ctx.render_count == 1);
     REQUIRE(ctx.cleanup_count == 1);
-    REQUIRE_THAT(ctx.messages, RangeEquals({"start", "update cleanup", "post update", "render webgpu", "update cleanup"}));
+    REQUIRE(ctx.input_count == 1);
+    REQUIRE_THAT(ctx.messages, RangeEquals({"start", "input", "update cleanup", "post update", "render webgpu", "update cleanup"}));
 }
 
 TEST_CASE("Added system run with priority") {
@@ -150,4 +168,40 @@ TEST_CASE("System is instantiated once") {
         .run_as<sys_type::update>();
     manager.start(ctx);
     REQUIRE_NOTHROW(manager.update(1.F, ctx));
+}
+
+TEST_CASE("System run result is used") {
+    test_context ctx;
+    system_manager<test_context> manager;
+
+    struct convertible_to_run_result {
+        bool exit{};
+        operator sys_run_result() const {
+            return exit ? sys_run_result::exit : sys_run_result::noop;
+        }
+    };
+    STATIC_REQUIRE(std::is_convertible_v<convertible_to_run_result, sys_run_result>);
+    using first_system = render_system;
+    struct exiting_system {
+        static convertible_to_run_result render(test_context &ctx) {
+            ctx.messages.emplace_back("exit");
+            ++ctx.render_count;
+            return {.exit = true};
+        }
+    };
+    using third_system = render_system;
+
+    manager
+        .add<first_system>("software")
+        .run_as<sys_type::render>(sys_priority::high);
+    manager
+        .add<exiting_system>()
+        .run_as<sys_type::render>(sys_priority::medium);
+    manager
+        .add<third_system>("dedicated gpu")
+        .run_as<sys_type::render>(sys_priority::low);
+    manager.render(ctx);
+
+    REQUIRE(ctx.render_count == 2);
+    REQUIRE_THAT(ctx.messages, RangeEquals({"render software", "exit"}));
 }

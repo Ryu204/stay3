@@ -12,6 +12,7 @@ module;
 export module stay3.ecs:system_manager;
 
 import stay3.core;
+import stay3.input;
 import :system_data;
 import :system_wrapper;
 
@@ -26,6 +27,9 @@ class system_manager {
         std::reference_wrapper<system_wrapper<context>> system;
         sys_priority_t priority;
         bool operator<(const system_entry_per_type &other) const {
+            if(priority == other.priority) {
+                return std::addressof(system.get()) < std::addressof(other.system.get());
+            }
             constexpr auto has_higher_priority = [](const auto &higher, const auto &lower) {
                 return higher.priority > lower.priority;
             };
@@ -102,6 +106,10 @@ public:
         return apply_all<sys_type::render>(ctx);
     }
 
+    sys_run_result input(const event &ev, context &ctx) {
+        return apply_all<sys_type::input>(ev, ctx);
+    }
+
     sys_run_result post_update(seconds delta, context &ctx) {
         return apply_all<sys_type::post_update>(delta, ctx);
     }
@@ -110,13 +118,18 @@ private:
     template<sys_type type, typename... args>
     sys_run_result apply_all(args &&...arguments) {
         auto res = sys_run_result::noop;
+        // debug
+        auto size = m_systems_by_type[type].size();
+        const auto &syss = m_systems_by_type[type];
         for(const auto &entry: m_systems_by_type[type]) {
             auto cur = entry.system.get().template call_method<type>(std::forward<args>(arguments)...);
             switch(cur) {
             case sys_run_result::noop:
                 break;
             case sys_run_result::exit:
-                res = sys_run_result::exit;
+                return sys_run_result::exit;
+            default:
+                // Potentially more control result types
                 break;
             }
         }

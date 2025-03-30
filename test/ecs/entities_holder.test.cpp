@@ -1,6 +1,7 @@
 #include <tuple>
 #include <unordered_set>
 #include <catch2/catch_all.hpp>
+#include "catch2/catch_test_macros.hpp"
 
 using Catch::Matchers::Contains;
 import stay3.ecs;
@@ -21,6 +22,12 @@ TEST_CASE("Entity manipulation") {
 
         es.destroy(0);
         REQUIRE_FALSE(reg.contains_entity(en));
+
+        auto en3 = es.create();
+        auto en4 = es.create();
+        es.destroy(en4);
+        REQUIRE_FALSE(reg.contains_entity(en4));
+        REQUIRE(reg.contains_entity(en3));
     }
 
     SECTION("Size and empty check") {
