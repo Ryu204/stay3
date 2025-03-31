@@ -42,6 +42,11 @@ struct remove_mut<mut<comp>> {
 template<typename t>
 using remove_mut_t = remove_mut<t>::type;
 
+template<typename... ts>
+struct exclude_t {};
+template<typename... ts>
+constexpr exclude_t<ts...> exclude{};
+
 class ecs_registry {
     template<component ecomp>
     class empty_proxy {
@@ -136,16 +141,68 @@ class ecs_registry {
     }
 
     template<typename entt_it, component... comps>
-    class entity_view_iterator {
+    class entity_components_view_iterator {
     public:
         using difference_type = entt_it::difference_type;
         using value_type = std::tuple<entity, proxy<comps>...>;
-        entity_view_iterator(entt_it it = {}, ecs_registry *reg = nullptr)
+        entity_components_view_iterator(entt_it it = {}, ecs_registry *reg = nullptr)
             : m_it{it}, m_registry{reg} {}
         value_type operator*() const {
             assert(m_registry != nullptr);
             entity en{*m_it};
             return {en, m_registry->make_proxy<comps>(en)...};
+        }
+        entity_components_view_iterator &operator++() {
+            ++m_it;
+            return *this;
+        }
+        bool operator!=(const entity_components_view_iterator &other) const {
+            return m_it != other.m_it;
+        }
+        bool operator==(const entity_components_view_iterator &other) const {
+            return m_it == other.m_it;
+        }
+        void operator++(int) {
+            ++*this;
+        }
+
+    private:
+        entt_it m_it;
+        ecs_registry *m_registry;
+    };
+
+    template<typename entt_view, component... comps>
+    class entity_components_view {
+    public:
+        using entt_it = std::decay_t<decltype(std::declval<entt_view>().begin())>;
+        using iterator = entity_components_view_iterator<entt_it, comps...>;
+        static_assert(std::input_iterator<iterator>);
+        static_assert(std::semiregular<iterator>);
+        static_assert(std::sentinel_for<iterator, iterator>);
+
+        entity_components_view(entt_view view, ecs_registry &reg)
+            : m_view{view}, m_registry{reg} {}
+        iterator begin() {
+            return {m_view.begin(), &m_registry.get()};
+        }
+        iterator end() {
+            return {m_view.end(), &m_registry.get()};
+        }
+
+    private:
+        entt_view m_view;
+        std::reference_wrapper<ecs_registry> m_registry;
+    };
+
+    template<typename entt_it, component... comps>
+    class entity_view_iterator {
+    public:
+        using difference_type = entt_it::difference_type;
+        using value_type = entity;
+        entity_view_iterator(entt_it it = {})
+            : m_it{it} {}
+        value_type operator*() const {
+            return *m_it;
         }
         entity_view_iterator &operator++() {
             ++m_it;
@@ -163,7 +220,6 @@ class ecs_registry {
 
     private:
         entt_it m_it;
-        ecs_registry *m_registry;
     };
 
     template<typename entt_view, component... comps>
@@ -175,18 +231,17 @@ class ecs_registry {
         static_assert(std::semiregular<iterator>);
         static_assert(std::sentinel_for<iterator, iterator>);
 
-        entity_view(entt_view view, ecs_registry &reg)
-            : m_view{view}, m_registry{reg} {}
+        entity_view(entt_view view)
+            : m_view{view} {}
         iterator begin() {
-            return {m_view.begin(), &m_registry.get()};
+            return {m_view.begin()};
         }
         iterator end() {
-            return {m_view.end(), &m_registry.get()};
+            return {m_view.end()};
         }
 
     private:
         entt_view m_view;
-        std::reference_wrapper<ecs_registry> m_registry;
     };
 
 public:
@@ -213,7 +268,7 @@ public:
     }
 
     /**
-     * @return A read or write proxy to created component based on constness of `comp`
+     * @return A read or write proxy to the created component
      */
     template<component comp, typename... arguments>
     proxy<comp> emplace(entity en, arguments &&...args) {
@@ -269,7 +324,7 @@ public:
     }
 
     /**
-     * @note Will publish an update event if `comp` is non const
+     * @note Will publish an update event of a `comp` if it is marked `mut<comp>`
      * and the returned result goes out of scope
      */
     template<component... comps>
@@ -290,13 +345,22 @@ public:
      * }
      * ```
      */
-    template<component... comps>
-    auto each() {
-        using result = entity_view<
-            std::decay_t<decltype(std::declval<entt::registry>().view<remove_mut_t<comps>...>())>,
-            comps...>;
+    template<component... comps, component... exclude_comps>
+    auto each(exclude_t<exclude_comps...> = {}) {
+        using entt_view = std::decay_t<decltype(std::declval<entt::registry>()
+                                                    .view<remove_mut_t<comps>...>(std::declval<entt::exclude_t<exclude_comps...>>()))>;
+        using result = entity_components_view<entt_view, comps...>;
         static_assert(std::ranges::range<result>);
-        return result{m_registry.view<remove_mut_t<comps>...>(), *this};
+        return result{m_registry.view<remove_mut_t<comps>...>(entt::exclude<exclude_comps...>), *this};
+    }
+
+    template<component... comps, component... exclude_comps>
+    auto view(exclude_t<exclude_comps...> = {}) {
+        using entt_view = std::decay_t<decltype(std::declval<entt::registry>()
+                                                    .view<remove_mut_t<comps>...>(std::declval<entt::exclude_t<exclude_comps...>>()))>;
+        using result = entity_view<entt_view, comps...>;
+        static_assert(std::ranges::range<result>);
+        return result{m_registry.view<remove_mut_t<comps>...>(entt::exclude<exclude_comps...>)};
     }
 
     template<component comp, typename pred>

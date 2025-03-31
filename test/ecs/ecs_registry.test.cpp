@@ -1,10 +1,10 @@
 #include <iterator>
 #include <type_traits>
 #include <catch2/catch_all.hpp>
-#include "catch2/catch_test_macros.hpp"
 
 import stay3.ecs;
 using Catch::Approx;
+using Catch::Matchers::UnorderedRangeEquals;
 
 struct dummy {
     int value;
@@ -22,9 +22,13 @@ struct entity_destroyed_handler {
 
 TEST_CASE("Traits") {
     SECTION("Concepts are satisfied") {
-        using each_t = std::decay_t<decltype(std::declval<st::ecs_registry>().each<dummy, empty_dummy>())>;
+        using each_t = std::decay_t<decltype(std::declval<st::ecs_registry>().each<dummy, empty_dummy>(st::exclude<float, int>))>;
         STATIC_REQUIRE(std::input_iterator<each_t::iterator>);
         STATIC_REQUIRE(std::ranges::range<each_t>);
+
+        using view_t = std::decay_t<decltype(std::declval<st::ecs_registry>().view<empty_dummy>())>;
+        STATIC_REQUIRE(std::input_iterator<view_t::iterator>);
+        STATIC_REQUIRE(std::ranges::range<view_t>);
     }
     SECTION("Type traits work correctly") {
         STATIC_REQUIRE(st::is_mut_v<st::mut<dummy>>);
@@ -36,6 +40,8 @@ TEST_CASE("Traits") {
         STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<st::mut<empty_dummy>>, empty_dummy>);
         STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<dummy>, dummy>);
         STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<empty_dummy>, empty_dummy>);
+
+        STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(st::exclude<dummy, empty_dummy>)>, st::exclude_t<dummy, empty_dummy>>);
     }
 }
 
@@ -232,6 +238,32 @@ TEST_CASE("Sort and iteration") {
             auto s3 = registry.get<second_comp>(en3);
             REQUIRE(d3->value == 60);
             REQUIRE(s3->value == 30.0f);
+        }
+
+        SECTION("Entity only iteration") {
+            auto view = registry.view<dummy, second_comp>();
+            std::vector<st::entity> ens;
+            for(auto en: view) {
+                ens.emplace_back(en);
+            }
+            REQUIRE_THAT(ens, UnorderedRangeEquals({en1, en3}));
+        }
+
+        SECTION("Exclude iteration") {
+            SECTION("Each") {
+                auto each = registry.each<st::mut<dummy>>(st::exclude<second_comp, int>);
+                auto it = each.begin();
+                REQUIRE(std::get<0>(*it) == en2);
+                ++it;
+                REQUIRE(it == each.end());
+            }
+            SECTION("View") {
+                auto view = registry.view<dummy>(st::exclude<second_comp, int>);
+                auto it = view.begin();
+                REQUIRE(*it == en2);
+                ++it;
+                REQUIRE(it == view.end());
+            }
         }
     }
 
