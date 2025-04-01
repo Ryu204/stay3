@@ -129,9 +129,7 @@ tl;dr:
 * Never add or destroy component in signal handler of that component.
 * Components destruction order of a destroyed entity is not deterministic so you shouldn't perform arbitrary registry manipulation in the handler.
 
-11. Please don't destroy entity via `ecs_registry::destroy`, use `entities_holder::destroy` instead. The former does not allow disconnecting entity from its node.
-
-12. There is currently a primitive way to specify a dependency relationship between components. Definition:
+11. There is currently a primitive way to specify a dependency relationship between components. Definition:
 
 Component `deps` is considered a dependency of component `base` in the registry if:
 > For every entity `e` with `base`, it has a `deps`. 
@@ -154,13 +152,13 @@ In soft version, when `base` is added to `e`, if it already has a `deps`, deleti
 
 **Limitation**: In both version, `args` can contains no more than 1 type.
 
-13. Render mental model:
+12. Render mental model:
 * `mesh_data` component defines the geometry, color, uv,... information of drawn objects. It can be shared accross multiple entities.
 * A `rendered_mesh` component corresponds to a drawn object in the scene. It holds reference to `mesh_data` component.
 * There can be multiple cameras, but only the one with `main_camera` tag component will be used for rendering final image.
 * Camera initially looks at Z+ direction, with its up vector being Y+.
 
-14. Input
+13. Input
 * Input systems will have their methods called for every event, unless one of them explicitly wants to exit. 
 * The `event` paramter does not reflect realtime keyboard info. If you want to query realtime status:
 ```cpp

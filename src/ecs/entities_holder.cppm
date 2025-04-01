@@ -1,8 +1,10 @@
 module;
 
+#include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <vector>
 #include <entt/entt.hpp>
 
 export module stay3.ecs:entities_holder;
@@ -15,7 +17,9 @@ import :ecs_registry;
 export namespace st {
 /**
  * @brief Owns a set of entities
+ * @note Caller must call `discard` in handler of the `ecs_registry`'s `on_entity_destroyed` if destroyed entity is owned by this node
  */
+
 class entities_holder {
 public:
     class const_iterator {
@@ -23,7 +27,8 @@ public:
 
     public:
         using difference_type = std::ptrdiff_t;
-        const_iterator(internal it)
+        using value_type = entity;
+        const_iterator(internal it = {})
             : m_it{it} {};
         const entity &operator*() const {
             return *m_it;
@@ -31,6 +36,9 @@ public:
         const_iterator &operator++() {
             ++m_it;
             return *this;
+        }
+        void operator++(int) {
+            ++*this;
         }
         bool operator==(const const_iterator &other) const {
             return m_it == other.m_it;
@@ -75,7 +83,20 @@ public:
         const auto destroyed_entity = m_entities[index];
         m_on_entity_destroy.publish(destroyed_entity);
         m_registry.get().destroy(destroyed_entity);
-        m_entities.erase(m_entities.begin() + index);
+        assert(!std::ranges::contains(m_entities, destroyed_entity) && "Caller did not call discard");
+    }
+
+    /**
+     * @brief Remove ownership of an entity without destroying it
+     */
+    void discard(entity en) {
+        auto it = std::ranges::find(m_entities, en);
+        assert(it != m_entities.end() && "Entity not found");
+        assert(
+            ((it == m_entities.begin() && m_entities.size() == 1)
+             || it != m_entities.begin())
+            && "Cannot discard entity at index 0 before others");
+        m_entities.erase(it);
     }
 
     /**

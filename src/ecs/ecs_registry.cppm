@@ -156,9 +156,6 @@ class ecs_registry {
             ++m_it;
             return *this;
         }
-        bool operator!=(const entity_components_view_iterator &other) const {
-            return m_it != other.m_it;
-        }
         bool operator==(const entity_components_view_iterator &other) const {
             return m_it == other.m_it;
         }
@@ -207,9 +204,6 @@ class ecs_registry {
         entity_view_iterator &operator++() {
             ++m_it;
             return *this;
-        }
-        bool operator!=(const entity_view_iterator &other) const {
-            return m_it != other.m_it;
         }
         bool operator==(const entity_view_iterator &other) const {
             return m_it == other.m_it;

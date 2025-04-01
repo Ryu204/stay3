@@ -2,6 +2,7 @@ module;
 
 #include <algorithm>
 #include <filesystem>
+#include <variant>
 #include <webgpu/webgpu_cpp.h>
 
 module stay3.system.render;

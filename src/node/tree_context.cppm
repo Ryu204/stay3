@@ -77,7 +77,9 @@ private:
     }
 
     void remove_entity_node_mapping(entity en) {
+        node &owner = m_entity_to_node.at(en);
         m_entity_to_node.erase(en);
+        owner.entities().discard(en);
     }
 
     [[nodiscard]] node::id_type register_node(node &node) {

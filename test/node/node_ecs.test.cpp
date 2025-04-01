@@ -1,5 +1,5 @@
+#include <algorithm>
 #include <catch2/catch_all.hpp>
-
 import stay3.node;
 import stay3.ecs;
 
@@ -23,9 +23,18 @@ TEST_CASE("Entity to node mapping") {
     }
 
     SECTION("Deleted entity is removed from ecs registry") {
-        auto en = root.entities().create();
-        root.entities().destroy(0);
-        REQUIRE_FALSE(context.ecs().contains(en));
+        SECTION("Deleted by entities holder") {
+            auto en = root.entities().create();
+            root.entities().destroy(0);
+            REQUIRE_FALSE(context.ecs().contains(en));
+        }
+        SECTION("Deleted by registry") {
+            auto &holder = root.entities();
+            auto en = holder.create();
+            context.ecs().destroy(en);
+            REQUIRE_FALSE(context.ecs().contains(en));
+            REQUIRE_FALSE(std::ranges::contains(holder, en));
+        }
     }
 }
 
