@@ -84,5 +84,6 @@ add_custom_test(ecs-dependency ecs/dependency.test.cpp "Catch2::Catch2WithMain" 
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(systems-render-camera systems/render_camera.test.cpp "Catch2::Catch2WithMain" "")
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

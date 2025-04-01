@@ -73,6 +73,11 @@ mat<4, 4, type> perspective(type fov, type ratio, type near, type far) {
 }
 
 template<typename type>
+mat<4, 4, type> orthographic(type width, type ratio, type near, type far) {
+    return glm::ortho<type>(-width / 2, width / 2, -width / ratio / 2, width / ratio / 2, near, far);
+}
+
+template<typename type>
 using mat4 = mat<4, 4, type>;
 
 using mat4f = mat<4, 4, float>;

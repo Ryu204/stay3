@@ -46,7 +46,16 @@ void render_system::render(tree_context &ctx) {
         auto [unused_en, cam, unused_tag, tf] = *cameras.begin();
         assert(cam->ratio.has_value() && "Camera aspect was not set by system");
         clear_color = cam->clear_color;
-        const auto camera_view_projection = perspective(cam->fov, cam->ratio.value(), cam->near, cam->far) * tf->get().inv_matrix();
+        const mat4f camera_projection = std::visit(
+            visit_helper{
+                [&cam](const camera::perspective_data &pers) {
+                    return perspective(pers.fov, cam->ratio.value(), cam->near, cam->far);
+                },
+                [&cam](const camera::orthographic_data &ortho) {
+                    return orthographic(ortho.width, cam->ratio.value(), cam->near, cam->far);
+                }},
+            cam->data);
+        const auto camera_view_projection = camera_projection * tf->get().inv_matrix();
         update_all_object_uniforms(reg, camera_view_projection);
     }
 
