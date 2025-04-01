@@ -218,7 +218,7 @@ public:
 class jump_system {
 public:
     static void update(seconds, tree_context &ctx) {
-        auto &window = ctx.ecs().get_context<runtime_info>().window();
+        auto &window = ctx.vars().get<runtime_info>().window();
         if(is_jump_button_pressed(window)) {
             jump_all(ctx.ecs());
         }
@@ -247,7 +247,7 @@ public:
     }
     static void update(seconds, tree_context &ctx) {
         auto &reg = ctx.ecs();
-        auto &window = reg.get_context<runtime_info>().window();
+        auto &window = ctx.vars().get<runtime_info>().window();
         const auto duck_button_pressed = is_duck_button_pressed(window);
 
         for(auto [en, dino]: reg.each<mut<dino_state>>()) {
@@ -302,8 +302,8 @@ class ground_system {
     static void on_change(tree_context &ctx, ecs_registry &reg, entity en) {
         auto status = *reg.get<ground_status>(en);
         if(status == ground_status::started) {
-            const auto &meshes = reg.get_context<mesh_holders>();
-            const auto texture = reg.get_context<texture_holder>().holder;
+            const auto &meshes = ctx.vars().get<mesh_holders>();
+            const auto texture = ctx.vars().get<texture_holder>().holder;
             reg.emplace<material_data>(en, material_data{.texture_holder = texture});
             reg.emplace<rendered_mesh>(
                 en,
@@ -366,10 +366,10 @@ public:
 
         auto texture_en = res.entities().create();
         const auto &texture = *reg.emplace<texture_2d_data>(texture_en, "assets/base64.png");
-        reg.add_context<texture_holder>(texture_holder{.holder = texture_en});
+        ctx.vars().emplace<texture_holder>(texture_holder{.holder = texture_en});
         auto material = res.entities().create();
         reg.emplace<material_data>(material, material_data{.texture_holder = texture_en});
-        const auto &meshes = reg.add_context<mesh_holders>(create_meshes(reg, res, texture));
+        const auto &meshes = ctx.vars().emplace<mesh_holders>(create_meshes(reg, res, texture));
 
         auto cam = scene.entities().create();
         reg.emplace<camera>(cam, camera{.clear_color = vec4f{1.F}});

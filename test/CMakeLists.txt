@@ -66,6 +66,7 @@ add_custom_test(core-id-generator core/id_generator.test.cpp "Catch2::Catch2With
 add_custom_test(core-signal core/signal.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-file core/file.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-color core/color.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-any-map core/any_map.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(node-node node/node.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(node-node-ecs node/node_ecs.test.cpp "Catch2::Catch2WithMain" "")

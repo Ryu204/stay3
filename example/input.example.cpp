@@ -42,7 +42,7 @@ struct input_system {
         if(const auto *data = ev.try_get<event::key_pressed>(); data != nullptr) {
             std::cout << get_name(data->code) << std::endl; // NOLINT(*-avoid-endl)
         }
-        auto &window = ctx.ecs().get_context<runtime_info>().window();
+        auto &window = ctx.vars().get<runtime_info>().window();
 
         entity current_mesh;
         if(window.get_key(scancode::space) == key_status::pressed) {

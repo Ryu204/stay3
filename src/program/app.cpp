@@ -66,7 +66,7 @@ void app::on_frame() {
 }
 
 void app::add_runtime_info() {
-    m_tree_context.ecs().add_context<runtime_info>(m_window);
+    m_tree_context.vars().emplace<runtime_info>(m_window);
 }
 
 app::should_exit app::update(seconds delta) {

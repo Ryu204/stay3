@@ -25,7 +25,7 @@ render_system::render_system(const vec2u &surface_size, std::filesystem::path sh
     : m_config{config}, m_surface_size{surface_size}, m_shader_path{std::move(shader_path)} {}
 
 void render_system::start(tree_context &ctx) {
-    auto &window = ctx.ecs().get_context<runtime_info>().window();
+    auto &window = ctx.vars().get<runtime_info>().window();
     m_global = create_and_config(window, m_config, m_surface_size);
     const texture_formats formats{
         .surface = m_global.surface_format,
@@ -34,7 +34,7 @@ void render_system::start(tree_context &ctx) {
     m_depth_texture = create_depth_texture_view(m_global.device, m_surface_size, formats.depth);
     m_bind_group_layouts = bind_group_layouts{m_global.device};
     m_pipeline = create_pipeline(m_global.device, formats, m_shader_path, *m_bind_group_layouts);
-    setup_signals(ctx.ecs());
+    setup_signals(ctx);
 }
 
 void render_system::render(tree_context &ctx) {
@@ -110,7 +110,9 @@ void render_system::update_all_object_uniforms(ecs_registry &reg, const mat4f &c
     }
 }
 
-void render_system::setup_signals(ecs_registry &reg) {
+void render_system::setup_signals(tree_context& ctx) {
+    auto& reg = ctx.ecs();
+    
     reg.on<comp_event::construct, mesh_data>().connect<&render_system::initialize_mesh_state>(*this);
     reg.on<comp_event::update, mesh_data>().connect<&render_system::create_mesh_state_from_data>(*this);
     reg.on<comp_event::destroy, mesh_data>().connect<&ecs_registry::destroy_if_exist<mesh_state>>();
@@ -120,7 +122,7 @@ void render_system::setup_signals(ecs_registry &reg) {
     make_soft_dependency<transform, rendered_mesh>(reg);
 
     make_soft_dependency<transform, camera>(reg);
-    reg.on<comp_event::construct, camera>().connect<&render_system::fix_camera_aspect>();
+    reg.on<comp_event::construct, camera>().connect<&render_system::fix_camera_aspect>(ctx);
 
     reg.on<comp_event::construct, texture_2d_data>().connect<&render_system::initialize_texture_2d_state>(*this);
     reg.on<comp_event::update, texture_2d_data>().connect<&render_system::create_texture_2d_state_from_data>(*this);
@@ -131,8 +133,8 @@ void render_system::setup_signals(ecs_registry &reg) {
     reg.on<comp_event::destroy, material_data>().connect<&ecs_registry::destroy_if_exist<material_state>>();
 }
 
-void render_system::fix_camera_aspect(ecs_registry &reg, entity en) {
-    auto &window = reg.get_context<runtime_info>().window();
+void render_system::fix_camera_aspect(tree_context& ctx, ecs_registry &reg, entity en) {
+    auto &window = ctx.vars().get<runtime_info>().window();
     const auto aspect = static_cast<float>(window.size().x) / static_cast<float>(window.size().y);
     auto cam = reg.get<mut<camera>>(en);
     cam->ratio = aspect;

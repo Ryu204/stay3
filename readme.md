@@ -164,7 +164,7 @@ In soft version, when `base` is added to `e`, if it already has a `deps`, deleti
 ```cpp
 struct input_system {
     static void input(const event&, tree_context& ctx) {
-        auto& window = ctx.ecs().get_context<runtime_info>().window();
+        auto& window = ctx.vars().get<runtime_info>().window();
         if (window.get_key(scancode::enter) == key_status::pressed) {
             std::cout << "Enter pressed\n";
         }
