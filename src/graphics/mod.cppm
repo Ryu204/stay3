@@ -5,3 +5,4 @@ export import :error;
 export import :vertex;
 export import :camera;
 export import :material;
+export import :rendered_mesh;

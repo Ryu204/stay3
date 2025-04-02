@@ -28,6 +28,7 @@ target_sources(${PROJECT_NAME}
     src/graphics/glfw_window.cppm
     src/graphics/camera.cppm
     src/graphics/material.cppm
+    src/graphics/rendered_mesh.cppm
 
     src/core/mod.cppm
     src/core/error.cppm
@@ -64,6 +65,7 @@ target_sources(${PROJECT_NAME}
     src/ecs/system_manager.cppm
     src/ecs/component.cppm
     src/ecs/dependency.cppm
+    src/ecs/component_ref.cppm
 
     src/systems/mod.cppm
     src/systems/runtime_info.cppm

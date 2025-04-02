@@ -82,6 +82,7 @@ add_custom_test(ecs-entities-holder ecs/entities_holder.test.cpp "Catch2::Catch2
 add_custom_test(ecs-system-data ecs/system_data.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-system-manager ecs/system_manager.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-dependency ecs/dependency.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(ecs-component-ref ecs/component_ref.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")

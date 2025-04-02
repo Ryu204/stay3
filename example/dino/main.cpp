@@ -128,9 +128,8 @@ public:
 
 class animation_system {
     static void update_anim_frame(ecs_registry &reg, const animation &anim, animation_status &anim_status, const rendered_mesh &rmesh) {
-        const auto texture_holder = reg.get<material_data>(rmesh.material_holder)->texture_holder;
-        const auto &texture = *reg.get<texture_2d_data>(texture_holder);
-        auto mesh = reg.get<mut<mesh_data>>(rmesh.mesh_holder);
+        const auto &texture = *rmesh.material.get(reg)->texture.get(reg);
+        auto mesh = rmesh.mesh.get_mut(reg);
         anim_status.index %= anim.frames.size();
         *mesh = mesh_sprite(texture, data::pixels_per_unit, vec4f{1.F}, anim.frames[anim_status.index]);
     }
@@ -191,7 +190,7 @@ class bound_debug_system {
         db->renderer = ctx.get_node(en).entities().create();
         reg.emplace<mesh_data>(db->renderer, mesh_plane(box->size, vec4f{0.F, 1.F, 0.F, 1.F}));
         reg.emplace<material_data>(db->renderer);
-        reg.emplace<rendered_mesh>(db->renderer, rendered_mesh{.mesh_holder = db->renderer, .material_holder = db->renderer});
+        reg.emplace<rendered_mesh>(db->renderer, rendered_mesh{.mesh = db->renderer, .material = db->renderer});
     }
     static void remove_shape_entity(tree_context &ctx, ecs_registry &reg, entity en) {
         const auto db_entity = reg.get<bounding_box_debug>(en)->renderer;
@@ -304,12 +303,12 @@ class ground_system {
         if(status == ground_status::started) {
             const auto &meshes = ctx.vars().get<mesh_holders>();
             const auto texture = ctx.vars().get<texture_holder>().holder;
-            reg.emplace<material_data>(en, material_data{.texture_holder = texture});
+            reg.emplace<material_data>(en, material_data{.texture = texture});
             reg.emplace<rendered_mesh>(
                 en,
                 rendered_mesh{
-                    .mesh_holder = meshes.at(data::sprite::ground),
-                    .material_holder = en,
+                    .mesh = meshes.at(data::sprite::ground),
+                    .material = en,
                 });
             auto ground_tf = reg.get<mut<transform>>(en);
             ground_tf
@@ -323,7 +322,7 @@ class ground_system {
             reg.emplace<ground_hider>(hider);
             reg.emplace<mesh_data>(hider, mesh_plane(vec2f{15.F}, vec4f{1.F}));
             reg.emplace<material_data>(hider);
-            reg.emplace<rendered_mesh>(hider, rendered_mesh{.mesh_holder = hider, .material_holder = hider});
+            reg.emplace<rendered_mesh>(hider, rendered_mesh{.mesh = hider, .material = hider});
             auto hider_tf = reg.get<mut<transform>>(hider);
             hider_tf->set_position(vec3f{4.F, 0.F, -0.1F});
             reg.emplace<velocity>(hider, velocity{.value = 10.F * vec_right, .accel = {}});
@@ -368,7 +367,7 @@ public:
         const auto &texture = *reg.emplace<texture_2d_data>(texture_en, "assets/base64.png");
         ctx.vars().emplace<texture_holder>(texture_holder{.holder = texture_en});
         auto material = res.entities().create();
-        reg.emplace<material_data>(material, material_data{.texture_holder = texture_en});
+        reg.emplace<material_data>(material, material_data{.texture = texture_en});
         const auto &meshes = ctx.vars().emplace<mesh_holders>(create_meshes(reg, res, texture));
 
         auto cam = scene.entities().create();
@@ -381,8 +380,8 @@ public:
         reg.emplace<rendered_mesh>(
             m_dino,
             rendered_mesh{
-                .mesh_holder = meshes.at(data::sprite::dino_wait),
-                .material_holder = material,
+                .mesh = meshes.at(data::sprite::dino_wait),
+                .material = material,
             });
         reg.emplace<dino_state>(m_dino, dino_state::idle);
         auto dino_tf = reg.get<mut<transform>>(m_dino);

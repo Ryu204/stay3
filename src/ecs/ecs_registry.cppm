@@ -41,6 +41,8 @@ struct remove_mut<mut<comp>> {
 };
 template<typename t>
 using remove_mut_t = remove_mut<t>::type;
+template<typename t>
+using add_mut_t = std::conditional_t<is_mut_v<t>, t, mut<t>>;
 
 template<typename... ts>
 struct exclude_t {};

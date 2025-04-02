@@ -64,14 +64,14 @@ void render_system::render(tree_context &ctx) {
     const auto &&[unused, encoder, render_pass_encoder] = create_render_pass(m_global.device, m_global.surface, m_depth_texture.view, clear_color);
     render_pass_encoder.SetPipeline(m_pipeline);
 
-    entity material_entity;
+    component_ref<material_data> material;
     for(auto &&[unused, data, state]: reg.each<rendered_mesh, rendered_mesh_state>()) {
-        if(data->material_holder != material_entity) {
-            material_entity = data->material_holder;
-            const auto material_bind_group = reg.get<material_state>(material_entity)->material_bind_group;
+        if(data->material != material) {
+            material = data->material;
+            const auto material_bind_group = reg.get<material_state>(material.entity())->material_bind_group;
             render_pass_encoder.SetBindGroup(bind_group_layouts_data::material::group, material_bind_group);
         }
-        auto [geometry_data, geometry_state] = reg.get<mesh_data, mesh_state>(data->mesh_holder);
+        auto [geometry_data, geometry_state] = reg.get<mesh_data, mesh_state>(data->mesh.entity());
         render_pass_encoder.SetVertexBuffer(0, geometry_state->vertex_buffer);
         render_pass_encoder.SetBindGroup(bind_group_layouts_data::object::group, state->object_bind_group);
         if(geometry_state->index_buffer) {
@@ -110,9 +110,9 @@ void render_system::update_all_object_uniforms(ecs_registry &reg, const mat4f &c
     }
 }
 
-void render_system::setup_signals(tree_context& ctx) {
-    auto& reg = ctx.ecs();
-    
+void render_system::setup_signals(tree_context &ctx) {
+    auto &reg = ctx.ecs();
+
     reg.on<comp_event::construct, mesh_data>().connect<&render_system::initialize_mesh_state>(*this);
     reg.on<comp_event::update, mesh_data>().connect<&render_system::create_mesh_state_from_data>(*this);
     reg.on<comp_event::destroy, mesh_data>().connect<&ecs_registry::destroy_if_exist<mesh_state>>();
@@ -133,7 +133,7 @@ void render_system::setup_signals(tree_context& ctx) {
     reg.on<comp_event::destroy, material_data>().connect<&ecs_registry::destroy_if_exist<material_state>>();
 }
 
-void render_system::fix_camera_aspect(tree_context& ctx, ecs_registry &reg, entity en) {
+void render_system::fix_camera_aspect(tree_context &ctx, ecs_registry &reg, entity en) {
     auto &window = ctx.vars().get<runtime_info>().window();
     const auto aspect = static_cast<float>(window.size().x) / static_cast<float>(window.size().y);
     auto cam = reg.get<mut<camera>>(en);
@@ -177,9 +177,9 @@ void render_system::create_mesh_state_from_data(ecs_registry &reg, entity en) co
 }
 
 void render_system::initialize_rendered_mesh_state(ecs_registry &reg, entity en) {
-    assert(reg.contains<mesh_data>(reg.get<rendered_mesh>(en)->mesh_holder)
+    assert(!reg.get<rendered_mesh>(en)->mesh.is_null()
            && "rendered_mesh without mesh_data");
-    assert(reg.contains<material_data>(reg.get<rendered_mesh>(en)->material_holder)
+    assert(!reg.get<rendered_mesh>(en)->material.is_null()
            && "rendered_mesh without material_data");
 
     auto state = reg.emplace<mut<rendered_mesh_state>>(en);
@@ -279,10 +279,10 @@ void render_system::create_material_state_from_data(ecs_registry &reg, entity en
 
     wgpu::TextureView texture_view;
     {
-        if(data->texture_holder.is_null()) {
+        if(data->texture.is_null()) {
             texture_view = reg.get<texture_2d_state>(default_texture_entity(reg))->view;
         } else {
-            texture_view = reg.get<texture_2d_state>(data->texture_holder)->view;
+            texture_view = reg.get<texture_2d_state>(data->texture.entity())->view;
         }
     }
     const auto sampler_comp = reg.get<sampler>(default_sampler_entity(reg));

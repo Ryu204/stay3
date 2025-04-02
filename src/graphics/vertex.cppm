@@ -7,7 +7,6 @@ module;
 export module stay3.graphics:vertex;
 
 import stay3.core;
-import stay3.ecs;
 
 export namespace st {
 struct vertex_attributes {
@@ -36,12 +35,4 @@ mesh_data mesh_sprite(
     const std::optional<vec4f> &color = std::nullopt,
     const std::optional<rectf> &texture_rect = std::nullopt);
 mesh_data mesh_cube(const vec3f &size, const std::optional<vec4f> &color = std::nullopt);
-
-/**
- * @brief This component represent single visible object in the scene
- */
-struct rendered_mesh {
-    entity mesh_holder;
-    entity material_holder;
-};
 } // namespace st

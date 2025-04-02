@@ -41,6 +41,11 @@ TEST_CASE("Traits") {
         STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<dummy>, dummy>);
         STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<empty_dummy>, empty_dummy>);
 
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<dummy>, st::mut<dummy>>);
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<empty_dummy>, st::mut<empty_dummy>>);
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<st::mut<dummy>>, st::mut<dummy>>);
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<st::mut<empty_dummy>>, st::mut<empty_dummy>>);
+
         STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(st::exclude<dummy, empty_dummy>)>, st::exclude_t<dummy, empty_dummy>>);
     }
 }

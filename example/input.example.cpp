@@ -28,8 +28,8 @@ struct input_system {
         reg.emplace<rendered_mesh>(
             en,
             rendered_mesh{
-                .mesh_holder = mesh_holders[0],
-                .material_holder = material,
+                .mesh = mesh_holders[0],
+                .material = material,
             });
 
         reg.emplace<camera>(cam);
@@ -51,7 +51,7 @@ struct input_system {
             current_mesh = mesh_holders[0];
         }
         for(auto [unused, data]: ctx.ecs().each<mut<rendered_mesh>>()) {
-            data->mesh_holder = current_mesh;
+            data->mesh = current_mesh;
         }
     }
 

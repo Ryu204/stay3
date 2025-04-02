@@ -171,6 +171,24 @@ struct input_system {
     }
 };
 ```
+
+14. Component reference
+
+It is common to reference a component from another component, for example a material component will need a texture component. It is dangerous to use pointer or reference directly because the actual component may be reallocated. This is similar to how we access elements of `std::vector` by their indices and not store reference to the element. It is best to use entity and query the component from the registry. 
+
+There is a helper template class: `component_ref`. It stores the entity and component type.
+
+```cpp
+struct material {
+    component_ref<texture> texture_ref;
+};
+// ...
+auto mat = my_registry.get<material>(my_entity);
+auto texture_comp = mat->texture_ref.get(my_registry);
+// Equivalent to:
+// auto texture_comp = my_registry.get<texture>(mat->texture_ref.entity());
+```
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
