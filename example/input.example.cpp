@@ -22,8 +22,8 @@ struct input_system {
         auto en = scene.entities().create();
         auto cam = scene.entities().create();
 
-        reg.emplace<mesh_data>(mesh_holders[0], mesh_plane(vec2f{1.F, 1.F}, vec4f{1.F}));
-        reg.emplace<mesh_data>(mesh_holders[1], mesh_plane(vec2f{0.5F, 2.F}));
+        reg.emplace<mesh_plane_builder>(mesh_holders[0], mesh_plane_builder{.size = vec2f{1.F}});
+        reg.emplace<mesh_plane_builder>(mesh_holders[1], mesh_plane_builder{.size = vec2f{0.5F, 2.F}});
         reg.emplace<material_data>(material);
         reg.emplace<rendered_mesh>(
             en,

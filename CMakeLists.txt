@@ -29,6 +29,7 @@ target_sources(${PROJECT_NAME}
     src/graphics/camera.cppm
     src/graphics/material.cppm
     src/graphics/rendered_mesh.cppm
+    src/graphics/mesh_builder.cppm
 
     src/core/mod.cppm
     src/core/error.cppm
@@ -85,7 +86,6 @@ target_sources(${PROJECT_NAME}
     src/program/app.cpp
 
     src/graphics/glfw_window.cpp
-    src/graphics/vertex.cpp
 
     src/core/time.cpp
     src/core/transform.cpp

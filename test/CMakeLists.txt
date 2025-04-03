@@ -75,6 +75,7 @@ add_custom_test(input-event input/event.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(input-keyboard input/keyboard.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(graphics-glfw-window graphics/glfw_window.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(graphics-mesh-builder graphics/mesh_builder.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(ecs-ecs-registry ecs/ecs_registry.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-ecs-registry-advanced ecs/ecs_registry_advanced.test.cpp "Catch2::Catch2WithMain" "")
@@ -87,5 +88,6 @@ add_custom_test(ecs-component-ref ecs/component_ref.test.cpp "Catch2::Catch2With
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-render-camera systems/render_camera.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Catch2WithMain" "")
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

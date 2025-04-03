@@ -6,3 +6,4 @@ export import :vertex;
 export import :camera;
 export import :material;
 export import :rendered_mesh;
+export import :mesh_builder;
