@@ -7,7 +7,6 @@ module;
 export module stay3.graphics:vertex;
 
 import stay3.core;
-import stay3.ecs;
 
 export namespace st {
 struct vertex_attributes {
@@ -23,25 +22,5 @@ struct vertex_attributes {
 struct mesh_data {
     std::vector<vertex_attributes> vertices;
     std::optional<std::vector<std::uint32_t>> maybe_indices;
-};
-
-mesh_data mesh_plane(
-    const vec2f &size,
-    const std::optional<vec4f> &color = std::nullopt,
-    const std::optional<rectf> &rect_normalized = std::nullopt);
-class texture_2d_data;
-mesh_data mesh_sprite(
-    const texture_2d_data &texture,
-    float pixels_per_unit,
-    const std::optional<vec4f> &color = std::nullopt,
-    const std::optional<rectf> &texture_rect = std::nullopt);
-mesh_data mesh_cube(const vec3f &size, const std::optional<vec4f> &color = std::nullopt);
-
-/**
- * @brief This component represent single visible object in the scene
- */
-struct rendered_mesh {
-    entity mesh_holder;
-    entity material_holder;
 };
 } // namespace st

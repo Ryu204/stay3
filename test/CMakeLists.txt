@@ -66,6 +66,7 @@ add_custom_test(core-id-generator core/id_generator.test.cpp "Catch2::Catch2With
 add_custom_test(core-signal core/signal.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-file core/file.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(core-color core/color.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(core-any-map core/any_map.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(node-node node/node.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(node-node-ecs node/node_ecs.test.cpp "Catch2::Catch2WithMain" "")
@@ -74,6 +75,7 @@ add_custom_test(input-event input/event.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(input-keyboard input/keyboard.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(graphics-glfw-window graphics/glfw_window.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(graphics-mesh-builder graphics/mesh_builder.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(ecs-ecs-registry ecs/ecs_registry.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-ecs-registry-advanced ecs/ecs_registry_advanced.test.cpp "Catch2::Catch2WithMain" "")
@@ -81,8 +83,11 @@ add_custom_test(ecs-entities-holder ecs/entities_holder.test.cpp "Catch2::Catch2
 add_custom_test(ecs-system-data ecs/system_data.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-system-manager ecs/system_manager.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-dependency ecs/dependency.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(ecs-component-ref ecs/component_ref.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(systems-render-camera systems/render_camera.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Catch2WithMain" "")
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

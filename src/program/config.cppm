@@ -20,5 +20,6 @@ export struct app_config {
     render_config render{};
     std::string assets_dir{"assets"};
     app_web_config web{};
+    bool use_default_systems{true};
 };
 }; // namespace st

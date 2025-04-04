@@ -7,3 +7,4 @@ export import :system_data;
 export import :system_manager;
 export import :component;
 export import :dependency;
+export import :component_ref;

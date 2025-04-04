@@ -69,6 +69,10 @@ public:
         return *m_root;
     }
 
+    [[nodiscard]] any_map &vars() {
+        return m_context_variables;
+    }
+
 private:
     friend class node;
 
@@ -77,7 +81,9 @@ private:
     }
 
     void remove_entity_node_mapping(entity en) {
+        node &owner = m_entity_to_node.at(en);
         m_entity_to_node.erase(en);
+        owner.entities().discard(en);
     }
 
     [[nodiscard]] node::id_type register_node(node &node) {
@@ -104,5 +110,7 @@ private:
     sink<decltype(m_entity_created)> m_entity_created_sink{m_entity_created};
     signal<void(node &, entity)> m_entity_destroyed;
     sink<decltype(m_entity_destroyed)> m_entity_destroyed_sink{m_entity_destroyed};
+
+    any_map m_context_variables;
 };
 } // namespace st

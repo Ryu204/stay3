@@ -42,6 +42,17 @@ TEST_CASE("Matrix operations", "[mat]") {
             auto pers_glm = glm::perspective<float>(fov, aspect, near, far);
             REQUIRE(pers == pers_glm);
         }
+
+        SECTION("Ortho graphics") {
+            constexpr auto width = 10.F;
+            constexpr auto height = 15.F;
+            const auto far = 10.F;
+            const auto near = 1.F;
+            auto ortho = orthographic(width, width / height, near, far);
+            STATIC_REQUIRE(std::is_same_v<decltype(ortho), mat4f>);
+            auto ortho_glm = glm::ortho<float>(-width / 2, width / 2, -height / 2, height / 2, near, far);
+            REQUIRE(ortho == ortho_glm);
+        }
     }
 
     SECTION("Chaining method") {

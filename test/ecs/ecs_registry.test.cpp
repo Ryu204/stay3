@@ -4,6 +4,7 @@
 
 import stay3.ecs;
 using Catch::Approx;
+using Catch::Matchers::UnorderedRangeEquals;
 
 struct dummy {
     int value;
@@ -19,10 +20,34 @@ struct entity_destroyed_handler {
     bool signaled{false};
 };
 
-TEST_CASE("Concepts are satisfied") {
-    using each_t = std::decay_t<decltype(std::declval<st::ecs_registry>().each<dummy, empty_dummy>())>;
-    STATIC_REQUIRE(std::input_iterator<each_t::iterator>);
-    STATIC_REQUIRE(std::ranges::range<each_t>);
+TEST_CASE("Traits") {
+    SECTION("Concepts are satisfied") {
+        using each_t = std::decay_t<decltype(std::declval<st::ecs_registry>().each<dummy, empty_dummy>(st::exclude<float, int>))>;
+        STATIC_REQUIRE(std::input_iterator<each_t::iterator>);
+        STATIC_REQUIRE(std::ranges::range<each_t>);
+
+        using view_t = std::decay_t<decltype(std::declval<st::ecs_registry>().view<empty_dummy>())>;
+        STATIC_REQUIRE(std::input_iterator<view_t::iterator>);
+        STATIC_REQUIRE(std::ranges::range<view_t>);
+    }
+    SECTION("Type traits work correctly") {
+        STATIC_REQUIRE(st::is_mut_v<st::mut<dummy>>);
+        STATIC_REQUIRE(st::is_mut_v<st::mut<empty_dummy>>);
+        STATIC_REQUIRE_FALSE(st::is_mut_v<dummy>);
+        STATIC_REQUIRE_FALSE(st::is_mut_v<empty_dummy>);
+
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<st::mut<dummy>>, dummy>);
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<st::mut<empty_dummy>>, empty_dummy>);
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<dummy>, dummy>);
+        STATIC_REQUIRE(std::is_same_v<st::remove_mut_t<empty_dummy>, empty_dummy>);
+
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<dummy>, st::mut<dummy>>);
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<empty_dummy>, st::mut<empty_dummy>>);
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<st::mut<dummy>>, st::mut<dummy>>);
+        STATIC_REQUIRE(std::is_same_v<st::add_mut_t<st::mut<empty_dummy>>, st::mut<empty_dummy>>);
+
+        STATIC_REQUIRE(std::is_same_v<std::decay_t<decltype(st::exclude<dummy, empty_dummy>)>, st::exclude_t<dummy, empty_dummy>>);
+    }
 }
 
 TEST_CASE("Entity and Component Management") {
@@ -31,104 +56,149 @@ TEST_CASE("Entity and Component Management") {
     SECTION("Entity null check") {
         st::entity en;
         REQUIRE(en.is_null());
-        en = registry.create_entity();
+        en = registry.create();
         REQUIRE_FALSE(en.is_null());
     }
 
     SECTION("Entity creation and destruction") {
-        auto en = registry.create_entity();
-        REQUIRE(registry.contains_entity(en));
+        auto en = registry.create();
+        REQUIRE(registry.contains(en));
 
-        registry.destroy_entity(en);
-        REQUIRE_FALSE(registry.contains_entity(en));
+        registry.destroy(en);
+        REQUIRE_FALSE(registry.contains(en));
+
+        SECTION("destroy if exist") {
+            REQUIRE_NOTHROW(registry.destroy_if_exist(en));
+            auto en2 = registry.create();
+            registry.destroy_if_exist(en2);
+            REQUIRE_FALSE(registry.contains(en2));
+        }
 
         SECTION("On entity destroyed signal") {
             entity_destroyed_handler handler;
             registry.on_entity_destroyed().connect<&entity_destroyed_handler::on_event>(handler);
             REQUIRE_FALSE(handler.signaled);
-            registry.destroy_entity(registry.create_entity());
-            REQUIRE(handler.signaled);
+
+            SECTION("Destroy") {
+                registry.destroy(registry.create());
+                REQUIRE(handler.signaled);
+            }
+            SECTION("Destroy if exist") {
+                registry.destroy_if_exist(registry.create());
+                REQUIRE(handler.signaled);
+            }
         }
     }
 
     SECTION("Single component operations") {
-        auto en = registry.create_entity();
+        auto en = registry.create();
 
         SECTION("Add and has component check") {
-            REQUIRE_FALSE(registry.has_components<dummy>(en));
-            registry.add_component<dummy>(en, 42);
-            REQUIRE(registry.has_components<dummy>(en));
+            REQUIRE_FALSE(registry.contains<dummy>(en));
+            registry.emplace<dummy>(en, 42);
+            REQUIRE(registry.contains<dummy>(en));
+
             SECTION("Empty component") {
-                REQUIRE_FALSE(registry.has_components<empty_dummy>(en));
-                registry.add_component<empty_dummy>(en);
-                REQUIRE(registry.has_components<empty_dummy>(en));
-                REQUIRE(registry.has_components<dummy, empty_dummy>(en));
+                REQUIRE_FALSE(registry.contains<empty_dummy>(en));
+                registry.emplace<empty_dummy>(en);
+                REQUIRE(registry.contains<empty_dummy>(en));
+                REQUIRE(registry.contains<dummy, empty_dummy>(en));
+            }
+
+            SECTION("Conditional emplaces") {
+                registry.emplace_or_replace<dummy>(en, 100);
+                REQUIRE(registry.get<dummy>(en)->value == 100);
+                auto dum = registry.emplace_if_not_exist<dummy>(en, 200);
+                REQUIRE(dum->value == 100);
+
+                SECTION("Emplace with no prior component") {
+                    auto en2 = registry.create();
+                    REQUIRE(registry.emplace_or_replace<dummy>(en2, 42)->value == 42);
+                    auto en3 = registry.create();
+                    REQUIRE(registry.emplace_if_not_exist<dummy>(en3, 45)->value == 45);
+                }
             }
         }
 
         SECTION("Get component") {
-            registry.add_component<const dummy>(en, 42);
-            registry.add_component<empty_dummy>(en);
+            registry.emplace<dummy>(en, 42);
+            registry.emplace<empty_dummy>(en);
             SECTION("Read proxy") {
-                auto comp = registry.get_components<const dummy>(en);
+                auto comp = registry.get<dummy>(en);
                 REQUIRE(comp->value == 42);
             }
             SECTION("Write proxy") {
-                auto comp = registry.get_components<dummy>(en);
+                auto comp = registry.get<st::mut<dummy>>(en);
                 REQUIRE(comp->value == 42);
                 comp->value = 50;
-                REQUIRE(registry.get_components<const dummy>(en)->value == 50);
+                REQUIRE(registry.get<dummy>(en)->value == 50);
             }
             SECTION("Empty proxy") {
-                REQUIRE_NOTHROW(registry.get_components<empty_dummy>(en));
-                STATIC_REQUIRE(std::is_empty_v<std::decay_t<decltype(registry.get_components<empty_dummy>(en))>>);
+                REQUIRE_NOTHROW(registry.get<empty_dummy>(en));
+                STATIC_REQUIRE(std::is_empty_v<std::decay_t<decltype(registry.get<empty_dummy>(en))>>);
             }
             SECTION("Multiple components") {
-                auto [comp, ecomp] = registry.get_components<dummy, empty_dummy>(en);
+                auto [comp, ecomp] = registry.get<st::mut<dummy>, empty_dummy>(en);
                 REQUIRE(comp->value == 42);
             }
         }
 
         SECTION("Remove component") {
-            registry.add_component<dummy>(en, 10);
-            registry.remove_component<dummy>(en);
-            REQUIRE_FALSE(registry.has_components<dummy>(en));
+            SECTION("Single") {
+                registry.emplace<dummy>(en, 10);
+                registry.destroy<dummy>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+            }
+            SECTION("Multiple") {
+                registry.emplace<dummy>(en, 10);
+                registry.emplace<float>(en, 10.F);
+                registry.destroy<dummy, float>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+                REQUIRE_FALSE(registry.contains<float>(en));
+            }
+            SECTION("Conditional remove") {
+                registry.emplace<dummy>(en);
+                registry.destroy_if_exist<dummy>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+                registry.destroy_if_exist<dummy>(en);
+                REQUIRE_FALSE(registry.contains<dummy>(en));
+            }
         }
 
         SECTION("Patch component") {
-            registry.add_component<dummy>(en, 20);
-            registry.patch_component<dummy>(en, [](dummy &comp) {
+            registry.emplace<dummy>(en, 20);
+            registry.patch<dummy>(en, [](dummy &comp) {
                 comp.value = 84;
             });
-            auto comp = registry.get_components<const dummy>(en);
+            auto comp = registry.get<dummy>(en);
             REQUIRE(comp->value == 84);
         }
 
         SECTION("Replace component") {
-            registry.add_component<dummy>(en, 30);
-            registry.replace_component<dummy>(en, 150);
-            auto comp = registry.get_components<const dummy>(en);
+            registry.emplace<dummy>(en, 30);
+            registry.replace<dummy>(en, 150);
+            auto comp = registry.get<dummy>(en);
             REQUIRE(comp->value == 150);
         }
 
         SECTION("Clear component") {
-            registry.add_component<dummy>(en, 30);
-            registry.add_component<empty_dummy>(en);
-            registry.clear_component<dummy>();
-            REQUIRE_FALSE(registry.has_components<dummy>(en));
+            registry.emplace<dummy>(en, 30);
+            registry.emplace<empty_dummy>(en);
+            registry.destroy_all<dummy>();
+            REQUIRE_FALSE(registry.contains<dummy>(en));
         }
     }
 }
 
 TEST_CASE("Sort and iteration") {
     st::ecs_registry registry;
-    auto en1 = registry.create_entity();
-    auto en2 = registry.create_entity();
-    auto en3 = registry.create_entity();
+    auto en1 = registry.create();
+    auto en2 = registry.create();
+    auto en3 = registry.create();
 
-    registry.add_component<dummy>(en1, 10);
-    registry.add_component<dummy>(en2, 20);
-    registry.add_component<dummy>(en3, 30);
+    registry.emplace<dummy>(en1, 10);
+    registry.emplace<dummy>(en2, 20);
+    registry.emplace<dummy>(en3, 30);
 
     struct second_comp {
         float value;
@@ -136,14 +206,14 @@ TEST_CASE("Sort and iteration") {
             : value{value} {}
     };
 
-    registry.add_component<second_comp>(en1, 1.0f);
-    registry.add_component<second_comp>(en3, 3.0f);
+    registry.emplace<second_comp>(en1, 1.0f);
+    registry.emplace<second_comp>(en3, 3.0f);
 
     SECTION("Iteration over components") {
         SECTION("Single component iteration") {
             int count = 0;
             int sum = 0;
-            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+            for(auto &&[entity, comp]: registry.each<dummy>()) {
                 count++;
                 sum += comp->value;
             }
@@ -154,7 +224,7 @@ TEST_CASE("Sort and iteration") {
         SECTION("Multiple component iteration") {
             int count = 0;
 
-            for(auto &&[entity, d, s]: registry.each<dummy, second_comp>()) {
+            for(auto &&[entity, d, s]: registry.each<st::mut<dummy>, st::mut<second_comp>>()) {
                 count++;
                 REQUIRE(((d->value == 10 && s->value == 1.0f) || (d->value == 30 && s->value == 3.0f)));
 
@@ -164,15 +234,41 @@ TEST_CASE("Sort and iteration") {
 
             REQUIRE(count == 2);
 
-            auto d1 = registry.get_components<const dummy>(en1);
-            auto s1 = registry.get_components<const second_comp>(en1);
+            auto d1 = registry.get<dummy>(en1);
+            auto s1 = registry.get<second_comp>(en1);
             REQUIRE(d1->value == 20);
             REQUIRE(s1->value == 10.0f);
 
-            auto d3 = registry.get_components<const dummy>(en3);
-            auto s3 = registry.get_components<const second_comp>(en3);
+            auto d3 = registry.get<dummy>(en3);
+            auto s3 = registry.get<second_comp>(en3);
             REQUIRE(d3->value == 60);
             REQUIRE(s3->value == 30.0f);
+        }
+
+        SECTION("Entity only iteration") {
+            auto view = registry.view<dummy, second_comp>();
+            std::vector<st::entity> ens;
+            for(auto en: view) {
+                ens.emplace_back(en);
+            }
+            REQUIRE_THAT(ens, UnorderedRangeEquals({en1, en3}));
+        }
+
+        SECTION("Exclude iteration") {
+            SECTION("Each") {
+                auto each = registry.each<st::mut<dummy>>(st::exclude<second_comp, int>);
+                auto it = each.begin();
+                REQUIRE(std::get<0>(*it) == en2);
+                ++it;
+                REQUIRE(it == each.end());
+            }
+            SECTION("View") {
+                auto view = registry.view<dummy>(st::exclude<second_comp, int>);
+                auto it = view.begin();
+                REQUIRE(*it == en2);
+                ++it;
+                REQUIRE(it == view.end());
+            }
         }
     }
 
@@ -183,7 +279,7 @@ TEST_CASE("Sort and iteration") {
             });
 
             std::vector<int> values;
-            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+            for(auto &&[entity, comp]: registry.each<dummy>()) {
                 values.push_back(comp->value);
             }
 
@@ -191,53 +287,15 @@ TEST_CASE("Sort and iteration") {
         }
         SECTION("Sort by entity") {
             registry.sort<dummy>([&registry](const st::entity &lhs, const st::entity &rhs) {
-                return registry.get_components<const dummy>(lhs)->value > registry.get_components<const dummy>(rhs)->value;
+                return registry.get<dummy>(lhs)->value > registry.get<dummy>(rhs)->value;
             });
 
             std::vector<int> values;
-            for(auto &&[entity, comp]: registry.each<const dummy>()) {
+            for(auto &&[entity, comp]: registry.each<dummy>()) {
                 values.push_back(comp->value);
             }
 
             REQUIRE(std::ranges::is_sorted(values, std::greater<int>{}));
         }
-    }
-}
-
-TEST_CASE("Context Management") {
-    st::ecs_registry registry;
-    struct audio_context {
-        float volume{0.8f};
-    };
-    struct physics_context {
-        float gravity;
-        bool enable_collision;
-    };
-
-    SECTION("Add context") {
-        REQUIRE_NOTHROW(registry.add_context<physics_context>(3.711F, true));
-
-        const auto &physics = registry.get_context<const physics_context>();
-        REQUIRE(physics.gravity == Approx(3.711f));
-        REQUIRE(physics.enable_collision == true);
-
-        SECTION("Multiple contexts") {
-            registry.add_context<audio_context>();
-            REQUIRE(registry.get_context<audio_context>().volume == Approx(0.8f));
-        }
-    }
-
-    SECTION("Modify context") {
-        registry.add_context<physics_context>(3.711F, true);
-        auto &phys = registry.get_context<physics_context>();
-        phys.enable_collision = false;
-        REQUIRE_FALSE(registry.get_context<const physics_context>().enable_collision);
-    }
-
-    SECTION("Modify on creation") {
-        auto &phys = registry.add_context<physics_context>(3.123F, false);
-        REQUIRE_FALSE(registry.get_context<const physics_context>().enable_collision);
-        phys.enable_collision = true;
-        REQUIRE(registry.get_context<const physics_context>().enable_collision);
     }
 }

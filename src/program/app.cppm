@@ -16,7 +16,6 @@ export namespace st {
 class app {
 public:
     app(const app_config &config = {});
-    app &enable_default_systems();
     system_manager<tree_context> &systems();
     void run();
 
@@ -30,6 +29,7 @@ private:
         no
     };
 
+    app &enable_default_systems();
     void add_runtime_info();
     should_exit update(seconds delta);
     void on_frame();

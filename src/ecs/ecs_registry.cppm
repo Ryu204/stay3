@@ -16,34 +16,70 @@ import :component;
 
 export namespace st {
 
+/**
+ * @brief tag class for mutable reference to component
+ */
+template<typename comp>
+struct mut {};
+template<typename comp>
+struct is_mut {
+    static constexpr auto value = false;
+};
+template<component comp>
+struct is_mut<mut<comp>> {
+    static constexpr auto value = true;
+};
+template<typename type>
+constexpr auto is_mut_v = is_mut<type>::value;
+template<typename t>
+struct remove_mut {
+    using type = t;
+};
+template<component comp>
+struct remove_mut<mut<comp>> {
+    using type = comp;
+};
+template<typename t>
+using remove_mut_t = remove_mut<t>::type;
+template<typename t>
+using add_mut_t = std::conditional_t<is_mut_v<t>, t, mut<t>>;
+
+template<typename... ts>
+struct exclude_t {};
+template<typename... ts>
+constexpr exclude_t<ts...> exclude{};
+
 class ecs_registry {
     template<component ecomp>
     class empty_proxy {
+        static_assert(!is_mut_v<ecomp>);
         static_assert(std::is_empty_v<ecomp>);
     };
 
-    template<component ccomp>
+    template<component comp>
     class read_access_proxy {
-        static_assert(std::is_const_v<std::remove_reference_t<ccomp>>);
+        static_assert(!is_mut_v<comp>);
+        static_assert(std::is_const_v<std::remove_reference_t<comp>>);
 
     public:
-        read_access_proxy(ccomp &data)
+        read_access_proxy(comp &data)
             : m_data{data} {}
 
-        ccomp *operator->() const {
+        comp *operator->() const {
             return std::addressof(m_data.get());
         }
-        ccomp &operator*() const {
+        comp &operator*() const {
             return m_data.get();
         }
 
     private:
-        std::reference_wrapper<ccomp>
-            m_data;
+        std::reference_wrapper<comp> m_data;
     };
 
+    template<typename comp>
+    class write_access_proxy {};
     template<component comp>
-    class write_access_proxy {
+    class write_access_proxy<mut<comp>> {
         static_assert(!std::is_const_v<std::remove_reference_t<comp>>);
 
     public:
@@ -89,45 +125,40 @@ class ecs_registry {
     };
 
     template<component comp>
-    using proxy = std::conditional_t<
-        std::is_empty_v<comp>,
-        empty_proxy<comp>,
-        std::conditional_t<
-            std::is_const_v<std::remove_reference_t<comp>>,
-            read_access_proxy<comp>,
-            write_access_proxy<comp>>>;
+    using proxy = std::conditional_t<is_mut_v<comp>,
+                                     write_access_proxy<comp>,
+                                     std::conditional_t<std::is_empty_v<comp>,
+                                                        empty_proxy<comp>,
+                                                        read_access_proxy<std::add_const_t<comp>>>>;
 
     template<component comp>
     proxy<comp> make_proxy(entity en) {
-        if constexpr(std::is_empty_v<comp>) {
-            return empty_proxy<comp>{};
-        } else if constexpr(std::is_const_v<std::remove_reference_t<comp>>) {
-            return m_registry.get<std::decay_t<comp>>(en);
+        if constexpr(is_mut_v<comp>) {
+            return write_access_proxy<comp>{*this, en};
+        } else if constexpr(std::is_empty_v<comp>) {
+            return {};
         } else {
-            return {*this, en};
+            return m_registry.get<std::decay_t<comp>>(en);
         }
     }
 
     template<typename entt_it, component... comps>
-    class entity_view_iterator {
+    class entity_components_view_iterator {
     public:
         using difference_type = entt_it::difference_type;
         using value_type = std::tuple<entity, proxy<comps>...>;
-        entity_view_iterator(entt_it it = {}, ecs_registry *reg = nullptr)
+        entity_components_view_iterator(entt_it it = {}, ecs_registry *reg = nullptr)
             : m_it{it}, m_registry{reg} {}
         value_type operator*() const {
             assert(m_registry != nullptr);
             entity en{*m_it};
             return {en, m_registry->make_proxy<comps>(en)...};
         }
-        entity_view_iterator &operator++() {
+        entity_components_view_iterator &operator++() {
             ++m_it;
             return *this;
         }
-        bool operator!=(const entity_view_iterator &other) const {
-            return m_it != other.m_it;
-        }
-        bool operator==(const entity_view_iterator &other) const {
+        bool operator==(const entity_components_view_iterator &other) const {
             return m_it == other.m_it;
         }
         void operator++(int) {
@@ -140,15 +171,15 @@ class ecs_registry {
     };
 
     template<typename entt_view, component... comps>
-    class entity_view {
+    class entity_components_view {
     public:
         using entt_it = std::decay_t<decltype(std::declval<entt_view>().begin())>;
-        using iterator = entity_view_iterator<entt_it, comps...>;
+        using iterator = entity_components_view_iterator<entt_it, comps...>;
         static_assert(std::input_iterator<iterator>);
         static_assert(std::semiregular<iterator>);
         static_assert(std::sentinel_for<iterator, iterator>);
 
-        entity_view(entt_view view, ecs_registry &reg)
+        entity_components_view(entt_view view, ecs_registry &reg)
             : m_view{view}, m_registry{reg} {}
         iterator begin() {
             return {m_view.begin(), &m_registry.get()};
@@ -162,65 +193,139 @@ class ecs_registry {
         std::reference_wrapper<ecs_registry> m_registry;
     };
 
+    template<typename entt_it, component... comps>
+    class entity_view_iterator {
+    public:
+        using difference_type = entt_it::difference_type;
+        using value_type = entity;
+        entity_view_iterator(entt_it it = {})
+            : m_it{it} {}
+        value_type operator*() const {
+            return *m_it;
+        }
+        entity_view_iterator &operator++() {
+            ++m_it;
+            return *this;
+        }
+        bool operator==(const entity_view_iterator &other) const {
+            return m_it == other.m_it;
+        }
+        void operator++(int) {
+            ++*this;
+        }
+
+    private:
+        entt_it m_it;
+    };
+
+    template<typename entt_view, component... comps>
+    class entity_view {
+    public:
+        using entt_it = std::decay_t<decltype(std::declval<entt_view>().begin())>;
+        using iterator = entity_view_iterator<entt_it, comps...>;
+        static_assert(std::input_iterator<iterator>);
+        static_assert(std::semiregular<iterator>);
+        static_assert(std::sentinel_for<iterator, iterator>);
+
+        entity_view(entt_view view)
+            : m_view{view} {}
+        iterator begin() {
+            return {m_view.begin()};
+        }
+        iterator end() {
+            return {m_view.end()};
+        }
+
+    private:
+        entt_view m_view;
+    };
+
 public:
     ecs_registry() {
         m_registry.on_destroy<entt::entity>().connect<&ecs_registry::entity_destroyed_handler>(*this);
     }
 
-    [[nodiscard]] entity create_entity() {
+    [[nodiscard]] entity create() {
         return m_registry.create();
     }
 
-    void destroy_entity(entity en) {
+    void destroy(entity en) {
         m_registry.destroy(en);
     }
 
-    [[nodiscard]] bool contains_entity(entity en) const {
+    void destroy_if_exist(entity en) {
+        if(m_registry.valid(en)) {
+            m_registry.destroy(en);
+        }
+    }
+
+    [[nodiscard]] bool contains(entity en) const {
         return m_registry.valid(en);
     }
 
     /**
-     * @return A read or write proxy to created component based on constness of `comp`
+     * @return A read or write proxy to the created component
      */
     template<component comp, typename... arguments>
-    proxy<comp> add_component(entity en, arguments &&...args) {
-        m_registry.emplace<std::decay_t<comp>>(en, std::forward<arguments>(args)...);
-        return get_components<comp>(en);
+    proxy<comp> emplace(entity en, arguments &&...args) {
+        m_registry.emplace<std::decay_t<remove_mut_t<comp>>>(en, std::forward<arguments>(args)...);
+        return get<comp>(en);
+    }
+
+    template<component comp, typename... arguments>
+    proxy<comp> emplace_or_replace(entity en, arguments &&...args) {
+        m_registry.emplace_or_replace<std::decay_t<remove_mut_t<comp>>>(en, std::forward<arguments>(args)...);
+        return get<comp>(en);
+    }
+
+    template<component comp, typename... arguments>
+    proxy<comp> emplace_if_not_exist(entity en, arguments &&...args) {
+        using raw_comp = std::decay_t<remove_mut_t<comp>>;
+        if(!m_registry.all_of<raw_comp>(en)) {
+            m_registry.emplace<raw_comp>(en, std::forward<arguments>(args)...);
+        }
+        return get<comp>(en);
+    }
+
+    template<component... comps>
+    void destroy(entity en) {
+        m_registry.erase<comps...>(en);
+    }
+
+    template<component... comps>
+    void destroy_if_exist(entity en) {
+        m_registry.remove<comps...>(en);
     }
 
     template<component comp>
-    void remove_component(entity en) {
-        m_registry.remove<comp>(en);
-    }
-
-    template<component comp>
-    void clear_component() {
+    void destroy_all() {
         m_registry.clear<comp>();
     }
 
     template<component comp, typename func>
         requires std::invocable<func, comp &>
-    void patch_component(entity en, func &&patcher) {
+    void patch(entity en, func &&patcher) {
         m_registry.patch<comp>(en, std::forward<func>(patcher));
     }
 
     template<component comp, typename... arguments>
-    void replace_component(entity en, arguments &&...args) {
+    void replace(entity en, arguments &&...args) {
         m_registry.replace<comp>(en, std::forward<arguments>(args)...);
     }
 
     template<component... comps>
-    bool has_components(entity en) {
+        requires(sizeof...(comps) > 0)
+    [[nodiscard]] bool contains(entity en) const {
         return m_registry.all_of<comps...>(en);
     }
 
     /**
-     * @note Will publish an update event if `comp` is non const
+     * @note Will publish an update event of a `comp` if it is marked `mut<comp>`
      * and the returned result goes out of scope
      */
     template<component... comps>
         requires(sizeof...(comps) > 0)
-    auto get_components(entity en) {
+    auto get(entity en) {
         if constexpr(sizeof...(comps) == 1) {
             return make_proxy<comps...>(en);
         } else {
@@ -236,13 +341,22 @@ public:
      * }
      * ```
      */
-    template<component... comps>
-    auto each() {
-        using result = entity_view<
-            std::decay_t<decltype(std::declval<entt::registry>().view<comps...>())>,
-            comps...>;
+    template<component... comps, component... exclude_comps>
+    auto each(exclude_t<exclude_comps...> = {}) {
+        using entt_view = std::decay_t<decltype(std::declval<entt::registry>()
+                                                    .view<remove_mut_t<comps>...>(std::declval<entt::exclude_t<exclude_comps...>>()))>;
+        using result = entity_components_view<entt_view, comps...>;
         static_assert(std::ranges::range<result>);
-        return result{m_registry.view<comps...>(), *this};
+        return result{m_registry.view<remove_mut_t<comps>...>(entt::exclude<exclude_comps...>), *this};
+    }
+
+    template<component... comps, component... exclude_comps>
+    auto view(exclude_t<exclude_comps...> = {}) {
+        using entt_view = std::decay_t<decltype(std::declval<entt::registry>()
+                                                    .view<remove_mut_t<comps>...>(std::declval<entt::exclude_t<exclude_comps...>>()))>;
+        using result = entity_view<entt_view, comps...>;
+        static_assert(std::ranges::range<result>);
+        return result{m_registry.view<remove_mut_t<comps>...>(entt::exclude<exclude_comps...>)};
     }
 
     template<component comp, typename pred>
@@ -262,16 +376,6 @@ public:
 
     decltype(auto) on_entity_destroyed() {
         return this->m_entity_destroyed_sink;
-    }
-
-    template<typename context, typename... args>
-    std::add_lvalue_reference_t<context> add_context(args &&...arguments) {
-        return m_registry.ctx().emplace<context>(std::forward<args>(arguments)...);
-    }
-
-    template<typename context>
-    std::add_lvalue_reference_t<context> get_context() {
-        return m_registry.ctx().get<context>();
     }
 
 private:

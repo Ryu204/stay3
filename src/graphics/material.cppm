@@ -115,7 +115,7 @@ private:
 };
 
 struct material_data {
-    entity texture_holder;
+    component_ref<texture_2d_data> texture;
 };
 
 } // namespace st

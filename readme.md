@@ -52,7 +52,7 @@ struct component { int value{}; };
 struct my_system {
     static void update(seconds, tree_context &ctx) {
         auto sum = 0;
-        for(auto &&[en, comp]: ctx.ecs().each<const component>()) {
+        for(auto &&[en, comp]: ctx.ecs().each<component>()) {
             // `comp` provides pointer-like interface to component
             sum -= comp->value;
             // Or dereference
@@ -62,11 +62,11 @@ struct my_system {
     }
 };
 ```
-If you want to modify the component, use non const template. This however may be a litle bit slower [^1].
+If you want to modify the component, replace `component` with `mut<component>`. This however may be a litle bit slower [^1].
 
-The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get_components`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
+The syntax is so dumb because I wanted to make it possible to automatically react to changes after users are done with `each` or `get`, which means `comp` must be some proxy tricky class to report the change in destructor. To actually get the component reference, I have to call a method or operator on `comp`. `->` and `*` seems to take least number of characters.
 
-[^1]: In above example, `comp`'s destructor will invoke the update signal if somebody subcribed to it before.
+[^1]: mutable version will have the destructor invoke the update signal (if somebody subcribed to it before).
 
 7. System can add callback to certain events related to component, including `construct`, `update` and `destroy`.
 ```cpp
@@ -85,9 +85,9 @@ struct my_system {
 This is the (non exhaustive) list of available events.
 |Event|Trigger time|Causes|
 |-----|------------|------|
-|construct|**After** the component is created|`add_component`|
-|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get_components` or `add_component` with a non const type parameter and the proxy goes out of scope|
-|destroy|**Before** the component is removed|`remove_component`|
+|construct|**After** the component is created|`emplace`, `emplace_if_not_exist`, `emplace_or_replace`|
+|update|**After** the component is changed|`patch` or `replace`<br>`each` or `get` or `emplace` variants with a non const type parameter and the proxy goes out of scope|
+|destroy|**Before** the component is removed|`destroy`, `destroy_if_exist` (either the component or the whole entity)|
 
 8. To signal exit from inside a system method, use `sys_run_result` as a return type:
 
@@ -127,10 +127,9 @@ tl;dr:
 * Entity signals emitted from ecs registry do not have associations with scene tree anymore (`tree_context::get_node` will not work)
 * Never attach components to entity that is signaled to be destroyed
 * Never add or destroy component in signal handler of that component.
+* Components destruction order of a destroyed entity is not deterministic so you shouldn't perform arbitrary registry manipulation in the handler.
 
-11. Please don't destroy entity via `ecs_registry::destroy_entity`, use `entities_holder::destroy` instead. The former does not allow disconnecting entity from its node.
-
-12. There is currently a primitive way to specify a dependency relationship between components. Definition:
+11. There is currently a primitive way to specify a dependency relationship between components. Definition:
 
 Component `deps` is considered a dependency of component `base` in the registry if:
 > For every entity `e` with `base`, it has a `deps`. 
@@ -153,25 +152,43 @@ In soft version, when `base` is added to `e`, if it already has a `deps`, deleti
 
 **Limitation**: In both version, `args` can contains no more than 1 type.
 
-13. Render mental model:
+12. Render mental model:
 * `mesh_data` component defines the geometry, color, uv,... information of drawn objects. It can be shared accross multiple entities.
 * A `rendered_mesh` component corresponds to a drawn object in the scene. It holds reference to `mesh_data` component.
 * There can be multiple cameras, but only the one with `main_camera` tag component will be used for rendering final image.
 * Camera initially looks at Z+ direction, with its up vector being Y+.
 
-14. Input
+13. Input
 * Input systems will have their methods called for every event, unless one of them explicitly wants to exit. 
 * The `event` paramter does not reflect realtime keyboard info. If you want to query realtime status:
 ```cpp
 struct input_system {
     static void input(const event&, tree_context& ctx) {
-        auto& window = ctx.ecs().get_context<runtime_info>().window();
+        auto& window = ctx.vars().get<runtime_info>().window();
         if (window.get_key(scancode::enter) == key_status::pressed) {
             std::cout << "Enter pressed\n";
         }
     }
 };
 ```
+
+14. Component reference
+
+It is common to reference a component from another component, for example a material component will need a texture component. It is dangerous to use pointer or reference directly because the actual component may be reallocated. This is similar to how we access elements of `std::vector` by their indices and not store reference to the element. It is best to use entity and query the component from the registry. 
+
+There is a helper template class: `component_ref`. It stores the entity and component type.
+
+```cpp
+struct material {
+    component_ref<texture> texture_ref;
+};
+// ...
+auto mat = my_registry.get<material>(my_entity);
+auto texture_comp = mat->texture_ref.get(my_registry);
+// Equivalent to:
+// auto texture_comp = my_registry.get<texture>(mat->texture_ref.entity());
+```
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:

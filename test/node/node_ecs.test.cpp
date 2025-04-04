@@ -1,5 +1,5 @@
+#include <algorithm>
 #include <catch2/catch_all.hpp>
-
 import stay3.node;
 import stay3.ecs;
 
@@ -11,21 +11,30 @@ TEST_CASE("Entity to node mapping") {
 
     SECTION("Entity should be added to mapping") {
         auto en = root.entities().create();
-        REQUIRE(context.ecs().contains_entity(en));
+        REQUIRE(context.ecs().contains(en));
         REQUIRE((&context.get_node(en)) == &root);
     }
 
     SECTION("Children's entities should be added to mapping") {
         auto &child1 = root.add_child();
         auto en = child1.entities().create();
-        REQUIRE(context.ecs().contains_entity(en));
+        REQUIRE(context.ecs().contains(en));
         REQUIRE((&context.get_node(en)) == (&child1));
     }
 
     SECTION("Deleted entity is removed from ecs registry") {
-        auto en = root.entities().create();
-        root.entities().destroy(0);
-        REQUIRE_FALSE(context.ecs().contains_entity(en));
+        SECTION("Deleted by entities holder") {
+            auto en = root.entities().create();
+            root.entities().destroy(0);
+            REQUIRE_FALSE(context.ecs().contains(en));
+        }
+        SECTION("Deleted by registry") {
+            auto &holder = root.entities();
+            auto en = holder.create();
+            context.ecs().destroy(en);
+            REQUIRE_FALSE(context.ecs().contains(en));
+            REQUIRE_FALSE(std::ranges::contains(holder, en));
+        }
     }
 }
 

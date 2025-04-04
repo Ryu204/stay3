@@ -8,6 +8,9 @@ import stay3.core;
 
 export namespace st {
 
+struct mesh_data_changed {};
+struct mesh_data_update_requested {};
+
 struct mesh_state {
     wgpu::Buffer vertex_buffer;
     wgpu::Buffer index_buffer;

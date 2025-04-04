@@ -20,19 +20,19 @@ entities setup(tree_context &ctx) {
 
     auto &depth1_node = root.add_child();
     auto depth1 = depth1_node.entities().create();
-    reg.add_component<const transform>(depth1);
+    reg.emplace<transform>(depth1);
 
     auto &depth2_node = depth1_node.add_child();
     auto depth2 = depth2_node.entities().create();
-    reg.add_component<const transform>(depth2);
+    reg.emplace<transform>(depth2);
 
     auto &depth31_node = depth2_node.add_child();
     auto depth31 = depth31_node.entities().create();
-    reg.add_component<const transform>(depth31);
+    reg.emplace<transform>(depth31);
 
     auto &depth32_node = depth2_node.add_child();
     auto depth32 = depth32_node.entities().create();
-    reg.add_component<const transform>(depth32);
+    reg.emplace<transform>(depth32);
 
     return {.depth1 = depth1, .depth2 = depth2, .depth31 = depth31, .depth32 = depth32};
 }
@@ -40,11 +40,11 @@ entities setup(tree_context &ctx) {
 void check_transitive_update(tree_context &ctx, const entities &es) {
     sync_global_transform(ctx);
     {
-        auto depth2_tf = ctx.ecs().get_components<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().get<mut<transform>>(es.depth2);
         depth2_tf->scale(2.F);
     }
     sync_global_transform(ctx);
-    auto depth3_tf = ctx.ecs().get_components<const global_transform>(es.depth31);
+    auto depth3_tf = ctx.ecs().get<global_transform>(es.depth31);
     if(!approx_equal(depth3_tf->get().scale(), vec3f{2.F})) {
         throw std::runtime_error{"Depth3 scale mismatch"};
     }
@@ -54,7 +54,7 @@ void check_transitive_update(tree_context &ctx, const entities &es) {
 
 void check_reparent_update(tree_context &ctx, const entities &es) {
     {
-        auto depth2_tf = ctx.ecs().get_components<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().get<mut<transform>>(es.depth2);
         depth2_tf->scale(3.F);
     }
     sync_global_transform(ctx);
@@ -62,7 +62,7 @@ void check_reparent_update(tree_context &ctx, const entities &es) {
     ctx.get_node(es.depth31).reparent(ctx.get_node(es.depth1));
     sync_global_transform(ctx);
 
-    auto depth3_tf = ctx.ecs().get_components<const global_transform>(es.depth31);
+    auto depth3_tf = ctx.ecs().get<global_transform>(es.depth31);
     if(!approx_equal(depth3_tf->get().scale(), vec3f{1.F})) {
         throw std::runtime_error{"Depth3 scale mismatch"};
     }
@@ -72,7 +72,7 @@ void check_reparent_update(tree_context &ctx, const entities &es) {
 
 void check_parent_entity_removed_update(tree_context &ctx, const entities &es) {
     {
-        auto depth2_tf = ctx.ecs().get_components<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().get<mut<transform>>(es.depth2);
         depth2_tf->scale(3.F);
     }
     sync_global_transform(ctx);
@@ -80,7 +80,7 @@ void check_parent_entity_removed_update(tree_context &ctx, const entities &es) {
     ctx.get_node(es.depth2).entities().clear();
     sync_global_transform(ctx);
 
-    auto depth3_tf = ctx.ecs().get_components<const global_transform>(es.depth31);
+    auto depth3_tf = ctx.ecs().get<global_transform>(es.depth31);
     if(!approx_equal(depth3_tf->get().scale(), vec3f{1.F})) {
         throw std::runtime_error{"Depth3 scale mismatch"};
     }
@@ -90,7 +90,7 @@ void check_parent_entity_removed_update(tree_context &ctx, const entities &es) {
 
 void check_parent_entity_added_update(tree_context &ctx, entities es) {
     {
-        auto depth2_tf = ctx.ecs().get_components<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().get<mut<transform>>(es.depth2);
         depth2_tf->scale(3.F);
     }
     auto &node2 = ctx.get_node(es.depth2);
@@ -98,12 +98,12 @@ void check_parent_entity_added_update(tree_context &ctx, entities es) {
     sync_global_transform(ctx);
     {
         es.depth2 = node2.entities().create();
-        auto depth2_tf = ctx.ecs().add_component<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().emplace<mut<transform>>(es.depth2);
         depth2_tf->scale(5.F);
     }
     sync_global_transform(ctx);
 
-    auto depth3_tf = ctx.ecs().get_components<const global_transform>(es.depth31);
+    auto depth3_tf = ctx.ecs().get<global_transform>(es.depth31);
     if(!approx_equal(depth3_tf->get().scale(), vec3f{5.F})) {
         throw std::runtime_error{"Depth3 scale mismatch"};
     }
@@ -113,15 +113,15 @@ void check_parent_entity_added_update(tree_context &ctx, entities es) {
 
 void check_parent_transform_removed_update(tree_context &ctx, const entities &es) {
     {
-        auto depth2_tf = ctx.ecs().get_components<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().get<mut<transform>>(es.depth2);
         depth2_tf->scale(3.F);
     }
     sync_global_transform(ctx);
 
-    ctx.ecs().remove_component<transform>(es.depth2);
+    ctx.ecs().destroy<transform>(es.depth2);
     sync_global_transform(ctx);
 
-    auto depth3_tf = ctx.ecs().get_components<const global_transform>(es.depth31);
+    auto depth3_tf = ctx.ecs().get<global_transform>(es.depth31);
     if(!approx_equal(depth3_tf->get().scale(), vec3f{1.F})) {
         throw std::runtime_error{"Depth3 scale mismatch"};
     }
@@ -131,18 +131,18 @@ void check_parent_transform_removed_update(tree_context &ctx, const entities &es
 
 void check_parent_transform_added_update(tree_context &ctx, const entities &es) {
     {
-        auto depth2_tf = ctx.ecs().get_components<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().get<mut<transform>>(es.depth2);
         depth2_tf->scale(3.F);
     }
-    ctx.ecs().remove_component<transform>(es.depth2);
+    ctx.ecs().destroy<transform>(es.depth2);
     sync_global_transform(ctx);
     {
-        auto depth2_tf = ctx.ecs().add_component<transform>(es.depth2);
+        auto depth2_tf = ctx.ecs().emplace<mut<transform>>(es.depth2);
         depth2_tf->scale(5.F);
     }
     sync_global_transform(ctx);
 
-    auto depth3_tf = ctx.ecs().get_components<const global_transform>(es.depth31);
+    auto depth3_tf = ctx.ecs().get<global_transform>(es.depth31);
     if(!approx_equal(depth3_tf->get().scale(), vec3f{5.F})) {
         throw std::runtime_error{"Depth3 scale mismatch"};
     }
@@ -162,7 +162,6 @@ void check_parent_transform_added_update(tree_context &ctx, const entities &es) 
     }; \
     TEST_CASE(#function) { \
         app my_app{{.assets_dir = "../assets"}}; \
-        REQUIRE_NOTHROW(my_app.enable_default_systems()); \
         REQUIRE_NOTHROW(my_app.systems().add<sys_##function>().run_as<sys_type::start>().run_as<sys_type::update>()); \
         REQUIRE_THROWS_MATCHES(my_app.run(), std::runtime_error, Message("OK")); \
     }
