@@ -46,21 +46,21 @@
 // constexpr auto duck_buttons = {scancode::down, scancode::s};
 // } // namespace data
 
-// void create_mesh_data(data::sprite id, const texture_2d_data &texture, entity en, ecs_registry &reg) {
+// void create_mesh_data(data::sprite id, entity texture_en, entity en, ecs_registry &reg) {
 //     reg.emplace<mesh_sprite_builder>(
 //         en,
 //         mesh_sprite_builder{
-//             .texture = &texture,
+//             .texture = texture_en,
 //             .pixels_per_unit = data::pixels_per_unit,
 //             .texture_rect = data::rects.at(id),
 //         });
 // }
 
-// std::unordered_map<data::sprite, entity> create_meshes(ecs_registry &reg, node &resource_node, const texture_2d_data &texture) {
+// std::unordered_map<data::sprite, entity> create_meshes(ecs_registry &reg, node &resource_node, entity texture_en) {
 //     std::unordered_map<data::sprite, entity> result;
 //     for(auto spr: {data::sprite::dino_wait, data::sprite::ground}) {
 //         const auto en = resource_node.entities().create();
-//         create_mesh_data(spr, texture, en, reg);
+//         create_mesh_data(spr, texture_en, en, reg);
 //         result.emplace(spr, en);
 //     }
 //     return result;
@@ -377,7 +377,7 @@
 //         ctx.vars().emplace<texture_holder>(texture_holder{.holder = texture_en});
 //         auto material = res.entities().create();
 //         reg.emplace<material_data>(material, material_data{.texture = texture_en});
-//         const auto &meshes = ctx.vars().emplace<mesh_holders>(create_meshes(reg, res, texture));
+//         const auto &meshes = ctx.vars().emplace<mesh_holders>(create_meshes(reg, res, texture_en));
 
 //         auto cam = scene.entities().create();
 //         reg.emplace<camera>(cam, camera{.clear_color = vec4f{1.F}});

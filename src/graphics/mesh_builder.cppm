@@ -1,7 +1,6 @@
 module;
 
 #include <cassert>
-#include <concepts>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -9,16 +8,12 @@ module;
 export module stay3.graphics:mesh_builder;
 
 import stay3.core;
+import stay3.ecs;
 
 import :vertex;
 import :material;
 
 export namespace st {
-
-template<typename builder>
-concept mesh_builder = requires(const builder &bd) {
-    { bd.build() } -> std::convertible_to<mesh_data>;
-};
 
 struct mesh_plane_builder {
     vec2f size;
@@ -64,18 +59,18 @@ struct mesh_plane_builder {
         return result;
     }
 };
-static_assert(mesh_builder<mesh_plane_builder>);
 
 struct mesh_sprite_builder {
 public:
-    const texture_2d_data *texture{};
+    component_ref<texture_2d_data> texture;
     float pixels_per_unit{};
     vec2f origin{0.5F};
     vec4f color{1.F};
     std::optional<rectf> texture_rect{std::nullopt};
 
-    [[nodiscard]] mesh_data build() const {
-        assert(texture != nullptr && "Unset texture");
+    [[nodiscard]] mesh_data build(ecs_registry &reg) const {
+        assert(!texture.is_null() && "Unset texture");
+        const auto texture = this->texture.get(reg);
         if(!texture_rect.has_value()) {
             const auto full_size = vec2f{texture->size()} / pixels_per_unit;
             return mesh_plane_builder{
@@ -99,7 +94,6 @@ public:
             .build();
     }
 };
-static_assert(mesh_builder<mesh_sprite_builder>);
 
 struct mesh_cube_builder {
     vec3f size;
@@ -173,5 +167,4 @@ struct mesh_cube_builder {
         // NOLINTEND(*-magic-numbers)
     }
 };
-static_assert(mesh_builder<mesh_cube_builder>);
 } // namespace st

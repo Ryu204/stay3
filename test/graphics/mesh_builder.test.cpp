@@ -1,6 +1,7 @@
 #include <catch2/catch_all.hpp>
 import stay3.graphics;
 import stay3.core;
+import stay3.ecs;
 
 using namespace st;
 
@@ -67,8 +68,11 @@ TEST_CASE("Plane") {
 }
 
 TEST_CASE("Sprite") {
+    ecs_registry reg;
+    entity en = reg.create();
+
     constexpr auto pixels_per_unit = 64.F;
-    texture_2d_data texture{"../assets/textures/example.jpg"};
+    const auto &texture = *reg.emplace<texture_2d_data>(en, "../assets/textures/example.jpg");
     const vec2f size = vec2f{texture.size()} / pixels_per_unit;
 
     REQUIRE(texture.size() == vec2u{1920, 1288});
@@ -80,13 +84,13 @@ TEST_CASE("Sprite") {
 
     SECTION("Full texture") {
         mesh_sprite_builder builder{
-            .texture = &texture,
+            .texture = en,
             .pixels_per_unit = pixels_per_unit,
             .color = red,
             .texture_rect = std::nullopt,
         };
 
-        const auto mesh = builder.build();
+        const auto mesh = builder.build(reg);
 
         SECTION("Size") {
             REQUIRE(mesh.vertices.size() == 4);
@@ -124,13 +128,13 @@ TEST_CASE("Sprite") {
 
     SECTION("With texture rect") {
         mesh_sprite_builder builder{
-            .texture = &texture,
+            .texture = en,
             .pixels_per_unit = pixels_per_unit,
             .color = red,
             .texture_rect = texture_rect,
         };
 
-        mesh_data mesh = builder.build();
+        mesh_data mesh = builder.build(reg);
 
         REQUIRE(mesh.vertices[0].uv.x == Catch::Approx{normed_texture_rect.left()});
         REQUIRE(mesh.vertices[0].uv.y == Catch::Approx{normed_texture_rect.top()});
