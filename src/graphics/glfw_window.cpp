@@ -117,8 +117,10 @@ key_status glfw_window::get_key(scancode code) {
     case GLFW_RELEASE:
         return key_status::released;
     default:
-        assert(false && "Unhandled key status");
+        break;
     }
+    assert(false && "Unhandled key status");
+    return key_status::released;
 }
 
 void glfw_window::set_window_callbacks() {
