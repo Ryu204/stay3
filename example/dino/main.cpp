@@ -1,3 +1,8 @@
+/**
+ * @brief The clone of the dino game of Google
+ * @note It is currently a w.i.p
+ */
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -33,6 +38,7 @@ const std::unordered_map<sprite, rectf> rects = {
 };
 constexpr auto pixels_per_unit = 100.F;
 constexpr vec3f gravity{0.F, -30.F, 0.F};
+constexpr vec3f dino_start_offset = 5.F * vec_left;
 constexpr auto dino_jump_height = 1.5F;
 const vec2f dino_bounding_box = vec2f{40.F, 94.F} / pixels_per_unit;
 const std::vector dino_run_frames = {
@@ -57,11 +63,11 @@ struct rigidbody {
     vec3f velocity;
     vec3f acceleration{data::gravity};
 };
+struct touched_ground {};
 struct jump_data {
     float height{};
 };
 struct jumped {};
-struct landed {};
 struct bounding_box {
     vec2f size;
 };
@@ -79,12 +85,19 @@ struct animation_user_state {
     decltype(animation_data::frames)::size_type index{};
     float current_time{};
 };
-struct dino_first_landed {};
+struct dino_first_touched_ground {};
 struct ground_reveal_started {};
+struct ground_revealing {
+    float speed{};
+    float max_width{};
+    float current_width{};
+};
 struct ground_revealed {};
-using mesh_holders = std::unordered_map<data::sprite, entity>;
 using animation_holders = std::unordered_map<data::animations, entity>;
 struct texture_holder {
+    entity holder;
+};
+struct material_holder {
     entity holder;
 };
 enum class dino_state : std::uint8_t {
@@ -94,34 +107,14 @@ enum class dino_state : std::uint8_t {
     jump,
 };
 const std::unordered_map<data::animations, animation_data> animations{
-    {data::animations::dino_run, {data::dino_run_frames, data::dino_fps}},
-    {data::animations::dino_run_duck, {data::dino_run_duck_frames, data::dino_fps}},
-    {data::animations::dino_jump, {{data::rects.at(data::sprite::dino_jump)}, data::dino_fps}},
+    {data::animations::dino_run, {.frames = data::dino_run_frames, .fps = data::dino_fps}},
+    {data::animations::dino_run_duck, {.frames = data::dino_run_duck_frames, .fps = data::dino_fps}},
+    {data::animations::dino_jump, {.frames = {data::rects.at(data::sprite::dino_jump)}, .fps = data::dino_fps}},
 };
-
-void create_mesh_data(data::sprite id, entity texture_en, entity en, ecs_registry &reg) {
-    reg.emplace<mesh_sprite_builder>(
-        en,
-        mesh_sprite_builder{
-            .texture = texture_en,
-            .pixels_per_unit = data::pixels_per_unit,
-            .texture_rect = data::rects.at(id),
-        });
-}
-
-mesh_holders create_meshes(ecs_registry &reg, node &resource_node, entity texture_en) {
-    std::unordered_map<data::sprite, entity> result;
-    for(auto spr: {data::sprite::dino_wait, data::sprite::ground}) {
-        const auto en = resource_node.entities().create();
-        create_mesh_data(spr, texture_en, en, reg);
-        result.emplace(spr, en);
-    }
-    return result;
-}
 
 animation_holders create_animations(ecs_registry &reg, node &resource_node) {
     animation_holders result;
-    for(const auto [animation_key, data]: animations) {
+    for(auto &&[animation_key, data]: animations) {
         const auto en = resource_node.entities().create();
         reg.emplace<animation_data>(en, data);
         result.emplace(animation_key, en);
@@ -146,12 +139,23 @@ bool is_duck_button_pressed(glfw_window &window) {
     });
 }
 
-class movement_system {
+class physics_system {
 public:
     static void update(seconds delta, tree_context &ctx) {
-        for(auto [en, tf, rg]: ctx.ecs().each<mut<transform>, mut<rigidbody>>()) {
+        auto &reg = ctx.ecs();
+        for(auto [en, tf, rg]: reg.each<mut<transform>, mut<rigidbody>>()) {
             rg->velocity += rg->acceleration * delta;
             tf->translate(rg->velocity * delta);
+        }
+        for(auto [en, tf, rg, box]: reg.each<mut<transform>, rigidbody, bounding_box>()) {
+            const auto bottom = tf->position().y - (box->size.y / 2.F);
+            if(bottom < 0) {
+                tf->translate(vec_up * (-bottom));
+                reg.get<mut<rigidbody>>(en)->velocity.y = std::max(0.F, rg->velocity.y);
+                reg.emplace_if_not_exist<touched_ground>(en);
+            } else {
+                reg.destroy_if_exist<touched_ground>(en);
+            }
         }
     }
 };
@@ -160,7 +164,8 @@ class animation_system {
 public:
     static void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
-        reg.on<comp_event::construct, animation_user>().connect<&animation_system::on_animation_user_constructed>(ctx);
+        reg.on<comp_event::construct, animation_user>().connect<&animation_system::on_animation_user_constructed>();
+        reg.on<comp_event::update, animation_user>().connect<&animation_system::update_animation_mesh>();
         reg.on<comp_event::destroy, animation_user>().connect<&ecs_registry::destroy_if_exist<animation_user_state>>();
     }
     static void post_update(seconds delta, tree_context &ctx) {
@@ -170,7 +175,7 @@ public:
             auto animation = data->animation.get(reg);
             const auto is_frame_modified = state->current_time > 1.F / animation->fps;
             while(state->current_time > 1.F / animation->fps) {
-                state->current_time -= animation->fps;
+                state->current_time -= 1.F / animation->fps;
                 state->index = (state->index + 1) % animation->frames.size();
             }
             if(is_frame_modified) {
@@ -180,46 +185,19 @@ public:
     }
 
 private:
-    static void on_animation_user_constructed(tree_context &ctx, ecs_registry &reg, entity en) {
+    static void on_animation_user_constructed(ecs_registry &reg, entity en) {
         auto anim = reg.get<animation_user>(en);
-        assert(!reg.contains<mesh_data>(en) && !reg.contains<mesh_sprite_builder>(en) && "Expect to create these components after animation_user");
-        auto texture_entity = ctx.vars().get<texture_holder>().holder;
-        auto mesh_builder = reg.emplace<mesh_sprite_builder>(
-            en,
-            mesh_sprite_builder{
-                .texture = texture_entity,
-                .pixels_per_unit = data::pixels_per_unit,
-            });
+        assert(reg.contains<mesh_sprite_builder>(en) && "Expect animation_user to have mesh_sprite_builder");
         reg.emplace<animation_user_state>(en);
         update_animation_mesh(reg, en);
-        reg.get<mut<rendered_mesh>>(en)->mesh = entity{} /*en*/;
+        reg.get<mut<rendered_mesh>>(en)->mesh = en;
     }
     static void update_animation_mesh(ecs_registry &reg, entity en) {
-        auto [mesh_builder, state, data] = reg.get<mut<mesh_sprite_builder>, animation_user_state, animation_user>(en);
+        auto [mesh_builder, state, data] = reg.get<mut<mesh_sprite_builder>, mut<animation_user_state>, animation_user>(en);
         auto animation = data->animation.get(reg);
-        assert(state->index < animation->frames.size());
+        assert(!animation->frames.empty() && "Empty animation data");
+        state->index %= animation->frames.size();
         mesh_builder->texture_rect = animation->frames[state->index];
-    }
-};
-
-class bound_system {
-public:
-    static void post_update(seconds, tree_context &ctx) {
-        auto &reg = ctx.ecs();
-        for(auto [en, tf, box]: reg.each<mut<transform>, bounding_box>()) {
-            const auto bottom = tf->position().y - (box->size.y / 2.F);
-            if(bottom < 0) {
-                tf->translate(vec_up * (-bottom));
-                if(reg.contains<rigidbody>(en)) {
-                    auto rg = reg.get<mut<rigidbody>>(en);
-                    rg->velocity.y = std::max(0.F, rg->velocity.y);
-                }
-                if(reg.contains<jump_data>(en)) {
-                    reg.destroy_if_exist<jumped>(en);
-                    reg.emplace_if_not_exist<landed>(en);
-                }
-            }
-        }
     }
 };
 
@@ -228,7 +206,7 @@ public:
     static void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
         reg.on<comp_event::construct, bounding_box>().connect<&bound_debug_system::on_bounding_box_constructed>(ctx);
-        reg.on<comp_event::destroy, bounding_box_debug>().connect<&bound_debug_system::remove_shape_entity>(ctx);
+        reg.on<comp_event::destroy, bounding_box_debug>().connect<&bound_debug_system::remove_shape_entity>();
     }
     static void post_update(seconds, tree_context &ctx) {
         auto &reg = ctx.ecs();
@@ -242,16 +220,17 @@ private:
     static void on_bounding_box_constructed(tree_context &ctx, ecs_registry &reg, entity en) {
         const auto box = reg.get<bounding_box>(en);
         auto db = reg.emplace<mut<bounding_box_debug>>(en);
-        db->renderer = add_shape_entity(reg, ctx.get_node(en), box->size, get_random_color());
+        db->renderer = add_shape_entity(ctx, ctx.get_node(en), box->size, get_random_color());
     }
-    static entity add_shape_entity(ecs_registry &reg, node &bounding_box_node, const vec2f &size, const vec4f &color) {
+    static entity add_shape_entity(tree_context &ctx, node &bounding_box_node, const vec2f &size, const vec4f &color) {
+        auto &reg = ctx.ecs();
         auto en = bounding_box_node.entities().create();
+        const auto &material = ctx.vars().get<material_holder>();
         reg.emplace<mesh_plane_builder>(en, mesh_plane_builder{.size = size, .color = color});
-        reg.emplace<material_data>(en);
-        reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = en, .material = en});
+        reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = en, .material = material.holder});
         return en;
     }
-    static void remove_shape_entity(tree_context &ctx, ecs_registry &reg, entity en) {
+    static void remove_shape_entity(ecs_registry &reg, entity en) {
         const auto db_entity = reg.get<bounding_box_debug>(en)->renderer;
         reg.destroy_if_exist(db_entity);
     }
@@ -266,6 +245,10 @@ private:
 
 class jump_system {
 public:
+    static void start(tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        reg.on<comp_event::construct, touched_ground>().connect<&ecs_registry::destroy_if_exist<jumped>>();
+    }
     static void update(seconds, tree_context &ctx) {
         auto &window = ctx.vars().get<runtime_info>().window();
         if(is_jump_button_pressed(window)) {
@@ -276,9 +259,8 @@ public:
 private:
     static void jump_all(ecs_registry &reg) {
         for(auto [en, rg, jump]: reg.each<mut<rigidbody>, jump_data>()) {
-            if(reg.contains<landed>(en)) {
+            if(reg.contains<touched_ground>(en)) {
                 rg->velocity.y = std::sqrt(std::abs(2.F * jump->height * data::gravity.y));
-                reg.destroy_if_exist<landed>(en);
                 reg.emplace_if_not_exist<jumped>(en);
             }
         }
@@ -290,8 +272,7 @@ public:
     static void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
         reg.on<comp_event::construct, jumped>().connect<&dino_system::to_jump_state>(ctx);
-        reg.on<comp_event::construct, landed>().connect<&dino_system::to_run_state>(ctx);
-        reg.on<comp_event::construct, landed>().connect<&ecs_registry::emplace_if_not_exist<dino_first_landed>>();
+        reg.on<comp_event::construct, touched_ground>().connect<&dino_system::on_touched_ground>(ctx);
     }
     static void update(seconds, tree_context &ctx) {
         auto &reg = ctx.ecs();
@@ -333,14 +314,70 @@ private:
         *reg.get<mut<dino_state>>(en) = dino_state::run_duck;
         reg.get<mut<animation_user>>(en)->animation = ctx.vars().get<animation_holders>().at(data::animations::dino_run_duck);
     }
+    static void on_touched_ground(tree_context &ctx, ecs_registry &reg, entity en) {
+        if(!reg.contains<dino_state>(en)) { return; }
+        if(*reg.get<dino_state>(en) == dino_state::jump) {
+            to_run_state(ctx, reg, en);
+            reg.emplace_if_not_exist<dino_first_touched_ground>(en);
+        }
+    }
 };
 
 class ground_system {
 public:
     static void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
+        reg.on<comp_event::construct, ground_reveal_started>().connect<&ground_system::prepare_ground_render>(ctx);
+        reg.on<comp_event::construct, ground_reveal_started>().connect<+[](ecs_registry &reg, entity en) {
+            reg.emplace<ground_revealing>(
+                en,
+                ground_revealing{
+                    .speed = 20.F,
+                    .max_width = 2.F * std::abs(data::dino_start_offset.x),
+                });
+        }>();
     }
-    static void update(seconds, tree_context &ctx) {
+    static void update(seconds delta, tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        for(auto &&[en, revealing, mesh_builder]: reg.each<mut<ground_revealing>, mut<mesh_sprite_builder>>()) {
+            const auto new_width_unclamped = revealing->current_width + (revealing->speed * delta);
+            const auto is_max_width_reached = new_width_unclamped >= revealing->max_width;
+            revealing->current_width = std::min(revealing->max_width, new_width_unclamped);
+            mesh_builder->texture_rect->size.x = revealing->current_width * mesh_builder->pixels_per_unit;
+            if(is_max_width_reached) {
+                reg.emplace_if_not_exist<ground_revealed>(en);
+            }
+        }
+        for(auto &&[en, revealed, mesh_builder]: reg.each<ground_revealed, mut<mesh_sprite_builder>>()) {
+            const auto speed = 10.F;
+            auto &texture_position = mesh_builder->texture_rect->position;
+            texture_position.x += speed * delta * mesh_builder->pixels_per_unit;
+            const auto &texture_rect = data::rects.at(data::sprite::ground);
+            texture_position.x = std::fmod(texture_position.x, texture_rect.size.x) + texture_rect.position.x;
+        }
+    }
+
+private:
+    static void prepare_ground_render(tree_context &ctx, ecs_registry &reg, entity en) {
+        const auto &vars = ctx.vars();
+        const auto &material = vars.get<material_holder>();
+        const auto &texture = vars.get<texture_holder>();
+        {
+            auto builder = reg.emplace<mut<mesh_sprite_builder>>(
+                en,
+                mesh_sprite_builder{
+                    .texture = texture.holder,
+                    .pixels_per_unit = data::pixels_per_unit,
+                    .origin = {},
+                    .texture_rect = data::rects.at(data::sprite::ground),
+                });
+            builder->texture_rect->size.x = 0.F;
+        }
+        reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = en, .material = material.holder});
+        reg.get<mut<transform>>(en)
+            ->translate(data::dino_start_offset)
+            .translate(vec_forward * 2.F)
+            .translate(vec_up * 0.3F);
     }
 };
 
@@ -348,30 +385,49 @@ class game_system {
 public:
     void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
+        auto &vars = ctx.vars();
 
         auto &resource_node = ctx.root().add_child();
         auto &scene_node = ctx.root().add_child();
 
         auto texture_en = resource_node.entities().create();
         const auto &texture = *reg.emplace<texture_2d_data>(texture_en, "assets/base64.png");
-        ctx.vars().emplace<texture_holder>(texture_holder{.holder = texture_en});
-        auto material = resource_node.entities().create();
-        reg.emplace<material_data>(material, material_data{.texture = texture_en});
-        const auto &meshes = ctx.vars().emplace<mesh_holders>(create_meshes(reg, resource_node, texture_en));
-        ctx.vars().emplace<animation_holders>(create_animations(reg, resource_node));
+        vars.emplace<texture_holder>(texture_en);
+        auto material_en = resource_node.entities().create();
+        reg.emplace<material_data>(material_en, material_data{.texture = texture_en});
+        vars.emplace<material_holder>(material_en);
+        vars.emplace<animation_holders>(create_animations(reg, resource_node));
 
         auto cam = scene_node.entities().create();
-        reg.emplace<camera>(cam, camera{.clear_color = vec4f{1.F}});
+        reg.emplace<camera>(
+            cam,
+            camera{
+                .clear_color = vec4f{1.F},
+                .data = camera::orthographic_data{
+                    .width = 1.2F * 2.F * std::abs(data::dino_start_offset.x),
+                },
+            });
         reg.emplace<main_camera>(cam);
         reg.get<mut<transform>>(cam)->set_position(vec_back * 3.F + 1.5F * vec_up);
 
         m_dino = scene_node.entities().create();
+        reg.emplace<mesh_sprite_builder>(
+            m_dino,
+            mesh_sprite_builder{
+                .texture = texture_en,
+                .pixels_per_unit = data::pixels_per_unit,
+                .origin = vec2f{0.F, 0.5F},
+                .texture_rect = data::rects.at(data::sprite::dino_wait),
+            });
         reg.emplace<rendered_mesh>(
             m_dino,
             rendered_mesh{
-                .mesh = meshes.at(data::sprite::dino_wait),
-                .material = material,
+                .mesh = m_dino,
+                .material = material_en,
             });
+        reg.get<mut<transform>>(m_dino)
+            ->translate(data::rects.at(data::sprite::dino_wait).size.y * 0.5F / data::pixels_per_unit * vec_up)
+            .translate(data::dino_start_offset);
         reg.emplace<dino_state>(m_dino, dino_state::idle);
         reg.emplace<bounding_box>(m_dino, data::dino_bounding_box);
 
@@ -405,7 +461,7 @@ private:
         const auto &animations = ctx.vars().get<animation_holders>();
         reg.emplace<animation_user>(m_dino, animation_user{.animation = animations.at(data::animations::dino_jump)});
 
-        reg.on<comp_event::construct, dino_first_landed>().connect<+[](entity ground, ecs_registry &reg, entity) {
+        reg.on<comp_event::construct, dino_first_touched_ground>().connect<+[](entity ground, ecs_registry &reg, entity) {
             reg.emplace<ground_reveal_started>(ground);
         }>(m_ground);
     }
@@ -430,40 +486,31 @@ int main() {
                 .filter = filter_mode::nearest,
             },
         }};
-        my_app
-            .systems()
+        auto &systems = my_app.systems();
+        systems
             .add<game_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::input>();
-        my_app
-            .systems()
-            .add<movement_system>()
+        systems
+            .add<physics_system>()
             .run_as<sys_type::update>(sys_priority::high);
-        my_app
-            .systems()
+        systems
             .add<jump_system>()
-            .run_as<sys_type::update>();
-        my_app
-            .systems()
-            .add<bound_system>()
-            .run_as<sys_type::post_update>();
-        my_app
-            .systems()
+            .run_as<sys_type::update>()
+            .run_as<sys_type::start>();
+        systems
             .add<bound_debug_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::post_update>();
-        my_app
-            .systems()
+        systems
             .add<animation_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::post_update>();
-        my_app
-            .systems()
+        systems
             .add<dino_system>()
             .run_as<sys_type::update>()
             .run_as<sys_type::start>();
-        my_app
-            .systems()
+        systems
             .add<ground_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::update>();

@@ -35,8 +35,13 @@ public:
     }
 
     template<typename type>
+    const type &get() const {
+        return std::any_cast<const type &>(m_variables.at(std::type_index{typeid(type)}));
+    }
+
+    template<typename type>
     type &get() {
-        return std::any_cast<type &>(m_variables.at(std::type_index{typeid(type)}));
+        return const_cast<type &>(std::as_const(*this).get<type>());
     }
 
     template<typename type, any_map_key id>
