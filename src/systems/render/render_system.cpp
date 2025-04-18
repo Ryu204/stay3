@@ -2,6 +2,7 @@ module;
 
 #include <algorithm>
 #include <filesystem>
+#include <type_traits>
 #include <variant>
 #include <webgpu/webgpu_cpp.h>
 
@@ -22,21 +23,25 @@ import :components;
 
 namespace st {
 
-template<mesh_builder builder>
-void register_one_builder(ecs_registry &reg) {
-    reg.on<comp_event::construct, builder>().template connect<&ecs_registry::emplace<mesh_data_changed>>();
-    reg.on<comp_event::update, builder>().template connect<&ecs_registry::emplace_if_not_exist<mesh_data_changed>>();
-    reg.on<comp_event::destroy, builder>().template connect<&ecs_registry::destroy_if_exist<mesh_data_changed>>();
+template<typename builder>
+void register_one_mesh_builder(ecs_registry &reg) {
+    reg.on<comp_event::construct, builder>().template connect<&ecs_registry::emplace<mesh_builder_data_changed>>();
+    reg.on<comp_event::update, builder>().template connect<&ecs_registry::emplace_if_not_exist<mesh_builder_data_changed>>();
+    reg.on<comp_event::destroy, builder>().template connect<&ecs_registry::destroy_if_exist<mesh_builder_data_changed>>();
     reg.on<comp_event::construct, mesh_data_update_requested>().connect<+[](ecs_registry &reg, entity en) {
         // This callback is invoked for every builder type so we need to do this check
         if(reg.contains<builder>(en)) {
-            reg.emplace_or_replace<mesh_data>(en, reg.get<builder>(en)->build());
+            if constexpr(std::is_same_v<builder, mesh_sprite_builder>) {
+                reg.emplace_or_replace<mesh_data>(en, reg.get<builder>(en)->build(reg));
+            } else {
+                reg.emplace_or_replace<mesh_data>(en, reg.get<builder>(en)->build());
+            }
         }
     }>();
 }
-template<mesh_builder... builders>
-void register_builders(ecs_registry &reg) {
-    (register_one_builder<builders>(reg), ...);
+template<typename... builders>
+void register_mesh_builders(ecs_registry &reg) {
+    (register_one_mesh_builder<builders>(reg), ...);
 }
 
 render_system::render_system(const vec2u &surface_size, std::filesystem::path shader_path, const render_config &config)
@@ -60,10 +65,10 @@ void render_system::render(tree_context &ctx) {
 
     // Update mesh data
     {
-        for(auto en: reg.view<mesh_data_changed>()) {
+        for(auto en: reg.view<mesh_builder_data_changed>()) {
             reg.emplace<mesh_data_update_requested>(en);
         }
-        reg.destroy_all<mesh_data_changed>();
+        reg.destroy_all<mesh_builder_data_changed>();
         reg.destroy_all<mesh_data_update_requested>();
     }
 
@@ -146,6 +151,7 @@ void render_system::setup_signals(tree_context &ctx) {
     reg.on<comp_event::destroy, mesh_data>().connect<&ecs_registry::destroy_if_exist<mesh_state>>();
 
     reg.on<comp_event::construct, rendered_mesh>().connect<&render_system::initialize_rendered_mesh_state>(*this);
+    reg.on<comp_event::update, rendered_mesh>().connect<&render_system::validate_rendered_mesh>();
     reg.on<comp_event::destroy, rendered_mesh>().connect<&ecs_registry::destroy_if_exist<rendered_mesh_state>>();
     make_soft_dependency<transform, rendered_mesh>(reg);
 
@@ -160,7 +166,7 @@ void render_system::setup_signals(tree_context &ctx) {
     reg.on<comp_event::update, material_data>().connect<&render_system::create_material_state_from_data>(*this);
     reg.on<comp_event::destroy, material_data>().connect<&ecs_registry::destroy_if_exist<material_state>>();
 
-    register_builders<
+    register_mesh_builders<
         mesh_plane_builder,
         mesh_sprite_builder,
         mesh_cube_builder>(reg);
@@ -209,12 +215,18 @@ void render_system::create_mesh_state_from_data(ecs_registry &reg, entity en) co
     }
 }
 
-void render_system::initialize_rendered_mesh_state(ecs_registry &reg, entity en) {
+void render_system::validate_rendered_mesh(ecs_registry &reg, entity en) {
     assert(!reg.get<rendered_mesh>(en)->mesh.is_null()
            && "rendered_mesh without mesh_data");
+    assert((reg.contains<mesh_data>(reg.get<rendered_mesh>(en)->mesh.entity())
+            || reg.contains<mesh_builder_data_changed>(reg.get<rendered_mesh>(en)->mesh.entity()))
+           && "rendered_mesh points to entity without mesh_data or mesh builder");
     assert(!reg.get<rendered_mesh>(en)->material.is_null()
            && "rendered_mesh without material_data");
+}
 
+void render_system::initialize_rendered_mesh_state(ecs_registry &reg, entity en) {
+    validate_rendered_mesh(reg, en);
     auto state = reg.emplace<mut<rendered_mesh_state>>(en);
     state->object_uniform_buffer = create_object_uniform_buffer();
     state->object_bind_group = create_object_bind_group(state->object_uniform_buffer);

@@ -32,7 +32,7 @@ TEST_CASE("Render some entity") {
             reg.emplace<mesh_sprite_builder>(
                 entity2,
                 mesh_sprite_builder{
-                    .texture = &(*reg.get<texture_2d_data>(material)),
+                    .texture = material,
                     .pixels_per_unit = 100.F,
                     .color = {1, 0, 1, 1},
                 });
