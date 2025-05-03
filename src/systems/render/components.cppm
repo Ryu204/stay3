@@ -21,4 +21,7 @@ struct rendered_mesh_state {
     wgpu::BindGroup object_bind_group;
 };
 
+struct default_texture_tag {};
+struct default_sampler_tag {};
+
 } // namespace st

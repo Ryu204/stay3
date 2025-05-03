@@ -35,6 +35,10 @@ app &app::enable_default_systems() {
         .run_as<sys_type::start>(sys_priority::high)
         .run_as<sys_type::render>()
         .run_as<sys_type::cleanup>(sys_priority::very_low);
+    m_ecs_systems
+        .add<text_system>()
+        .run_as<sys_type::start>(sys_priority::high)
+        .run_as<sys_type::render>(sys_priority::high);
     return *this;
 }
 

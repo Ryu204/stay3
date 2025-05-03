@@ -62,7 +62,7 @@ struct mesh_plane_builder {
 
 struct mesh_sprite_builder {
 public:
-    component_ref<texture_2d_data> texture;
+    component_ref<texture_2d> texture;
     float pixels_per_unit{};
     vec2f origin{0.5F};
     vec4f color{1.F};

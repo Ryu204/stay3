@@ -12,6 +12,6 @@ export namespace st {
  */
 struct rendered_mesh {
     component_ref<mesh_data> mesh;
-    component_ref<material_data> material;
+    component_ref<material> mat;
 };
 } // namespace st

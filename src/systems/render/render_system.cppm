@@ -13,6 +13,8 @@ import :init_result;
 import :config;
 import :render_pass;
 import :bind_group_layouts;
+import :texture_subsystem;
+import :material_subsystem;
 
 export namespace st {
 class render_system {
@@ -33,12 +35,6 @@ private:
     void initialize_rendered_mesh_state(ecs_registry &reg, entity en);
     [[nodiscard]] wgpu::Buffer create_object_uniform_buffer() const;
     [[nodiscard]] wgpu::BindGroup create_object_bind_group(const wgpu::Buffer &uniform_buffer) const;
-    void initialize_texture_2d_state(ecs_registry &reg, entity en) const;
-    void create_texture_2d_state_from_data(ecs_registry &reg, entity en) const;
-    void initialize_material_state(ecs_registry &reg, entity en) const;
-    void create_material_state_from_data(ecs_registry &reg, entity en) const;
-    static entity default_texture_entity(ecs_registry &reg);
-    entity default_sampler_entity(ecs_registry &reg) const;
 
     init_result m_global;
     texture_view m_depth_texture;
@@ -49,5 +45,7 @@ private:
     render_config m_config;
     vec2u m_surface_size;
     std::filesystem::path m_shader_path;
+    texture_subsystem m_texture_subsystem;
+    material_subsystem m_material_subsystem;
 };
 } // namespace st

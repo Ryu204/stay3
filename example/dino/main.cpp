@@ -227,7 +227,7 @@ private:
         auto en = bounding_box_node.entities().create();
         const auto &material = ctx.vars().get<material_holder>();
         reg.emplace<mesh_plane_builder>(en, mesh_plane_builder{.size = size, .color = color});
-        reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = en, .material = material.holder});
+        reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = en, .mat = material.holder});
         return en;
     }
     static void remove_shape_entity(ecs_registry &reg, entity en) {
@@ -373,7 +373,7 @@ private:
                 });
             builder->texture_rect->size.x = 0.F;
         }
-        reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = en, .material = material.holder});
+        reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = en, .mat = material.holder});
         reg.get<mut<transform>>(en)
             ->translate(data::dino_start_offset)
             .translate(vec_forward * 2.F)
@@ -386,15 +386,19 @@ public:
     void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
         auto &vars = ctx.vars();
+        auto &texture_cmd = vars.get<texture_2d::commands>();
 
         auto &resource_node = ctx.root().add_child();
         auto &scene_node = ctx.root().add_child();
 
         auto texture_en = resource_node.entities().create();
-        const auto &texture = *reg.emplace<texture_2d_data>(texture_en, "assets/base64.png");
+        texture_cmd.emplace(texture_2d::command_load{
+            .target = texture_en,
+            .filename = "assets/base64.png",
+        });
         vars.emplace<texture_holder>(texture_en);
         auto material_en = resource_node.entities().create();
-        reg.emplace<material_data>(material_en, material_data{.texture = texture_en});
+        reg.emplace<material>(material_en, material{.texture = texture_en});
         vars.emplace<material_holder>(material_en);
         vars.emplace<animation_holders>(create_animations(reg, resource_node));
 
@@ -423,7 +427,7 @@ public:
             m_dino,
             rendered_mesh{
                 .mesh = m_dino,
-                .material = material_en,
+                .mat = material_en,
             });
         reg.get<mut<transform>>(m_dino)
             ->translate(data::rects.at(data::sprite::dino_wait).size.y * 0.5F / data::pixels_per_unit * vec_up)
