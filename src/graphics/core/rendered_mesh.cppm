@@ -1,6 +1,6 @@
 module;
 
-export module stay3.graphics:rendered_mesh;
+export module stay3.graphics.core:rendered_mesh;
 
 import stay3.ecs;
 import :vertex;

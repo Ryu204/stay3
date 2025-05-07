@@ -1,5 +1,5 @@
 #include <catch2/catch_all.hpp>
-import stay3.graphics;
+import stay3.graphics.core;
 import stay3.core;
 import stay3.ecs;
 

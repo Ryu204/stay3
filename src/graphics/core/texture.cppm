@@ -7,7 +7,7 @@ module;
 #include <variant>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.graphics:texture;
+export module stay3.graphics.core:texture;
 
 import stay3.core;
 import stay3.ecs;

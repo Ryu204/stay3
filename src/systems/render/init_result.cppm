@@ -5,7 +5,7 @@ module;
 export module stay3.system.render:init_result;
 
 import stay3.core;
-import stay3.graphics;
+import stay3.graphics.core;
 import :config;
 
 export namespace st {

@@ -1,6 +1,6 @@
 module;
 
-export module stay3.graphics:material;
+export module stay3.graphics.core:material;
 
 import stay3.ecs;
 import :texture;

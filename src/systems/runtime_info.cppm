@@ -4,7 +4,7 @@ module;
 
 export module stay3.system.runtime_info;
 
-import stay3.graphics;
+import stay3.graphics.core;
 
 export namespace st {
 class runtime_info {

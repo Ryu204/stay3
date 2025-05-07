@@ -8,7 +8,8 @@ export module stay3.system.text;
 
 import stay3.node;
 import stay3.ecs;
-import stay3.graphics;
+import stay3.graphics.core;
+import stay3.graphics.text;
 
 import :font_state;
 import :font_atlas;
@@ -189,6 +190,7 @@ private:
             .position = top_left + static_cast<float>(metrics.height) * vec_down / pixels_per_unit,
             .uv = vec2f{texture_rect.position.x, texture_rect.position.y + texture_rect.size.y} / vec2f{texture_size},
         });
+        assert(vertices.back().position.x < 100000);
     }
 };
 } // namespace st

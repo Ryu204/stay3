@@ -22,17 +22,19 @@ target_sources(${PROJECT_NAME}
     src/program/config.cppm
     src/program/app.cppm
 
+    src/graphics/core/mod.cppm
+    src/graphics/core/error.cppm
+    src/graphics/core/vertex.cppm
+    src/graphics/core/glfw_window.cppm
+    src/graphics/core/camera.cppm
+    src/graphics/core/material.cppm
+    src/graphics/core/texture.cppm
+    src/graphics/core/rendered_mesh.cppm
+    src/graphics/core/mesh_builder.cppm
+    src/graphics/text/mod.cppm
+    src/graphics/text/font.cppm
+    src/graphics/text/text.cppm
     src/graphics/mod.cppm
-    src/graphics/error.cppm
-    src/graphics/vertex.cppm
-    src/graphics/glfw_window.cppm
-    src/graphics/camera.cppm
-    src/graphics/material.cppm
-    src/graphics/texture.cppm
-    src/graphics/rendered_mesh.cppm
-    src/graphics/mesh_builder.cppm
-    src/graphics/font.cppm
-    src/graphics/text.cppm
 
     src/core/mod.cppm
     src/core/error.cppm
@@ -95,7 +97,7 @@ target_sources(${PROJECT_NAME}
 
     src/program/app.cpp
 
-    src/graphics/glfw_window.cpp
+    src/graphics/core/glfw_window.cpp
 
     src/core/time.cpp
     src/core/transform.cpp

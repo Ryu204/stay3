@@ -4,7 +4,7 @@ module;
 
 export module stay3.system.text:font_state;
 
-import stay3.graphics;
+import stay3.graphics.text;
 import stay3.ecs;
 import :font_atlas;
 

@@ -10,7 +10,7 @@ module stay3.system.render;
 
 import stay3.node;
 import stay3.ecs;
-import stay3.graphics;
+import stay3.graphics.core;
 import stay3.core;
 import stay3.system.runtime_info;
 import stay3.system.transform;

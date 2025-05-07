@@ -8,7 +8,7 @@ export module stay3.system.render:mesh_subsystem;
 import stay3.node;
 import stay3.ecs;
 import stay3.core;
-import stay3.graphics;
+import stay3.graphics.core;
 import :init_result;
 import :components;
 

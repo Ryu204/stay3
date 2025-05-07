@@ -2,7 +2,7 @@ module;
 
 #include <string>
 
-export module stay3.graphics:text;
+export module stay3.graphics.text:text;
 
 import stay3.ecs;
 import :font;

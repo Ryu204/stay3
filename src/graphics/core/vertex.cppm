@@ -4,7 +4,7 @@ module;
 #include <optional>
 #include <vector>
 
-export module stay3.graphics:vertex;
+export module stay3.graphics.core:vertex;
 
 import stay3.core;
 

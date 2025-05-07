@@ -4,7 +4,7 @@ module;
 #include <optional>
 #include <variant>
 
-export module stay3.graphics:camera;
+export module stay3.graphics.core:camera;
 
 import stay3.core;
 

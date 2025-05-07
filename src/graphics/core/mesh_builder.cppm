@@ -5,7 +5,7 @@ module;
 #include <optional>
 #include <vector>
 
-export module stay3.graphics:mesh_builder;
+export module stay3.graphics.core:mesh_builder;
 
 import stay3.core;
 import stay3.ecs;

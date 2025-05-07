@@ -7,13 +7,12 @@ module;
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-export module stay3.graphics:font;
+export module stay3.graphics.text:font;
 
 import stay3.core;
 import stay3.node;
 import stay3.ecs;
-import :material;
-import :error;
+import stay3.graphics.core;
 
 namespace st {
 
@@ -72,7 +71,7 @@ export struct glyph_metrics {
     unsigned int width{};
     unsigned int height{};
     unsigned int advance{};
-    vec2u bearing;
+    vec2i bearing;
 };
 export struct glyph_load_result {
     glyph_metrics metrics;

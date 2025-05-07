@@ -1,4 +1,4 @@
-export module stay3.graphics:error;
+export module stay3.graphics.core:error;
 
 import stay3.core;
 

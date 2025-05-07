@@ -7,7 +7,7 @@ module;
 module stay3.system.render;
 
 import stay3.core;
-import stay3.graphics;
+import stay3.graphics.core;
 import :bind_group_layouts;
 import :pipeline;
 

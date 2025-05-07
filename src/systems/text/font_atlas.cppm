@@ -8,7 +8,8 @@ module;
 #include <stb/stb_rect_pack.h>
 export module stay3.system.text:font_atlas;
 
-import stay3.graphics;
+import stay3.graphics.core;
+import stay3.graphics.text;
 import stay3.ecs;
 import stay3.core;
 
