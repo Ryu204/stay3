@@ -10,7 +10,7 @@ import stay3.core;
 
 export namespace st {
 struct vertex_attributes {
-    vec4f color;
+    vec4f color{1.F};
     vec3f position;
     vec3f normal;
     vec2f uv;

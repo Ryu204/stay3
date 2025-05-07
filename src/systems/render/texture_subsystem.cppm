@@ -35,6 +35,12 @@ public:
             auto [data, state] = reg.get<texture_2d, texture_2d_state>(cmd.target.entity());
             assert(!cmd.data.empty() && "No data to write to texture");
             assert(cmd.origin.x < data->size().x && cmd.origin.y < data->size().y && "Origin exceeds texture dimension");
+            assert(
+                (!cmd.size.has_value()
+                 || (cmd.origin.x + cmd.size->x <= data->size().x && cmd.origin.y + cmd.size->y <= data->size().y))
+                && "Region to write is not completely inside texture dimension");
+            const auto size = cmd.size.value_or(data->size() - cmd.origin);
+            assert(cmd.data.size() == static_cast<std::size_t>(data->channel_count()) * size.x * size.y && "Buffer does not match write size");
             const wgpu::TexelCopyTextureInfo dest{
                 .texture = state->texture,
                 .mipLevel = 0,
@@ -43,17 +49,17 @@ public:
             };
             const wgpu::TexelCopyBufferLayout layout{
                 .offset = 0,
-                .bytesPerRow = data->channel_count() * data->size().x,
-                .rowsPerImage = data->size().y,
+                .bytesPerRow = data->channel_count() * size.x,
+                .rowsPerImage = size.y,
             };
             const wgpu::Extent3D texture_size{
-                .width = data->size().x,
-                .height = data->size().y,
+                .width = size.x,
+                .height = size.y,
                 .depthOrArrayLayers = 1,
             };
             const std::size_t data_size_byte =
                 static_cast<std::size_t>(data->channel_count())
-                * (data->size().x - cmd.origin.x) * (data->size().y - cmd.origin.y);
+                * size.x * size.y;
             assert(cmd.data.size() == data_size_byte && "Data's size does not match texture region size");
             m_context->queue.WriteTexture(&dest, cmd.data.data(), data_size_byte, &layout, &texture_size);
         };
@@ -63,7 +69,7 @@ public:
             }
             vec2i size;
             int raw_channel_count{};
-            auto format = cmd.preferred_format.value_or(texture_2d::format::rgba8u_norm);
+            auto format = cmd.preferred_format.value_or(texture_2d::format::rgba8unorm);
             stbi_uc *loaded_data = stbi_load(cmd.filename.c_str(), &size.x, &size.y, &raw_channel_count, static_cast<int>(texture_2d::format_to_channel_count(format)));
             if(loaded_data == nullptr) {
                 log::warn("Failed to load image: ", cmd.filename);
@@ -110,7 +116,7 @@ private:
         constexpr auto max_value = std::numeric_limits<std::uint8_t>::max();
         reg.emplace<texture_2d>(
             result,
-            texture_2d::format::rgba8u_norm,
+            texture_2d::format::rgba8unorm,
             vec2u{1, 1});
         reg.emplace<default_texture_tag>(result);
         ctx.vars().get<texture_2d::commands>().emplace(texture_2d::command_write{
@@ -126,6 +132,7 @@ private:
             .height = data->size().y,
             .depthOrArrayLayers = 1,
         };
+        m_context->device.PushErrorScope(wgpu::ErrorFilter::Validation);
         // Create
         {
             assert(data->size().x > 0 && data->size().y > 0 && "Invalid texture size");
@@ -141,6 +148,19 @@ private:
             };
             state->texture = m_context->device.CreateTexture(&desc);
         }
+        m_context->device.PopErrorScope(
+            wgpu::CallbackMode::AllowSpontaneous,
+            [](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
+                if(status != wgpu::PopErrorScopeStatus::Success) {
+                    log::warn("Failed to check texture creation status");
+                    return;
+                }
+                if(type == wgpu::ErrorType::NoError) {
+                    return;
+                }
+                log::error("Failed to create texture: ", message, " (code ", static_cast<std::uint32_t>(status), ")");
+            });
+        m_context->device.PushErrorScope(wgpu::ErrorFilter::Validation);
         // Texture view
         {
             const wgpu::TextureViewDescriptor desc{
@@ -155,6 +175,18 @@ private:
             };
             state->view = state->texture.CreateView(&desc);
         }
+        m_context->device.PopErrorScope(
+            wgpu::CallbackMode::AllowSpontaneous,
+            [](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
+                if(status != wgpu::PopErrorScopeStatus::Success) {
+                    log::warn("Failed to check texture view creation status");
+                    return;
+                }
+                if(type == wgpu::ErrorType::NoError) {
+                    return;
+                }
+                log::error("Failed to create texture view: ", message, " (code ", static_cast<std::uint32_t>(status), ")");
+            });
     }
     init_result *m_context{};
 };

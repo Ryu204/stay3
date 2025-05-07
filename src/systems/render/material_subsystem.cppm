@@ -30,26 +30,18 @@ public:
 
     void process_pending_materials(tree_context &ctx) {
         auto &reg = ctx.ecs();
-        for(auto en: reg.view<material_state_init_pending>()) {
-            reg.emplace<material_state>(en);
-        }
         for(auto en: reg.view<material_state_update_pending>()) {
             update_material_state(reg, en);
         }
-        reg.destroy_all<material_state_init_pending>();
         reg.destroy_all<material_state_update_pending>();
     }
 
 private:
     static void setup_signals(tree_context &ctx) {
         auto &reg = ctx.ecs();
-        reg.on<comp_event::construct, material>().connect<&ecs_registry::emplace<material_state_init_pending>>();
+        make_hard_dependency<material_state, material>(reg);
         reg.on<comp_event::construct, material>().connect<&ecs_registry::emplace<material_state_update_pending>>();
-
         reg.on<comp_event::update, material>().connect<&ecs_registry::emplace_if_not_exist<material_state_update_pending>>();
-
-        reg.on<comp_event::destroy, material>().connect<&ecs_registry::destroy_if_exist<material_state>>();
-        reg.on<comp_event::destroy, material>().connect<&ecs_registry::destroy_if_exist<material_state_init_pending>>();
         reg.on<comp_event::destroy, material>().connect<&ecs_registry::destroy_if_exist<material_state_update_pending>>();
     }
 

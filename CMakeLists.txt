@@ -85,6 +85,7 @@ target_sources(${PROJECT_NAME}
     src/systems/render/material.cppm
     src/systems/render/texture_subsystem.cppm
     src/systems/render/material_subsystem.cppm
+    src/systems/render/mesh_subsystem.cppm
     src/systems/text/text_system.cppm
     src/systems/text/font_state.cppm
     src/systems/text/font_atlas.cppm

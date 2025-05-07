@@ -71,6 +71,12 @@ private:
 export struct glyph_metrics {
     unsigned int width{};
     unsigned int height{};
+    unsigned int advance{};
+    vec2u bearing;
+};
+export struct glyph_load_result {
+    glyph_metrics metrics;
+    std::vector<std::uint8_t> bitmap;
 };
 
 export class font: private freetype_context_user {
@@ -114,7 +120,7 @@ public:
      */
     [[nodiscard]] bool set_size(size_type size) {
         assert(size > 0);
-        if(size == m_current_size) { return true; }
+        if(m_current_size.has_value() && size == m_current_size.value()) { return true; }
         switch(FT_Set_Pixel_Sizes(m_font_face, 0, size)) {
         case FT_Err_Ok:
             m_current_size = size;
@@ -137,18 +143,57 @@ public:
         return false;
     }
 
-    [[nodiscard]] struct glyph_metrics glyph_metrics(glyph_index index) const {
-        FT_Load_Glyph(m_font_face, index, FT_LOAD_DEFAULT);
-        const auto &metrics = m_font_face->glyph->metrics;
+    [[nodiscard]] struct glyph_load_result load_glyph(glyph_index index) const {
+        assert(m_current_size.has_value() && "Set font size before load a glyph");
+        if(FT_Load_Glyph(m_font_face, index, FT_LOAD_DEFAULT) != FT_Err_Ok) {
+            throw graphics_error{"Failed to load glyph"};
+        }
+        if(FT_Render_Glyph(m_font_face->glyph, FT_RENDER_MODE_NORMAL) != FT_Err_Ok) {
+            throw graphics_error{"Failed to render glyph to bitmap"};
+        }
+        const auto &bitmap = m_font_face->glyph->bitmap;
+        assert(bitmap.pixel_mode == FT_PIXEL_MODE_GRAY);
+        std::vector<std::uint8_t> packed_bitmap(static_cast<std::size_t>(bitmap.width) * bitmap.rows * 4);
+        std::span<const std::uint8_t> buffer_span{bitmap.buffer, static_cast<std::size_t>(std::abs(bitmap.pitch)) * bitmap.rows};
+        for(std::size_t row = 0; row < bitmap.rows; ++row) {
+            std::size_t src_offset = bitmap.pitch > 0
+                                         ? row * bitmap.pitch
+                                         : (bitmap.rows - 1 - row) * static_cast<std::size_t>(-bitmap.pitch);
+
+            std::span<const std::uint8_t> src_row = buffer_span.subspan(src_offset, bitmap.width);
+
+            for(std::size_t col = 0; col < bitmap.width; ++col) {
+                std::size_t dst_index = (row * bitmap.width + col) * 4;
+                // Assume premultiplied alpha
+                packed_bitmap[dst_index + 0] = src_row[col];
+                packed_bitmap[dst_index + 1] = src_row[col];
+                packed_bitmap[dst_index + 2] = src_row[col];
+                packed_bitmap[dst_index + 3] = src_row[col];
+            }
+        }
+
         return {
-            .width = static_cast<unsigned int>(metrics.width),
-            .height = static_cast<unsigned int>(metrics.height),
+            .metrics = {
+                .width = static_cast<unsigned int>(bitmap.width),
+                .height = static_cast<unsigned int>(bitmap.rows),
+                .advance = static_cast<unsigned int>(m_font_face->glyph->advance.x),
+                .bearing = {m_font_face->glyph->bitmap_left, m_font_face->glyph->bitmap_top},
+            },
+            .bitmap = std::move(packed_bitmap),
         };
+    }
+
+    [[nodiscard]] unsigned int whitespace_advance() const {
+        assert(m_current_size.has_value() && "Set font size before load a glyph");
+        if(FT_Load_Char(m_font_face, ' ', FT_LOAD_DEFAULT) != FT_Err_Ok) {
+            throw graphics_error{"Failed to load whitespace char"};
+        }
+        return m_font_face->glyph->advance.x;
     }
 
 private:
     FT_Face m_font_face{};
-    size_type m_current_size{};
+    std::optional<size_type> m_current_size{std::nullopt};
 };
 
 } // namespace st

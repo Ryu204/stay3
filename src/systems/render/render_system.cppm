@@ -15,6 +15,7 @@ import :render_pass;
 import :bind_group_layouts;
 import :texture_subsystem;
 import :material_subsystem;
+import :mesh_subsystem;
 
 export namespace st {
 class render_system {
@@ -29,8 +30,6 @@ private:
     void setup_signals(tree_context &ctx);
 
     static void fix_camera_aspect(tree_context &ctx, ecs_registry &reg, entity en);
-    void initialize_mesh_state(ecs_registry &reg, entity en);
-    void create_mesh_state_from_data(ecs_registry &reg, entity en) const;
     static void validate_rendered_mesh(ecs_registry &reg, entity en);
     void initialize_rendered_mesh_state(ecs_registry &reg, entity en);
     [[nodiscard]] wgpu::Buffer create_object_uniform_buffer() const;
@@ -47,5 +46,6 @@ private:
     std::filesystem::path m_shader_path;
     texture_subsystem m_texture_subsystem;
     material_subsystem m_material_subsystem;
+    mesh_subsystem m_mesh_subsystem;
 };
 } // namespace st

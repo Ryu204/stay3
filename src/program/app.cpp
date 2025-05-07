@@ -32,7 +32,7 @@ app &app::enable_default_systems() {
         .run_as<sys_type::post_update>(sys_priority::very_low);
     m_ecs_systems
         .add<render_system>(m_window.size(), m_assets_dir / "shaders" / "my_shader.wgsl", m_render_config)
-        .run_as<sys_type::start>(sys_priority::high)
+        .run_as<sys_type::start>(sys_priority::very_high)
         .run_as<sys_type::render>()
         .run_as<sys_type::cleanup>(sys_priority::very_low);
     m_ecs_systems
@@ -97,7 +97,10 @@ app::window_closed app::input() {
             close_window();
             return app::window_closed::yes;
         }
-        m_ecs_systems.input(ev, m_tree_context);
+        if(m_ecs_systems.input(ev, m_tree_context) == sys_run_result::exit) {
+            close_window();
+            return app::window_closed::yes;
+        }
     }
     return app::window_closed::no;
 }
