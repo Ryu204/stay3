@@ -50,11 +50,13 @@ void render_system::render(tree_context &ctx) {
     m_material_subsystem.process_pending_materials(ctx);
     auto &reg = ctx.ecs();
     vec4f clear_color;
+    vec3f cam_position;
     // Find main camera
     {
         auto cameras = reg.each<camera, main_camera, global_transform>();
         assert(cameras.begin() != cameras.end() && "No main camera found");
         auto [unused_en, cam, unused_tag, tf] = *cameras.begin();
+        cam_position = tf->get().position();
         assert(cam->ratio.has_value() && "Camera aspect was not set by system");
         clear_color = cam->clear_color;
         const mat4f camera_projection = std::visit(
@@ -73,8 +75,22 @@ void render_system::render(tree_context &ctx) {
     const auto &&[unused, encoder, render_pass_encoder] = create_render_pass(m_global.device, m_global.surface, m_depth_texture.view, clear_color);
     render_pass_encoder.SetPipeline(m_pipeline);
 
+    // Sort opaque objects to be rendered before transparent object
+    reg.sort<rendered_mesh>([&reg, &cam_position](entity first, entity last) {
+        auto r1 = reg.get<rendered_mesh>(first);
+        auto r2 = reg.get<rendered_mesh>(last);
+        if(!r2->transparency) { return false; }
+        if(!r1->transparency) { return true; }
+        // Sort transparent objects by heuristic: distance to camera
+        const auto &t1 = reg.get<global_transform>(first)->get().position();
+        const auto &t2 = reg.get<global_transform>(last)->get().position();
+        return vec3f{cam_position - t1}.magnitude_squared() > vec3f{cam_position - t2}.magnitude_squared();
+    });
+
     component_ref<material> material;
-    for(auto &&[unused, data, state]: reg.each<rendered_mesh, rendered_mesh_state>()) {
+    // TODO: Group entities with same material
+    for(auto en: reg.view<rendered_mesh>()) {
+        auto [data, state] = reg.get<rendered_mesh, rendered_mesh_state>(en);
         if(data->mat != material) {
             material = data->mat;
             const auto material_bind_group = reg.get<material_state>(material.entity())->material_bind_group;

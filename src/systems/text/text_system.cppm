@@ -92,6 +92,7 @@ private:
             rendered_mesh{
                 .mesh = en,
                 .mat = atlas_en,
+                .transparency = true,
             });
     }
 

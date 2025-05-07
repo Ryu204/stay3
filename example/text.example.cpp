@@ -15,10 +15,10 @@ struct show_atlas {
 
         auto txt = reg.emplace<text>(en1, text{.content = u8"the quick brown dog jump over the lazy fox", .font = en1});
         reg.emplace<text>(en2, text{.content = u8"BRAVO\tT. W. O", .size = 64, .font = en1});
-        reg.emplace<mut<transform>>(en2)->translate(vec_down);
+        reg.emplace<mut<transform>>(en2)->translate(vec_down + vec_forward);
 
         auto camera_en = root.entities().create();
-        reg.emplace<camera>(camera_en, camera{.clear_color = {0.1, 0.2, 0.3, 1.0}, .data = camera::orthographic_data{}});
+        reg.emplace<camera>(camera_en, camera{.data = camera::orthographic_data{}});
         reg.emplace<main_camera>(camera_en);
         reg.get<mut<transform>>(camera_en)->translate(vec_back);
     }

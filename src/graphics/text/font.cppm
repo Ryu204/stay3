@@ -4,6 +4,7 @@ module;
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -164,9 +165,10 @@ public:
             for(std::size_t col = 0; col < bitmap.width; ++col) {
                 std::size_t dst_index = (row * bitmap.width + col) * 4;
                 // Assume premultiplied alpha
-                packed_bitmap[dst_index + 0] = src_row[col];
-                packed_bitmap[dst_index + 1] = src_row[col];
-                packed_bitmap[dst_index + 2] = src_row[col];
+                constexpr auto max_value = 0xFF;
+                packed_bitmap[dst_index + 0] = max_value;
+                packed_bitmap[dst_index + 1] = max_value;
+                packed_bitmap[dst_index + 2] = max_value;
                 packed_bitmap[dst_index + 3] = src_row[col];
             }
         }

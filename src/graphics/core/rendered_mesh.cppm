@@ -13,5 +13,6 @@ export namespace st {
 struct rendered_mesh {
     component_ref<mesh_data> mesh;
     component_ref<material> mat;
+    bool transparency{false};
 };
 } // namespace st
