@@ -20,7 +20,7 @@ struct show_atlas {
         auto camera_en = root.entities().create();
         reg.emplace<camera>(camera_en, camera{.data = camera::orthographic_data{}});
         reg.emplace<main_camera>(camera_en);
-        reg.get<mut<transform>>(camera_en)->translate(vec_back);
+        reg.get<mut<transform>>(camera_en)->translate(vec_back * 5.F);
     }
 
     static sys_run_result input(const event &ev, tree_context &ctx) {
