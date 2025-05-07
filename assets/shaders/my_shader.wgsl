@@ -28,5 +28,6 @@ fn vs_main(in: vertex_input) -> vertex_output {
 @fragment
 fn fs_main(in: vertex_output) -> @location(0) vec4f {
     let color = textureSample(u_texture, u_sampler, in.uv).rgba;
+    if (color.a < 0.5) { discard; }
     return color * in.color;
 }

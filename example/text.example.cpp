@@ -11,10 +11,11 @@ struct show_atlas {
 
         const auto en1 = root.entities().create();
         const auto en2 = root.entities().create();
-        auto ft = reg.emplace<font>(en1, "./assets/fonts/Roboto-Regular.ttf");
+        reg.emplace<font>(en1, "./assets/fonts/Roboto-Regular.ttf");
+        reg.emplace<font>(en2, "./assets/fonts/Tagesschrift-Regular.ttf");
 
         auto txt = reg.emplace<text>(en1, text{.content = u8"the quick brown dog jump over the lazy fox", .font = en1});
-        reg.emplace<text>(en2, text{.content = u8"BRAVO\tT. W. O", .size = 64, .font = en1});
+        reg.emplace<text>(en2, text{.content = u8"BRAVO\tT. W. O", .size = 64, .font = en2});
         reg.emplace<mut<transform>>(en2)->translate(vec_down + vec_forward);
 
         auto camera_en = root.entities().create();

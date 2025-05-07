@@ -86,8 +86,8 @@ public:
     using character = FT_ULong;
 
     font(const std::filesystem::path &font_file) {
-        if(!std::filesystem::exists(font_file) || std::filesystem::is_directory(font_file)) {
-            log::warn("Failed to load font: \"", font_file, "\": Invalid file");
+        if(!is_normal_file(font_file, "Font")) {
+            throw graphics_error{"Failed to load font"};
         }
         const auto new_face_status = FT_New_Face(library(), font_file.string().c_str(), 0, &m_font_face);
         switch(new_face_status) {
