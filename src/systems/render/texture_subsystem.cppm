@@ -70,7 +70,8 @@ public:
             vec2i size;
             int raw_channel_count{};
             auto format = cmd.preferred_format.value_or(texture_2d::format::rgba8unorm);
-            stbi_uc *loaded_data = stbi_load(cmd.filename.c_str(), &size.x, &size.y, &raw_channel_count, static_cast<int>(texture_2d::format_to_channel_count(format)));
+            auto filename_str = cmd.filename.string();
+            stbi_uc *loaded_data = stbi_load(filename_str.c_str(), &size.x, &size.y, &raw_channel_count, static_cast<int>(texture_2d::format_to_channel_count(format)));
             if(loaded_data == nullptr) {
                 log::warn("Failed to load image: ", cmd.filename);
                 return;
