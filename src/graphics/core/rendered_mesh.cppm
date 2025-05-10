@@ -1,6 +1,6 @@
 module;
 
-export module stay3.graphics:rendered_mesh;
+export module stay3.graphics.core:rendered_mesh;
 
 import stay3.ecs;
 import :vertex;
@@ -12,6 +12,7 @@ export namespace st {
  */
 struct rendered_mesh {
     component_ref<mesh_data> mesh;
-    component_ref<material_data> material;
+    component_ref<material> mat;
+    bool transparency{false};
 };
 } // namespace st

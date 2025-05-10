@@ -4,6 +4,7 @@ module;
 #include <fstream>
 #include <optional>
 #include <string>
+#include <string_view>
 
 export module stay3.core:file;
 
@@ -56,4 +57,13 @@ std::optional<std::string> read_file_as_str_nothrow(const std::filesystem::path 
         return std::nullopt;
     }
 }
+
+bool is_normal_file(const std::filesystem::path &filename, std::string_view file_type = "") {
+    if(!std::filesystem::is_regular_file(filename)) {
+        log::warn(file_type, " file is not a regular file: ", filename);
+        return false;
+    }
+    return true;
+}
+
 } // namespace st

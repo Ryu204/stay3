@@ -9,6 +9,7 @@ using namespace st;
 struct setup_system {
     void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
+        auto &texture_cmd = ctx.vars().get<texture_2d::commands>();
 
         auto &res = ctx.root().add_child();
         auto &scene = ctx.root().add_child();
@@ -21,15 +22,18 @@ struct setup_system {
 
         reg.emplace<mesh_cube_builder>(mesh2, mesh_cube_builder{.size = {1.5F, 0.2F, 1.F}});
         reg.emplace<mesh_plane_builder>(mesh1, mesh_plane_builder{.size = vec2f{1.F}});
-        auto texture1 = reg.emplace<texture_2d_data>(mesh1, "assets/textures/example.jpg");
-        auto material1 = reg.emplace<material_data>(mesh1, material_data{.texture = mesh1});
-        auto material2 = reg.emplace<material_data>(mesh2);
+        texture_cmd.emplace(texture_2d::command_load{
+            .target = mesh1,
+            .filename = "assets/textures/example.jpg",
+        });
+        auto material1 = reg.emplace<material>(mesh1, material{.texture = mesh1});
+        auto material2 = reg.emplace<material>(mesh2);
 
         reg.emplace<rendered_mesh>(
             entity1,
             rendered_mesh{
                 .mesh = mesh1,
-                .material = mesh1,
+                .mat = mesh1,
             });
         {
             auto tf = reg.get<mut<transform>>(entity1);
@@ -39,7 +43,7 @@ struct setup_system {
             entity2,
             rendered_mesh{
                 .mesh = mesh2,
-                .material = mesh2,
+                .mat = mesh2,
             });
 
         reg.emplace<camera>(cam);

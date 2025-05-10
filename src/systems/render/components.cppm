@@ -8,9 +8,6 @@ import stay3.core;
 
 export namespace st {
 
-struct mesh_builder_data_changed {};
-struct mesh_data_update_requested {};
-
 struct mesh_state {
     wgpu::Buffer vertex_buffer;
     wgpu::Buffer index_buffer;
@@ -20,5 +17,8 @@ struct rendered_mesh_state {
     wgpu::Buffer object_uniform_buffer;
     wgpu::BindGroup object_bind_group;
 };
+
+struct default_texture_tag {};
+struct default_sampler_tag {};
 
 } // namespace st

@@ -5,7 +5,7 @@ module;
 module stay3.system.render;
 
 import stay3.core;
-import stay3.graphics;
+import stay3.graphics.core;
 import :init_result;
 import :config;
 

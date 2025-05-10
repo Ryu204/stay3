@@ -4,13 +4,13 @@ module;
 #include <optional>
 #include <vector>
 
-export module stay3.graphics:vertex;
+export module stay3.graphics.core:vertex;
 
 import stay3.core;
 
 export namespace st {
 struct vertex_attributes {
-    vec4f color;
+    vec4f color{1.F};
     vec3f position;
     vec3f normal;
     vec2f uv;

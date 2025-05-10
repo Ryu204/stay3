@@ -18,3 +18,7 @@
 	path = extern/stb/stb
 	url = https://github.com/nothings/stb.git
 	branch = master
+[submodule "extern/freetype"]
+	path = extern/freetype
+	url = https://github.com/freetype/freetype.git
+	branch = master

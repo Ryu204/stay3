@@ -7,14 +7,18 @@ TEST_CASE("Render some entity") {
     struct my_render_system {
         static void start(tree_context &ctx) {
             auto &reg = ctx.ecs();
+            auto &texture_cmd = ctx.vars().get<texture_2d::commands>();
             auto entity1 = ctx.root().entities().create();
             auto entity2 = ctx.root().entities().create();
             auto entity3 = ctx.root().entities().create();
-            auto material = ctx.root().entities().create();
+            auto material_en = ctx.root().entities().create();
             auto cam = ctx.root().entities().create();
 
-            reg.emplace<texture_2d_data>(material, "../assets/textures/example.jpg");
-            reg.emplace<material_data>(material, material_data{.texture = material});
+            texture_cmd.emplace(texture_2d::command_load{
+                .target = material_en,
+                .filename = "../assets/textures/example.jpg",
+            });
+            reg.emplace<material>(material_en, material{.texture = material_en});
 
             reg.emplace<mesh_plane_builder>(
                 entity1,
@@ -26,13 +30,13 @@ TEST_CASE("Render some entity") {
                 entity1,
                 rendered_mesh{
                     .mesh = entity1,
-                    .material = material,
+                    .mat = material_en,
                 });
 
             reg.emplace<mesh_sprite_builder>(
                 entity2,
                 mesh_sprite_builder{
-                    .texture = material,
+                    .texture = material_en,
                     .pixels_per_unit = 100.F,
                     .color = {1, 0, 1, 1},
                 });
@@ -40,7 +44,7 @@ TEST_CASE("Render some entity") {
                 entity2,
                 rendered_mesh{
                     .mesh = entity2,
-                    .material = material,
+                    .mat = material_en,
                 });
 
             reg.emplace<mesh_cube_builder>(
@@ -53,7 +57,7 @@ TEST_CASE("Render some entity") {
                 entity3,
                 rendered_mesh{
                     .mesh = entity3,
-                    .material = material,
+                    .mat = material_en,
                 });
 
             reg.emplace<main_camera>(cam);

@@ -1,5 +1,5 @@
 #include <catch2/catch_all.hpp>
-import stay3.graphics;
+import stay3.graphics.core;
 import stay3.core;
 import stay3.ecs;
 
@@ -72,10 +72,10 @@ TEST_CASE("Sprite") {
     entity en = reg.create();
 
     constexpr auto pixels_per_unit = 64.F;
-    const auto &texture = *reg.emplace<texture_2d_data>(en, "../assets/textures/example.jpg");
+    constexpr vec2u texture_size{1920, 1080};
+    const auto &texture = *reg.emplace<texture_2d>(en, texture_2d::format::rgba8unorm, texture_size);
     const vec2f size = vec2f{texture.size()} / pixels_per_unit;
 
-    REQUIRE(texture.size() == vec2u{1920, 1288});
     constexpr rectf texture_rect{.position = {1000, 1200}, .size = {20, 50}};
     const rectf normed_texture_rect{
         .position = vec2f{1000, 1200} / vec2f{texture.size()},

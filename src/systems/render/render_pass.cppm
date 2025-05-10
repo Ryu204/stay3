@@ -5,7 +5,7 @@ module;
 export module stay3.system.render:render_pass;
 
 import stay3.core;
-import stay3.graphics;
+import stay3.graphics.core;
 
 namespace st {
 

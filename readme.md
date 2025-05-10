@@ -189,6 +189,21 @@ auto texture_comp = mat->texture_ref.get(my_registry);
 // auto texture_comp = my_registry.get<texture>(mat->texture_ref.entity());
 ```
 
+15. Text
+
+It's possible to display text in 3D environment with `st::text` component.
+
+```cpp
+entity font_en = /* ... */
+entity text_en = /* ... */
+registry.emplace<font>(font_en, "path/to/font/file");
+registry.emplace<text>(text_en, text{
+    .font=font_en,
+    .content=u8"Hello",
+    .size=30,
+});
+```
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:

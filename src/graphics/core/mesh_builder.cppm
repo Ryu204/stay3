@@ -5,7 +5,7 @@ module;
 #include <optional>
 #include <vector>
 
-export module stay3.graphics:mesh_builder;
+export module stay3.graphics.core:mesh_builder;
 
 import stay3.core;
 import stay3.ecs;
@@ -62,7 +62,7 @@ struct mesh_plane_builder {
 
 struct mesh_sprite_builder {
 public:
-    component_ref<texture_2d_data> texture;
+    component_ref<texture_2d> texture;
     float pixels_per_unit{};
     vec2f origin{0.5F};
     vec4f color{1.F};

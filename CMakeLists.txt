@@ -22,14 +22,19 @@ target_sources(${PROJECT_NAME}
     src/program/config.cppm
     src/program/app.cppm
 
+    src/graphics/core/mod.cppm
+    src/graphics/core/error.cppm
+    src/graphics/core/vertex.cppm
+    src/graphics/core/glfw_window.cppm
+    src/graphics/core/camera.cppm
+    src/graphics/core/material.cppm
+    src/graphics/core/texture.cppm
+    src/graphics/core/rendered_mesh.cppm
+    src/graphics/core/mesh_builder.cppm
+    src/graphics/text/mod.cppm
+    src/graphics/text/font.cppm
+    src/graphics/text/text.cppm
     src/graphics/mod.cppm
-    src/graphics/error.cppm
-    src/graphics/vertex.cppm
-    src/graphics/glfw_window.cppm
-    src/graphics/camera.cppm
-    src/graphics/material.cppm
-    src/graphics/rendered_mesh.cppm
-    src/graphics/mesh_builder.cppm
 
     src/core/mod.cppm
     src/core/error.cppm
@@ -80,12 +85,19 @@ target_sources(${PROJECT_NAME}
     src/systems/render/bind_group_layouts.cppm
     src/systems/render/render_pass.cppm
     src/systems/render/material.cppm
+    src/systems/render/texture_subsystem.cppm
+    src/systems/render/material_subsystem.cppm
+    src/systems/render/mesh_subsystem.cppm
+    src/systems/text/text_system.cppm
+    src/systems/text/font_state.cppm
+    src/systems/text/font_atlas.cppm
+    src/systems/text/text_state.cppm
 
     PRIVATE
 
     src/program/app.cpp
 
-    src/graphics/glfw_window.cpp
+    src/graphics/core/glfw_window.cpp
 
     src/core/time.cpp
     src/core/transform.cpp
@@ -98,7 +110,7 @@ target_sources(${PROJECT_NAME}
     src/systems/render/render_system.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT stb)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT stb freetype)
 if(EMSCRIPTEN)
     target_compile_options(${PROJECT_NAME} PUBLIC -fexceptions)
     target_link_options(${PROJECT_NAME} PUBLIC -fexceptions -sASYNCIFY)

@@ -4,7 +4,7 @@ module;
 
 export module stay3.program:config;
 
-import stay3.graphics;
+import stay3.graphics.core;
 import stay3.system.render;
 
 namespace st {

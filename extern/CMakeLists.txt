@@ -18,3 +18,5 @@ target_compile_definitions(
 add_subdirectory(entt)
 
 add_subdirectory(stb)
+
+add_subdirectory(freetype)

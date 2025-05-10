@@ -9,7 +9,7 @@ module;
 #else
 #    include <webgpu/webgpu_glfw.h>
 #endif
-module stay3.graphics;
+module stay3.graphics.core;
 
 import stay3.input;
 import stay3.core;

@@ -7,7 +7,7 @@ module;
 #include <GLFW/glfw3.h>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.graphics:glfw_window;
+export module stay3.graphics.core:glfw_window;
 
 import stay3.input;
 import stay3.core;

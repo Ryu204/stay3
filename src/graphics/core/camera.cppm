@@ -4,7 +4,7 @@ module;
 #include <optional>
 #include <variant>
 
-export module stay3.graphics:camera;
+export module stay3.graphics.core:camera;
 
 import stay3.core;
 
@@ -16,7 +16,7 @@ enum class camera_type : std::uint8_t {
 };
 struct camera {
     static constexpr auto default_near{0.01F};
-    static constexpr auto default_far{100.F};
+    static constexpr auto default_far{30.F};
     static constexpr vec4f default_background_color{0.F, 0.F, 0.F, 1.F};
 
     struct perspective_data {

@@ -7,7 +7,7 @@ module;
 module stay3.system.render;
 
 import stay3.core;
-import stay3.graphics;
+import stay3.graphics.core;
 import :bind_group_layouts;
 import :pipeline;
 
@@ -115,13 +115,13 @@ wgpu::RenderPipeline create_pipeline(
     wgpu::BlendState blend_state{
         .color = {
             .operation = wgpu::BlendOperation::Add,
-            .srcFactor = wgpu::BlendFactor::One,
+            .srcFactor = wgpu::BlendFactor::SrcAlpha,
             .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
         },
         .alpha = {
             .operation = wgpu::BlendOperation::Add,
-            .srcFactor = wgpu::BlendFactor::One,
-            .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
+            .srcFactor = wgpu::BlendFactor::Zero,
+            .dstFactor = wgpu::BlendFactor::One,
         },
     };
     wgpu::ColorTargetState color_target{
