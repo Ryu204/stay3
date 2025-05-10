@@ -71,7 +71,7 @@ private:
 export struct glyph_metrics {
     unsigned int width{};
     unsigned int height{};
-    unsigned int advance{};
+    int advance{};
     vec2i bearing;
 };
 export struct glyph_load_result {
@@ -100,6 +100,10 @@ public:
             log::warn("Failed to load font: \"", font_file, "\": Unknown error");
             break;
         }
+        log::info(
+            "Font loaded: ", font_file,
+            "\n\tKerning table: ", FT_HAS_KERNING(m_font_face) ? "YES" : "NO",
+            "\n\tScalable: ", FT_IS_SCALABLE(m_font_face) ? "YES" : "NO");
     }
     ~font() {
         if(FT_Done_Face(m_font_face) != FT_Err_Ok) {
@@ -177,7 +181,7 @@ public:
             .metrics = {
                 .width = static_cast<unsigned int>(bitmap.width),
                 .height = static_cast<unsigned int>(bitmap.rows),
-                .advance = static_cast<unsigned int>(m_font_face->glyph->advance.x),
+                .advance = static_cast<int>(m_font_face->glyph->advance.x),
                 .bearing = {m_font_face->glyph->bitmap_left, m_font_face->glyph->bitmap_top},
             },
             .bitmap = std::move(packed_bitmap),
@@ -190,6 +194,18 @@ public:
             throw graphics_error{"Failed to load whitespace char"};
         }
         return m_font_face->glyph->advance.x;
+    }
+
+    [[nodiscard]] int kerning(character ch1, character ch2) const {
+        const auto index1 = character_to_index(ch1);
+        const auto index2 = character_to_index(ch2);
+        FT_Vector vec{0, 0};
+        if(FT_HAS_KERNING(m_font_face)) {
+            if(FT_Get_Kerning(m_font_face, index1, index2, FT_KERNING_DEFAULT, &vec) != FT_Err_Ok) {
+                throw graphics_error{"Failed to get kerning info"};
+            }
+        }
+        return static_cast<int>(vec.x);
     }
 
 private:

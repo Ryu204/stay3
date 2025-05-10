@@ -120,7 +120,11 @@ private:
         }
         const auto whitespace_advance = fnt_data->whitespace_advance();
         // Iterate over codepoints
+        font::character previous_character = 0;
         for(auto character: txt->content) {
+            if(previous_character != 0) {
+                pen_x += static_cast<float>(fnt_data->kerning(previous_character, character)) / 64.F;
+            }
             switch(character) {
             case ' ':
                 pen_x += static_cast<float>(whitespace_advance) / 64.F;
@@ -139,6 +143,7 @@ private:
             const auto &glyph = fnt_atlas->glyph_data[fnt_atlas->available_glyphs.at(index)];
             append_geometry(*mesh, pen_x, glyph.metrics, glyph.texture_rect, texture_size);
             pen_x += static_cast<float>(glyph.metrics.advance) / 64.F;
+            previous_character = character;
         }
     }
     static entity create_font_atlas(tree_context &ctx, entity font_holder) {
@@ -191,7 +196,6 @@ private:
             .position = top_left + static_cast<float>(metrics.height) * vec_down / pixels_per_unit,
             .uv = vec2f{texture_rect.position.x, texture_rect.position.y + texture_rect.size.y} / vec2f{texture_size},
         });
-        assert(vertices.back().position.x < 100000);
     }
 };
 } // namespace st
