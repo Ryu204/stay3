@@ -9,6 +9,7 @@ import stay3.ecs;
 import stay3.node;
 import stay3.graphics.core;
 import stay3.core;
+import stay3.physics;
 import stay3.system.render;
 import :config;
 
@@ -47,6 +48,7 @@ private:
     tree_context m_tree_context;
     system_manager<tree_context> m_ecs_systems;
     render_config m_render_config;
+    physics_config m_physics_config;
     std::filesystem::path m_assets_dir;
 };
 } // namespace st

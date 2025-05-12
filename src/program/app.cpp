@@ -15,7 +15,7 @@ import :config;
 namespace st {
 
 app::app(const app_config &config)
-    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render}, m_assets_dir{config.assets_dir} {
+    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render}, m_physics_config{config.physics}, m_assets_dir{config.assets_dir} {
     if(config.use_default_systems) {
         enable_default_systems();
     }
@@ -39,6 +39,10 @@ app &app::enable_default_systems() {
         .add<text_system>()
         .run_as<sys_type::start>(sys_priority::high)
         .run_as<sys_type::render>(sys_priority::high);
+    m_ecs_systems
+        .add<physics_system>(m_physics_config)
+        .run_as<sys_type::start>(sys_priority::very_high)
+        .run_as<sys_type::update>(sys_priority::very_high);
     return *this;
 }
 
