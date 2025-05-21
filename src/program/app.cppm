@@ -45,8 +45,8 @@ private:
 
     glfw_window m_window;
 
-    tree_context m_tree_context;
     system_manager<tree_context> m_ecs_systems;
+    tree_context m_tree_context;
     render_config m_render_config;
     physics_config m_physics_config;
     std::filesystem::path m_assets_dir;
