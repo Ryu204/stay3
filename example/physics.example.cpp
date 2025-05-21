@@ -11,17 +11,19 @@ struct example_system {
         auto &reg = ctx.ecs();
         constexpr vec3f box_size{1, 2, 3};
         constexpr vec3f floor_size{7.F, 0.1F, 2.F};
-        auto material_en = ctx.root().entities().create();
-        reg.emplace<material>(material_en);
+        auto material_en_1 = ctx.root().entities().create();
+        auto material_en_2 = ctx.root().entities().create();
+        reg.emplace<material>(material_en_1, material{.color = {1.F, 0.F, 0.F, 0.5F}});
+        reg.emplace<material>(material_en_2, material{.color = {0.5F, 1.F, 0.7F, 0.7F}});
 
-        auto box_en = create_box(reg, ctx.root(), material_en, box_size, rigidbody::dynamic);
+        auto box_en = create_box(reg, ctx.root(), material_en_1, box_size, rigidbody::dynamic);
         reg.get<mut<transform>>(box_en)->translate(vec_up * 25.F).rotate(vec_back, PI / 6.F);
-        auto floor_en = create_box(reg, ctx.root(), material_en, floor_size, rigidbody::fixed);
+        auto floor_en = create_box(reg, ctx.root(), material_en_2, floor_size, rigidbody::fixed);
         reg.get<mut<transform>>(floor_en)->translate(vec_down * 3.F);
 
         // Camera setup
         auto cam_en = ctx.root().entities().create();
-        reg.emplace<camera>(cam_en, camera{.data = camera::orthographic_data{}});
+        reg.emplace<camera>(cam_en, camera{.data = camera::perspective_data{}});
         reg.emplace<main_camera>(cam_en);
         reg.get<mut<transform>>(cam_en)->translate(vec_back * 10.F + vec_up * 2.F);
     }
@@ -48,7 +50,7 @@ private:
 
 int main() {
     try {
-        app my_app;
+        app my_app{{.window = {.size = {1000, 800}}}};
         my_app
             .systems()
             .add<example_system>()
