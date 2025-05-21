@@ -4,6 +4,7 @@ module;
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <span>
 #include <ft2build.h>
 #include FT_FREETYPE_H

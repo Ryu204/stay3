@@ -1,5 +1,7 @@
 module;
 
+#include <cassert>
+
 #include <entt/entt.hpp>
 
 export module stay3.ecs:entity;
@@ -24,6 +26,13 @@ public:
     }
     [[nodiscard]] bool is_null() const {
         return m_raw == entt::null;
+    }
+    [[nodiscard]] std::size_t numeric() const {
+        assert(!is_null() && "Null entity access");
+        return static_cast<std::size_t>(m_raw);
+    }
+    static entity from_numeric(std::size_t val) {
+        return {static_cast<entt::entity>(val)};
     }
 
 private:

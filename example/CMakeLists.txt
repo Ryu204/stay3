@@ -17,5 +17,6 @@ endfunction()
 add_example(app app.example.cpp "")
 add_example(input input.example.cpp "")
 add_example(text text.example.cpp "")
+add_example(physics physics.example.cpp "")
 
 add_subdirectory(dino)

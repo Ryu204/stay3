@@ -5,21 +5,31 @@ module;
 #include <limits>
 #include <mutex>
 #include <thread>
+#include <unordered_set>
 
 // clang-format off
 #include <Jolt/Jolt.h>
-#include <Jolt/Core/Factory.h>
-#include <Jolt/Core/Memory.h>
-#include <Jolt/RegisterTypes.h>
-#include <Jolt/Physics/PhysicsSettings.h>
-#include <Jolt/Core/JobSystemThreadPool.h>
-#include <Jolt/Physics/PhysicsSystem.h>
 // clang-format on
+#include <Jolt/Core/Factory.h>
+#include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Core/Memory.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyManager.h>
+#include <Jolt/Physics/Body/BodyType.h>
+#include <Jolt/Physics/Body/MotionType.h>
+#include <Jolt/Physics/EActivation.h>
+#include <Jolt/Physics/PhysicsSettings.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/RegisterTypes.h>
 
 export module stay3.physics:world;
 
 import stay3.core;
+import stay3.ecs;
 import :contact_listener;
+import :collider;
+import :rigidbody;
+import :properties;
 
 namespace st {
 
@@ -42,6 +52,7 @@ namespace broad_phase {
 constexpr JPH::BroadPhaseLayer moving{0};
 constexpr JPH::BroadPhaseLayer non_moving{1};
 constexpr auto layer_count = 2u;
+
 struct layer_impl: public JPH::BroadPhaseLayerInterface {
     [[nodiscard]] unsigned int GetNumBroadPhaseLayers() const override {
         return layer_count;
@@ -122,14 +133,18 @@ private:
 };
 
 export struct physics_config {
+    static constexpr vec3f earth_gravity{0.F, -9.8F, 0.F};
+
     /** @brief Max amount of bodies in a world */
     unsigned int max_body_count{std::numeric_limits<std::uint16_t>::max()};
     float updates_per_second{120.F};
     unsigned int collision_steps{2u};
+    vec3f gravity{earth_gravity};
 };
 
 export class physics_world: private jolt_context_user {
 public:
+    using body_id = JPH::BodyID;
     constexpr physics_world(const physics_config &settings = {})
         : m_settings{settings} {
         constexpr auto num_body_mutexes = 0u;
@@ -144,6 +159,7 @@ public:
             m_broad_phase_layer,
             m_object_bp_layer_filter,
             m_object_object_filter);
+        m_physics_system.SetGravity(convert(settings.gravity));
         m_physics_system.SetContactListener(&m_contact_listener);
     }
 
@@ -151,8 +167,14 @@ public:
         m_pending_time += delta;
         const seconds time_per_update = 1.F / m_settings.updates_per_second;
 
+        m_bodies_with_changed_state.clear();
         while(m_pending_time > time_per_update) {
             m_pending_time -= time_per_update;
+            const auto active_bodies_count = m_physics_system.GetNumActiveBodies(JPH::EBodyType::RigidBody);
+            JPH::BodyIDVector this_update_bodies_list;
+            m_physics_system.GetActiveBodies(JPH::EBodyType::RigidBody, this_update_bodies_list);
+            m_bodies_with_changed_state.insert_range(this_update_bodies_list);
+
             const auto error = m_physics_system.Update(time_per_update, static_cast<int>(m_settings.collision_steps), &m_temp_allocator, &m_job_system);
             switch(error) {
             case JPH::EPhysicsUpdateError::None:
@@ -172,9 +194,83 @@ public:
         }
     }
 
-private:
-    JPH::PhysicsSystem m_physics_system;
+    [[nodiscard]] const auto &bodies_with_changed_state() const {
+        return m_bodies_with_changed_state;
+    }
 
+    body_id create(const collider &col, const vec3f &position, const quaternionf &orientation, rigidbody type, entity en) {
+        const auto shape_result = col.build_geometry();
+        JPH::BodyCreationSettings settings{
+            shape_result.Get(),
+            convert(position),
+            convert(orientation),
+            convert(type),
+            type == rigidbody::fixed ? layer::non_moving : layer::moving,
+        };
+        auto &interface = m_physics_system.GetBodyInterface();
+        auto result = interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
+        assert(!result.IsInvalid() && "Invalid body. Maybe body limit reached?");
+        static_assert(sizeof(JPH::uint64) >= sizeof(std::size_t), "Cannot hold entity in Jolt user data");
+        interface.SetUserData(result, static_cast<JPH::uint64>(en.numeric()));
+        return result;
+    }
+
+    void destroy(const body_id &id) {
+        auto &interface = m_physics_system.GetBodyInterface();
+        interface.RemoveBody(id);
+        interface.DestroyBody(id);
+    }
+
+    void set_velocity(const body_id &id, const velocity &vel) {
+        auto &interface = m_physics_system.GetBodyInterface();
+        interface.SetLinearAndAngularVelocity(id, convert(vel.linear), convert(vel.angular));
+    }
+
+    [[nodiscard]] transform transform(const body_id &id) const {
+        const auto raw_tf = m_physics_system.GetBodyInterface().GetWorldTransform(id);
+        return {convert(raw_tf.GetTranslation()), convert(raw_tf.GetQuaternion())};
+    }
+
+    void set_transform(const body_id &id, const vec3f &position, const quaternionf &orientation) {
+        m_physics_system
+            .GetBodyInterface()
+            .SetPositionAndRotation(id, convert(position), convert(orientation), JPH::EActivation::Activate);
+    }
+
+    [[nodiscard]] entity entity(const body_id &id) const {
+        const auto number = static_cast<std::size_t>(m_physics_system.GetBodyInterface().GetUserData(id));
+        return entity::from_numeric(number);
+    }
+
+private:
+    static JPH::EMotionType convert(rigidbody type) {
+        switch(type) {
+        case rigidbody::fixed:
+            return JPH::EMotionType::Static;
+        case rigidbody::dynamic:
+            return JPH::EMotionType::Dynamic;
+        case rigidbody::kinematic:
+            return JPH::EMotionType::Kinematic;
+        default:
+            assert(false && "Invalid value");
+        }
+    }
+    static JPH::Vec3 convert(const vec3f &val) {
+        return {val.x, val.y, -val.z};
+    }
+    static vec3f convert(const JPH::Vec3 &val) {
+        return {val.GetX(), val.GetY(), -val.GetZ()};
+    }
+    static quaternionf convert(const JPH::Quat &val) {
+        return {val.GetX(), val.GetY(), -val.GetZ(), val.GetW()};
+    }
+    static JPH::Quat convert(const quaternionf &val) {
+        return {val.x, val.y, -val.z, val.w};
+    }
+
+    JPH::PhysicsSystem m_physics_system;
+    std::unordered_set<body_id> m_bodies_with_changed_state;
+    // Mandatory objects to use JPH::PhysicsSystem
     layer::object_object_filter m_object_object_filter;
     broad_phase::layer_impl m_broad_phase_layer;
     broad_phase::object_bp_layer_filter m_object_bp_layer_filter;
@@ -186,6 +282,7 @@ private:
         JPH::cMaxPhysicsBarriers,
         static_cast<int>(std::thread::hardware_concurrency()),
     };
+    // Others
     physics_config m_settings;
     seconds m_pending_time{0.F};
 };

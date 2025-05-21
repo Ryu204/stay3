@@ -77,6 +77,8 @@ target_sources(${PROJECT_NAME}
     src/physics/world.cppm
     src/physics/contact_listener.cppm
     src/physics/rigidbody.cppm
+    src/physics/properties.cppm
+    src/physics/collider.cppm
 
     src/systems/mod.cppm
     src/systems/runtime_info.cppm
