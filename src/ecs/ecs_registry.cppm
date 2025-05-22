@@ -365,6 +365,10 @@ public:
         m_registry.sort<comp>(std::forward<pred>(func));
     }
 
+    void clear() {
+        m_registry.clear();
+    }
+
     template<comp_event ev, component comp>
     decltype(auto) on() {
         const auto key = event_key<ev, comp>;

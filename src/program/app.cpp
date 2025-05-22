@@ -21,6 +21,12 @@ app::app(const app_config &config)
     }
 }
 
+app::~app() {
+    // Zero the tree, then systems can be safely destroyed
+    // If this step is skipped, the destroyed systems cannot handle `ecs_registry`'s signals
+    m_tree_context.destroy_tree();
+}
+
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
 }
@@ -39,10 +45,15 @@ app &app::enable_default_systems() {
         .add<text_system>()
         .run_as<sys_type::start>(sys_priority::high)
         .run_as<sys_type::render>(sys_priority::high);
-    m_ecs_systems
-        .add<physics_system>(m_physics_config)
-        .run_as<sys_type::start>(sys_priority::very_high)
-        .run_as<sys_type::update>(sys_priority::very_high);
+    auto physics =
+        m_ecs_systems
+            .add<physics_system>(m_physics_config)
+            .run_as<sys_type::start>(sys_priority::very_high)
+            .run_as<sys_type::update>(sys_priority::very_high);
+    if(m_physics_config.debug_draw) {
+        physics.run_as<sys_type::render>(sys_priority::very_high);
+    }
+
     return *this;
 }
 
