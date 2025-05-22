@@ -47,7 +47,7 @@ public:
 private:
     using jolt_settings = std::variant<JPH::BoxShapeSettings>;
     static constexpr visit_helper init_visitor{
-        [](const box &box) -> jolt_settings { return {JPH::Vec3{box.x, box.y, box.z}}; },
+        [](const box &box) -> jolt_settings { return {JPH::Vec3{box.x / 2.F, box.y / 2.F, box.z / 2.F}}; },
     };
     jolt_settings shape_settings;
 };

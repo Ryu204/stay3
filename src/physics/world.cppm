@@ -26,6 +26,9 @@ export module stay3.physics:world;
 
 import stay3.core;
 import stay3.ecs;
+import stay3.physics.debug;
+import stay3.node;
+import stay3.physics.convert;
 import :contact_listener;
 import :collider;
 import :rigidbody;
@@ -140,13 +143,14 @@ export struct physics_config {
     float updates_per_second{120.F};
     unsigned int collision_steps{2u};
     vec3f gravity{earth_gravity};
+    bool debug_draw{false};
 };
 
 export class physics_world: private jolt_context_user {
 public:
     using body_id = JPH::BodyID;
-    constexpr physics_world(const physics_config &settings = {})
-        : m_settings{settings} {
+    constexpr physics_world(tree_context &ctx, const physics_config &settings = {})
+        : m_settings{settings}, m_debug_drawer{ctx} {
         constexpr auto num_body_mutexes = 0u;
         constexpr auto max_body_pairs = std::numeric_limits<std::uint16_t>::max();
         constexpr auto max_contact_constraints = 10240u;
@@ -204,7 +208,7 @@ public:
             shape_result.Get(),
             convert(position),
             convert(orientation),
-            convert(type),
+            from(type),
             type == rigidbody::fixed ? layer::non_moving : layer::moving,
         };
         auto &interface = m_physics_system.GetBodyInterface();
@@ -242,8 +246,14 @@ public:
         return entity::from_numeric(number);
     }
 
+    void render() {
+        const JPH::BodyManager::DrawSettings settings{};
+        m_debug_drawer.begin_draw();
+        m_physics_system.DrawBodies(m_draw_settings, &m_debug_drawer);
+    }
+
 private:
-    static JPH::EMotionType convert(rigidbody type) {
+    static JPH::EMotionType from(rigidbody type) {
         switch(type) {
         case rigidbody::fixed:
             return JPH::EMotionType::Static;
@@ -255,19 +265,6 @@ private:
             assert(false && "Invalid value");
         }
     }
-    static JPH::Vec3 convert(const vec3f &val) {
-        return {val.x, val.y, -val.z};
-    }
-    static vec3f convert(const JPH::Vec3 &val) {
-        return {val.GetX(), val.GetY(), -val.GetZ()};
-    }
-    static quaternionf convert(const JPH::Quat &val) {
-        return {val.GetX(), val.GetY(), -val.GetZ(), val.GetW()};
-    }
-    static JPH::Quat convert(const quaternionf &val) {
-        return {val.x, val.y, -val.z, val.w};
-    }
-
     JPH::PhysicsSystem m_physics_system;
     std::unordered_set<body_id> m_bodies_with_changed_state;
     // Mandatory objects to use JPH::PhysicsSystem
@@ -285,6 +282,8 @@ private:
     // Others
     physics_config m_settings;
     seconds m_pending_time{0.F};
+    physics_debug_drawer m_debug_drawer;
+    JPH::BodyManager::DrawSettings m_draw_settings;
 };
 
 } // namespace st

@@ -21,4 +21,5 @@ add_subdirectory(stb)
 
 add_subdirectory(freetype)
 
+set(CPP_RTTI_ENABLED ON)
 add_subdirectory(JoltPhysics/Build)

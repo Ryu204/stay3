@@ -1,6 +1,7 @@
 module;
 
 #include <cassert>
+#include <memory>
 #include <ranges>
 #include <vector>
 // Needed for `ecs::registry::get` structured binding
@@ -23,7 +24,7 @@ struct update_physics_state_from_transform {};
 export class physics_system {
 public:
     physics_system(const physics_config &settings = {})
-        : m_world{settings} {}
+        : m_config{settings} {}
     // Currently system wrapper impl uses `std::any` which requires copy ctor for no real benefit
     physics_system(const physics_system &) {
         assert(false && "Cannot copy");
@@ -34,6 +35,7 @@ public:
     ~physics_system() = default;
 
     void start(tree_context &ctx) {
+        m_world = std::make_unique<physics_world>(ctx, m_config);
         setup_signals(ctx);
     }
 
@@ -46,19 +48,23 @@ public:
             reg.emplace<no_update_physics_state>(en);
             const auto &id = *reg.get<physics_world::body_id>(en);
             const auto &global_tf = sync_global_transform(ctx, en).get();
-            m_world.set_transform(id, global_tf.position(), global_tf.orientation());
+            m_world->set_transform(id, global_tf.position(), global_tf.orientation());
             reg.destroy<update_physics_state_from_transform>(en);
         }
         reg.destroy_all<no_update_physics_state>();
 
-        m_world.update(delta);
+        m_world->update(delta);
 
-        for(const auto &id: m_world.bodies_with_changed_state()) {
-            auto en = m_world.entity(id);
+        for(const auto &id: m_world->bodies_with_changed_state()) {
+            auto en = m_world->entity(id);
             reg.emplace<no_update_physics_state>(en);
-            set_global_transform(ctx, en, m_world.transform(id));
+            set_global_transform(ctx, en, m_world->transform(id));
         }
         reg.destroy_all<no_update_physics_state>();
+    }
+
+    void render(tree_context &) {
+        m_world->render();
     }
 
 private:
@@ -92,7 +98,7 @@ private:
         const auto &global_tf = sync_global_transform(*args.ctx, en).get();
         auto col = reg.get<collider>(en);
         auto rg = *reg.get<rigidbody>(en);
-        const auto body_id = args.system->m_world.create(*col, global_tf.position(), global_tf.orientation(), rg, en);
+        const auto body_id = args.system->m_world->create(*col, global_tf.position(), global_tf.orientation(), rg, en);
         reg.emplace<physics_world::body_id>(en, body_id);
 
         switch(rg) {
@@ -115,12 +121,12 @@ private:
     }
 
     void on_body_id_destroy(ecs_registry &reg, entity en) {
-        m_world.destroy(*reg.get<physics_world::body_id>(en));
+        m_world->destroy(*reg.get<physics_world::body_id>(en));
     }
 
     void on_velocity_update(ecs_registry &reg, entity en) {
         auto [id, vel] = reg.get<physics_world::body_id, velocity>(en);
-        m_world.set_velocity(*id, *vel);
+        m_world->set_velocity(*id, *vel);
     }
 
     static void on_actual_global_transform_update(ecs_registry &reg, entity en) {
@@ -129,6 +135,7 @@ private:
         }
     }
 
-    physics_world m_world;
+    physics_config m_config;
+    std::unique_ptr<physics_world> m_world;
 };
 } // namespace st

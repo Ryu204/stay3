@@ -184,6 +184,9 @@ class ecs_registry {
         iterator begin() {
             return {m_view.begin(), &m_registry.get()};
         }
+        const auto &front() {
+            return *begin();
+        }
         iterator end() {
             return {m_view.end(), &m_registry.get()};
         }
@@ -231,6 +234,9 @@ class ecs_registry {
             : m_view{view} {}
         iterator begin() {
             return {m_view.begin()};
+        }
+        entity front() {
+            return *begin();
         }
         iterator end() {
             return {m_view.end()};

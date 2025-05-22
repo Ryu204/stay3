@@ -73,12 +73,15 @@ target_sources(${PROJECT_NAME}
     src/ecs/dependency.cppm
     src/ecs/component_ref.cppm
 
+    src/physics/physics_debug.cppm
+
     src/physics/mod.cppm
     src/physics/world.cppm
     src/physics/contact_listener.cppm
     src/physics/rigidbody.cppm
     src/physics/properties.cppm
     src/physics/collider.cppm
+    src/physics/convert.cppm
 
     src/systems/mod.cppm
     src/systems/runtime_info.cppm
