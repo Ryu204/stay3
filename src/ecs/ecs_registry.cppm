@@ -184,7 +184,8 @@ class ecs_registry {
         iterator begin() {
             return {m_view.begin(), &m_registry.get()};
         }
-        const auto &front() {
+        auto front() {
+            assert(m_view.begin() != m_view.end() && "No entity with matching components");
             return *begin();
         }
         iterator end() {
@@ -236,6 +237,7 @@ class ecs_registry {
             return {m_view.begin()};
         }
         entity front() {
+            assert(m_view.begin() != m_view.end() && "No entity with matching components");
             return *begin();
         }
         iterator end() {

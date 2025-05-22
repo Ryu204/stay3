@@ -3,6 +3,7 @@ module;
 #include <cassert>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <unordered_set>
@@ -150,7 +151,7 @@ export class physics_world: private jolt_context_user {
 public:
     using body_id = JPH::BodyID;
     constexpr physics_world(tree_context &ctx, const physics_config &settings = {})
-        : m_settings{settings}, m_debug_drawer{ctx} {
+        : m_settings{settings} {
         constexpr auto num_body_mutexes = 0u;
         constexpr auto max_body_pairs = std::numeric_limits<std::uint16_t>::max();
         constexpr auto max_contact_constraints = 10240u;
@@ -165,6 +166,10 @@ public:
             m_object_object_filter);
         m_physics_system.SetGravity(convert(settings.gravity));
         m_physics_system.SetContactListener(&m_contact_listener);
+
+        if(settings.debug_draw) {
+            m_drawer = std::make_unique<draw>(ctx);
+        }
     }
 
     void update(float delta) {
@@ -242,14 +247,14 @@ public:
     }
 
     [[nodiscard]] entity entity(const body_id &id) const {
-        const auto number = static_cast<std::size_t>(m_physics_system.GetBodyInterface().GetUserData(id));
+        const auto number = static_cast<std::uint32_t>(m_physics_system.GetBodyInterface().GetUserData(id));
         return entity::from_numeric(number);
     }
 
     void render() {
-        const JPH::BodyManager::DrawSettings settings{};
-        m_debug_drawer.begin_draw();
-        m_physics_system.DrawBodies(m_draw_settings, &m_debug_drawer);
+        assert(m_drawer && "The world was not configured with debug draw");
+        m_drawer->debug_drawer.begin_draw();
+        m_physics_system.DrawBodies(m_drawer->settings, &m_drawer->debug_drawer);
     }
 
 private:
@@ -282,8 +287,13 @@ private:
     // Others
     physics_config m_settings;
     seconds m_pending_time{0.F};
-    physics_debug_drawer m_debug_drawer;
-    JPH::BodyManager::DrawSettings m_draw_settings;
+    struct draw {
+        draw(tree_context &ctx, const JPH::BodyManager::DrawSettings &settings = {})
+            : debug_drawer{ctx}, settings{settings} {}
+        physics_debug_drawer debug_drawer;
+        JPH::BodyManager::DrawSettings settings;
+    };
+    std::unique_ptr<draw> m_drawer;
 };
 
 } // namespace st

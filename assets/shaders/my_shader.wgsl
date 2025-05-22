@@ -48,6 +48,6 @@ fn fs_main(in: vertex_output) -> @location(0) vec4f {
     // let shading_a = max(0.0, dot(light_dir_a, in.normal));
     // let shading_b = max(0.0, dot(light_dir_b, in.normal));
     // let shading = shading_a * light_color_a + shading_b * light_color_b;
-    // return vec4f(color.rgb * in.color.rgb * shading, 1.0);
+    // return vec4f(unlit_color.rgb * shading, 1.0);
     return unlit_color;
 }

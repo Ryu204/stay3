@@ -10,7 +10,7 @@ export namespace st {
 struct material {
     component_ref<texture_2d> texture;
     vec4f color{1.F};
-    bool transparency;
+    bool transparency{false};
 };
 
 } // namespace st

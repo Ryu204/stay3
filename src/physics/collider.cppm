@@ -27,10 +27,9 @@ struct box {
 };
 
 class collider {
-    using collider_info = std::variant<box>;
-
 public:
-    collider(const collider_info &info)
+    using info = std::variant<box>;
+    collider(const info &info)
         : shape_settings{std::visit(init_visitor, info)} {
         std::visit(visit_helper{[](const auto &data) -> void { data.SetEmbedded(); }}, shape_settings);
     }
