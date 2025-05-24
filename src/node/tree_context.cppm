@@ -73,6 +73,11 @@ public:
         return m_context_variables;
     }
 
+    void destroy_tree() {
+        m_ecs_reg.clear();
+        m_root.reset();
+    }
+
 private:
     friend class node;
 
@@ -81,8 +86,11 @@ private:
     }
 
     void remove_entity_node_mapping(entity en) {
-        node &owner = m_entity_to_node.at(en);
-        m_entity_to_node.erase(en);
+        auto it = m_entity_to_node.find(en);
+        const auto is_stray_entity = it == m_entity_to_node.end();
+        if(is_stray_entity) { return; }
+        node &owner = it->second;
+        m_entity_to_node.erase(it);
         owner.entities().discard(en);
     }
 

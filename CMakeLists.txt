@@ -73,9 +73,21 @@ target_sources(${PROJECT_NAME}
     src/ecs/dependency.cppm
     src/ecs/component_ref.cppm
 
+    src/physics/physics_debug.cppm
+
+    src/physics/mod.cppm
+    src/physics/world.cppm
+    src/physics/contact_listener.cppm
+    src/physics/rigidbody.cppm
+    src/physics/properties.cppm
+    src/physics/collider.cppm
+    src/physics/convert.cppm
+
     src/systems/mod.cppm
     src/systems/runtime_info.cppm
+
     src/systems/transform/global_transform.cppm
+
     src/systems/render/mod.cppm
     src/systems/render/render_system.cppm
     src/systems/render/components.cppm
@@ -88,10 +100,13 @@ target_sources(${PROJECT_NAME}
     src/systems/render/texture_subsystem.cppm
     src/systems/render/material_subsystem.cppm
     src/systems/render/mesh_subsystem.cppm
+
     src/systems/text/text_system.cppm
     src/systems/text/font_state.cppm
     src/systems/text/font_atlas.cppm
     src/systems/text/text_state.cppm
+
+    src/systems/physics/physics_system.cppm
 
     PRIVATE
 
@@ -111,6 +126,8 @@ target_sources(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT stb freetype)
+# Targets linked to Jolt must compile with same instruction-related flags (avx, bmi,...)
+target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 if(EMSCRIPTEN)
     target_compile_options(${PROJECT_NAME} PUBLIC -fexceptions)
     target_link_options(${PROJECT_NAME} PUBLIC -fexceptions -sASYNCIFY)

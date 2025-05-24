@@ -18,5 +18,6 @@ wgpu::RenderPipeline create_pipeline(
     const wgpu::Device &device,
     const texture_formats &texture_formats,
     const std::filesystem::path &shader_path,
-    const bind_group_layouts &layouts);
+    const bind_group_layouts &layouts,
+    bool culling);
 } // namespace st

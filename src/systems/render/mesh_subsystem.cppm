@@ -77,7 +77,8 @@ private:
         register_mesh_builders<
             mesh_plane_builder,
             mesh_sprite_builder,
-            mesh_cube_builder>(reg);
+            mesh_cube_builder,
+            mesh_uv_sphere_builder>(reg);
     }
     void update_mesh_state_from_data(ecs_registry &reg, entity en) const {
         auto [state, data] = reg.get<mut<mesh_state>, mesh_data>(en);

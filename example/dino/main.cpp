@@ -59,7 +59,7 @@ constexpr auto jump_buttons = {scancode::enter, scancode::w, scancode::up, scanc
 constexpr auto duck_buttons = {scancode::down, scancode::s};
 } // namespace data
 
-struct rigidbody {
+struct my_rigidbody {
     vec3f velocity;
     vec3f acceleration{data::gravity};
 };
@@ -139,19 +139,19 @@ bool is_duck_button_pressed(glfw_window &window) {
     });
 }
 
-class physics_system {
+class simple_physics_system {
 public:
     static void update(seconds delta, tree_context &ctx) {
         auto &reg = ctx.ecs();
-        for(auto [en, tf, rg]: reg.each<mut<transform>, mut<rigidbody>>()) {
+        for(auto [en, tf, rg]: reg.each<mut<transform>, mut<my_rigidbody>>()) {
             rg->velocity += rg->acceleration * delta;
             tf->translate(rg->velocity * delta);
         }
-        for(auto [en, tf, rg, box]: reg.each<mut<transform>, rigidbody, bounding_box>()) {
+        for(auto [en, tf, rg, box]: reg.each<mut<transform>, my_rigidbody, bounding_box>()) {
             const auto bottom = tf->position().y - (box->size.y / 2.F);
             if(bottom < 0) {
                 tf->translate(vec_up * (-bottom));
-                reg.get<mut<rigidbody>>(en)->velocity.y = std::max(0.F, rg->velocity.y);
+                reg.get<mut<my_rigidbody>>(en)->velocity.y = std::max(0.F, rg->velocity.y);
                 reg.emplace_if_not_exist<touched_ground>(en);
             } else {
                 reg.destroy_if_exist<touched_ground>(en);
@@ -258,7 +258,7 @@ public:
 
 private:
     static void jump_all(ecs_registry &reg) {
-        for(auto [en, rg, jump]: reg.each<mut<rigidbody>, jump_data>()) {
+        for(auto [en, rg, jump]: reg.each<mut<my_rigidbody>, jump_data>()) {
             if(reg.contains<touched_ground>(en)) {
                 rg->velocity.y = std::sqrt(std::abs(2.F * jump->height * data::gravity.y));
                 reg.emplace_if_not_exist<jumped>(en);
@@ -460,7 +460,7 @@ private:
 
     void to_transition(tree_context &ctx, ecs_registry &reg) {
         m_current_state = state::transition;
-        reg.emplace<rigidbody>(m_dino);
+        reg.emplace<my_rigidbody>(m_dino);
         reg.emplace<jump_data>(m_dino, jump_data{.height = data::dino_jump_height});
         const auto &animations = ctx.vars().get<animation_holders>();
         reg.emplace<animation_user>(m_dino, animation_user{.animation = animations.at(data::animations::dino_jump)});
@@ -496,7 +496,7 @@ int main() {
             .run_as<sys_type::start>()
             .run_as<sys_type::input>();
         systems
-            .add<physics_system>()
+            .add<simple_physics_system>()
             .run_as<sys_type::update>(sys_priority::high);
         systems
             .add<jump_system>()

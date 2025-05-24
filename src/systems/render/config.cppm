@@ -42,6 +42,7 @@ struct render_config {
 
     power_preference power_pref{power_preference::low};
     filter_mode filter{filter_mode::linear};
+    bool culling{true};
 };
 
 } // namespace st

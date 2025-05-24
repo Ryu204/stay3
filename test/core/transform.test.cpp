@@ -4,7 +4,7 @@ import stay3.test_helper;
 using namespace st;
 using Catch::Approx;
 
-TEST_CASE("Transform - Default initialization") {
+TEST_CASE("Default initialization") {
     transform tf;
 
     SECTION("Default values") {
@@ -23,7 +23,34 @@ TEST_CASE("Transform - Default initialization") {
     }
 }
 
-TEST_CASE("Transform - Basic operations") {
+TEST_CASE("Constructors and operator =") {
+    constexpr vec3f position{10.F, 3.F, -5.F};
+    const quaternionf orientation{vec3f{vec_up + 2.F * vec_left + 1.5F * vec_back}.normalized(), PI * 0.345F};
+    constexpr vec3f scale{1.F, -0.5F, 2.F};
+
+    const transform constructed{position, orientation, scale};
+
+    SECTION("Value constructor") {
+        REQUIRE(approx_equal(constructed.position(), position));
+        REQUIRE(approx_equal(constructed.orientation(), orientation));
+        REQUIRE(approx_equal(constructed.scale(), scale));
+    }
+
+    SECTION("Copy constructor") {
+        const transform copied{constructed};
+        REQUIRE(copied.matrix() == constructed.matrix());
+        REQUIRE(copied.inv_matrix() == constructed.inv_matrix());
+    }
+
+    SECTION("Operator =") {
+        transform copied;
+        copied = constructed;
+        REQUIRE(copied.matrix() == constructed.matrix());
+        REQUIRE(copied.inv_matrix() == constructed.inv_matrix());
+    }
+}
+
+TEST_CASE("Basic operations") {
     transform tf;
     constexpr vec3f offset{1.F, 2.F, -3.F};
     constexpr vec3f axis{0.F, 1.F, 0.F};
@@ -63,7 +90,7 @@ TEST_CASE("Transform - Basic operations") {
     }
 }
 
-TEST_CASE("Transform - Matrix operations") {
+TEST_CASE("Matrix operations") {
     SECTION("Matrix composition") {
         transform tf1;
         transform tf2;

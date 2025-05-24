@@ -14,6 +14,10 @@ export namespace st {
  */
 class transform {
 public:
+    transform(const vec3f &position = {}, const quaternionf &orientation = {}, const vec3f &scale = vec3f{1.F});
+    transform(const transform &);
+    ~transform() = default;
+    transform &operator=(const transform &other);
     /**
      * @brief Rotates the transform around `axis` by `angle`
      * @param axis Rotation axis

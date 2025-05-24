@@ -58,6 +58,20 @@ bool approx_equal(const quaternionf &first, const quaternionf &second, float eps
     return false;
 }
 
+bool approx_equal_orientation(const quaternionf &first, const quaternionf &second, float epsilon = 1e-6F, bool print = true) {
+    if((std::abs(first.w - second.w) <= epsilon && std::abs(first.x - second.x) <= epsilon && std::abs(first.y - second.y) <= epsilon && std::abs(first.z - second.z) <= epsilon)) {
+        return true;
+    }
+    if((std::abs(first.w + second.w) <= epsilon && std::abs(first.x + second.x) <= epsilon && std::abs(first.y + second.y) <= epsilon && std::abs(first.z + second.z) <= epsilon)) {
+        return true;
+    }
+    if(print) {
+        std::cout << first << "\n"
+                  << second << "\n";
+    }
+    return false;
+}
+
 bool same_orientation(const quaternionf &first, const quaternionf &second, float epsilon = 1e-6F) {
     const auto minus_second = quaternionf::wxyz(-second.w, -second.x, -second.y, -second.z);
     if(approx_equal(first, second, epsilon, false) || approx_equal(first, minus_second, epsilon, false)) {

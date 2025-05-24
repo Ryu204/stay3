@@ -84,10 +84,13 @@ add_custom_test(ecs-system-data ecs/system_data.test.cpp "Catch2::Catch2WithMain
 add_custom_test(ecs-system-manager ecs/system_manager.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-dependency ecs/dependency.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-component-ref ecs/component_ref.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(ecs-entity ecs/entity.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-render-camera systems/render_camera.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Catch2WithMain" "")
+
+add_custom_test(physics-world physics/world.test.cpp "Catch2::Catch2WithMain" "")
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

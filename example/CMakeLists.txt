@@ -17,5 +17,8 @@ endfunction()
 add_example(app app.example.cpp "")
 add_example(input input.example.cpp "")
 add_example(text text.example.cpp "")
+add_example(physics physics.example.cpp "")
+add_example(earth earth.example.cpp "")
 
 add_subdirectory(dino)
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
