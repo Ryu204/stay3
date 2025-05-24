@@ -7,6 +7,7 @@ module;
 // clang-format on
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/Shape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 
 export module stay3.physics:collider;
 
@@ -26,9 +27,14 @@ struct box {
     float z;
 };
 
+struct sphere {
+    static constexpr auto default_radius = 1.F;
+    float radius{default_radius};
+};
+
 class collider {
 public:
-    using info = std::variant<box>;
+    using info = std::variant<box, sphere>;
     collider(const info &info)
         : shape_settings{std::visit(init_visitor, info)} {
         std::visit(visit_helper{[](const auto &data) -> void { data.SetEmbedded(); }}, shape_settings);
@@ -44,9 +50,18 @@ public:
     }
 
 private:
-    using jolt_settings = std::variant<JPH::BoxShapeSettings>;
+    using jolt_settings = std::variant<JPH::BoxShapeSettings, JPH::SphereShapeSettings>;
     static constexpr visit_helper init_visitor{
-        [](const box &box) -> jolt_settings { return {JPH::Vec3{box.x / 2.F, box.y / 2.F, box.z / 2.F}}; },
+        [](const box &box) -> jolt_settings {
+            return jolt_settings{
+                std::in_place_type<JPH::BoxShapeSettings>,
+                JPH::Vec3{box.x / 2.F, box.y / 2.F, box.z / 2.F}};
+        },
+        [](const sphere &sphere) -> jolt_settings {
+            return jolt_settings{
+                std::in_place_type<JPH::SphereShapeSettings>,
+                sphere.radius};
+        },
     };
     jolt_settings shape_settings;
 };

@@ -212,14 +212,14 @@ public:
         JPH::BodyCreationSettings settings{
             shape_result.Get(),
             convert(position),
-            convert(orientation),
+            convert(orientation).Normalized(),
             from(type),
             type == rigidbody::fixed ? layer::non_moving : layer::moving,
         };
         auto &interface = m_physics_system.GetBodyInterface();
         auto result = interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
         assert(!result.IsInvalid() && "Invalid body. Maybe body limit reached?");
-        static_assert(sizeof(JPH::uint64) >= sizeof(std::size_t), "Cannot hold entity in Jolt user data");
+        static_assert(sizeof(JPH::uint64) >= sizeof(std::uint32_t), "Cannot hold entity in Jolt user data");
         interface.SetUserData(result, static_cast<JPH::uint64>(en.numeric()));
         return result;
     }
@@ -243,7 +243,7 @@ public:
     void set_transform(const body_id &id, const vec3f &position, const quaternionf &orientation) {
         m_physics_system
             .GetBodyInterface()
-            .SetPositionAndRotation(id, convert(position), convert(orientation), JPH::EActivation::Activate);
+            .SetPositionAndRotation(id, convert(position), convert(orientation).Normalized(), JPH::EActivation::Activate);
     }
 
     [[nodiscard]] entity entity(const body_id &id) const {

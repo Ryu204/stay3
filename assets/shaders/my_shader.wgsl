@@ -27,7 +27,7 @@ fn vs_main(in: vertex_input) -> vertex_output {
     var out: vertex_output;
     out.position = u_mvp_matrix * vec4f(in.position, 1.0);
     out.color = in.color;
-    out.normal = in.normal;
+    out.normal = (u_mvp_matrix * vec4f(in.normal, 1.0)).xyz;
     out.uv = in.uv;
     return out;
 }
@@ -41,13 +41,13 @@ fn fs_main(in: vertex_output) -> @location(0) vec4f {
     // if (unlit_color.a < 0.5) { discard; }
 
     // Temporary lighting to check depth attachement
-    // let light_dir_a = 1.5 * normalize(vec3f(0.5, 0.5, -1.0));
-    // let light_color_a = vec3f(1.0, 0.9, 0.6);
-    // let light_dir_b = normalize(vec3f(-1.0, 0.5, 0.5));
-    // let light_color_b = vec3f(0.6, 0.9, 1.0);
-    // let shading_a = max(0.0, dot(light_dir_a, in.normal));
-    // let shading_b = max(0.0, dot(light_dir_b, in.normal));
-    // let shading = shading_a * light_color_a + shading_b * light_color_b;
-    // return vec4f(unlit_color.rgb * shading, 1.0);
-    return unlit_color;
+    let light_dir_a = 1.5 * normalize(vec3f(0.5, 0.5, 1.0));
+    let light_color_a = vec3f(0.1, 0.1, 0.05);
+    let light_dir_b = normalize(vec3f(-1.0, -0.4, 0.05));
+    let light_color_b = vec3f(0.5, 0.6, 0.6);
+    let shading_a = max(0.0, dot(light_dir_a, in.normal));
+    let shading_b = max(0.0, dot(light_dir_b, in.normal));
+    let shading = shading_a * light_color_a + shading_b * light_color_b;
+    return vec4f(unlit_color.rgb * shading, 1.0);
+    // return unlit_color;
 }
