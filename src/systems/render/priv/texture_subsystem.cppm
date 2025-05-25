@@ -7,7 +7,7 @@ module;
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-export module stay3.system.render:texture_subsystem;
+export module stay3.system.render.priv:texture_subsystem;
 
 import stay3.node;
 import stay3.ecs;

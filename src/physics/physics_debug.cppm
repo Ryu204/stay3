@@ -11,7 +11,7 @@ module;
 
 export module stay3.physics.debug;
 
-import stay3.core; /* DEBUG */
+import stay3.core;
 import stay3.node;
 import stay3.ecs;
 import stay3.graphics;

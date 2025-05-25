@@ -2,11 +2,11 @@ module;
 
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:init_result;
+export module stay3.system.render.priv:init_result;
 
 import stay3.core;
 import stay3.graphics.core;
-import :config;
+import stay3.system.render.config;
 
 export namespace st {
 struct init_result {

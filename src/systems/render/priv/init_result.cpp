@@ -2,12 +2,12 @@ module;
 
 #include <webgpu/webgpu_cpp.h>
 
-module stay3.system.render;
+module stay3.system.render.priv;
 
 import stay3.core;
 import stay3.graphics.core;
+import stay3.system.render.config;
 import :init_result;
-import :config;
 
 namespace st {
 

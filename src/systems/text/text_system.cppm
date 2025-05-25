@@ -7,13 +7,11 @@ module;
 export module stay3.system.text;
 
 import stay3.node;
+import stay3.core;
 import stay3.ecs;
 import stay3.graphics.core;
 import stay3.graphics.text;
-
-import :font_state;
-import :font_atlas;
-import :text_state;
+import stay3.system.text.priv;
 
 export namespace st {
 

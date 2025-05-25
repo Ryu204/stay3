@@ -14,13 +14,7 @@ import stay3.graphics.core;
 import stay3.core;
 import stay3.system.runtime_info;
 import stay3.system.transform;
-
-import :init_result;
-import :pipeline;
-import :render_pass;
-import :material;
-import :components;
-import :mesh_subsystem;
+import stay3.system.render.priv;
 
 namespace st {
 

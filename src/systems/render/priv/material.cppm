@@ -2,7 +2,7 @@ module;
 
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:material;
+export module stay3.system.render.priv:material;
 
 import stay3.core;
 import stay3.ecs;

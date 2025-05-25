@@ -4,7 +4,7 @@ module;
 #include <optional>
 #include <webgpu/webgpu_cpp.h>
 
-module stay3.system.render;
+module stay3.system.render.priv;
 
 import stay3.core;
 import stay3.graphics.core;

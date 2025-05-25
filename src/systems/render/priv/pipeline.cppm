@@ -3,7 +3,7 @@ module;
 #include <filesystem>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:pipeline;
+export module stay3.system.render.priv:pipeline;
 
 import :bind_group_layouts;
 

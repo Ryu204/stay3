@@ -88,23 +88,24 @@ target_sources(${PROJECT_NAME}
 
     src/systems/transform/global_transform.cppm
 
-    src/systems/render/mod.cppm
+    src/systems/render/priv/mod.cppm
     src/systems/render/render_system.cppm
-    src/systems/render/components.cppm
-    src/systems/render/init_result.cppm
+    src/systems/render/priv/components.cppm
+    src/systems/render/priv/init_result.cppm
     src/systems/render/config.cppm
-    src/systems/render/pipeline.cppm
-    src/systems/render/bind_group_layouts.cppm
-    src/systems/render/render_pass.cppm
-    src/systems/render/material.cppm
-    src/systems/render/texture_subsystem.cppm
-    src/systems/render/material_subsystem.cppm
-    src/systems/render/mesh_subsystem.cppm
+    src/systems/render/priv/pipeline.cppm
+    src/systems/render/priv/bind_group_layouts.cppm
+    src/systems/render/priv/render_pass.cppm
+    src/systems/render/priv/material.cppm
+    src/systems/render/priv/texture_subsystem.cppm
+    src/systems/render/priv/material_subsystem.cppm
+    src/systems/render/priv/mesh_subsystem.cppm
 
     src/systems/text/text_system.cppm
-    src/systems/text/font_state.cppm
-    src/systems/text/font_atlas.cppm
-    src/systems/text/text_state.cppm
+    src/systems/text/priv/mod.cppm
+    src/systems/text/priv/font_state.cppm
+    src/systems/text/priv/font_atlas.cppm
+    src/systems/text/priv/text_state.cppm
 
     src/systems/physics/physics_system.cppm
 
@@ -120,8 +121,8 @@ target_sources(${PROJECT_NAME}
     src/node/node.cpp
 
     src/systems/transform/global_transform.cpp
-    src/systems/render/init_result.cpp
-    src/systems/render/pipeline.cpp
+    src/systems/render/priv/init_result.cpp
+    src/systems/render/priv/pipeline.cpp
     src/systems/render/render_system.cpp
 )
 

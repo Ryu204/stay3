@@ -4,20 +4,16 @@ module;
 #include <optional>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:system;
+export module stay3.system.render;
 
 import stay3.core;
 import stay3.node;
 import stay3.ecs;
-import :init_result;
-import :config;
-import :render_pass;
-import :bind_group_layouts;
-import :texture_subsystem;
-import :material_subsystem;
-import :mesh_subsystem;
+import stay3.system.render.priv;
+export import stay3.system.render.config;
 
 export namespace st {
+
 class render_system {
 public:
     render_system(const vec2u &surface_size, std::filesystem::path shader_path, const render_config &config = {});

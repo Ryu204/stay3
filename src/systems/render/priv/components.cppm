@@ -2,7 +2,7 @@ module;
 
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:components;
+export module stay3.system.render.priv:components;
 
 import stay3.core;
 
