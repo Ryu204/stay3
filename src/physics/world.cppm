@@ -33,7 +33,6 @@ import stay3.physics.convert;
 import :contact_listener;
 import :collider;
 import :rigidbody;
-import :properties;
 
 namespace st {
 
@@ -230,14 +229,38 @@ public:
         interface.DestroyBody(id);
     }
 
-    void set_velocity(const body_id &id, const velocity &vel) {
+    [[nodiscard]] vec3f linear_velocity(const body_id &id) const {
+        const auto &interface = m_physics_system.GetBodyInterface();
+        return convert(interface.GetLinearVelocity(id));
+    }
+
+    void set_linear_velocity(const body_id &id, const vec3f &linear) {
         auto &interface = m_physics_system.GetBodyInterface();
-        interface.SetLinearAndAngularVelocity(id, convert(vel.linear), convert(vel.angular));
+        interface.SetLinearVelocity(id, convert(linear));
+    }
+
+    void set_angular_velocity(const body_id &id, const vec3f &axis, float value) {
+        auto &interface = m_physics_system.GetBodyInterface();
+        interface.SetAngularVelocity(id, value * convert(axis));
+    }
+
+    [[nodiscard]] vec3f angular_velocity(const body_id &id) const {
+        const auto &interface = m_physics_system.GetBodyInterface();
+        return convert(interface.GetAngularVelocity(id));
     }
 
     [[nodiscard]] transform transform(const body_id &id) const {
         const auto raw_tf = m_physics_system.GetBodyInterface().GetWorldTransform(id);
         return {convert(raw_tf.GetTranslation()), convert(raw_tf.GetQuaternion())};
+    }
+
+    void add_force(const body_id &id, const vec3f &force, const std::optional<vec3f> &point = std::nullopt) {
+        auto &interface = m_physics_system.GetBodyInterface();
+        if(point.has_value()) {
+            interface.AddForce(id, convert(force), convert(point.value()));
+        } else {
+            interface.AddForce(id, convert(force));
+        }
     }
 
     void set_transform(const body_id &id, const vec3f &position, const quaternionf &orientation) {

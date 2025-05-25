@@ -108,7 +108,7 @@ private:
             assert(false && "Unimplemented");
             break;
         case rigidbody::dynamic:
-            reg.emplace<velocity>(en);
+            reg.emplace<physics>(en, *args.system->m_world, body_id);
             break;
         default:
             assert(false && "Invalid value");
@@ -117,16 +117,11 @@ private:
 
     static void on_collider_destroy(ecs_registry &reg, entity en) {
         reg.destroy_if_exist<physics_world::body_id>(en);
-        reg.destroy_if_exist<velocity>(en);
+        reg.destroy_if_exist<physics>(en);
     }
 
     void on_body_id_destroy(ecs_registry &reg, entity en) {
         m_world->destroy(*reg.get<physics_world::body_id>(en));
-    }
-
-    void on_velocity_update(ecs_registry &reg, entity en) {
-        auto [id, vel] = reg.get<physics_world::body_id, velocity>(en);
-        m_world->set_velocity(*id, *vel);
     }
 
     static void on_actual_global_transform_update(ecs_registry &reg, entity en) {
