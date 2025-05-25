@@ -162,7 +162,7 @@ TEST_CASE("Happy path") {
     app my_app{{.assets_dir = "../assets", .use_default_systems = false}};
     my_app.systems()
         .add<transform_sync_system>()
-        .run_as<sys_type::start>()
+        .run_as<sys_type::start>(sys_priority::very_high)
         .run_as<sys_type::post_update>(sys_priority::high);
 
     SECTION("Sync system changes global transform correctly") {

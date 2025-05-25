@@ -1,5 +1,6 @@
 module;
 
+#include <optional>
 #include <functional>
 
 export module stay3.physics:properties;
