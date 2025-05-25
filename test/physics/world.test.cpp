@@ -38,7 +38,7 @@ TEST_CASE("World state behavior") {
         return dummy_1.ecs().create();
     };
 
-    auto dynamic_id = wld.create(collider::info{box{1, 1, 1}}, position, orientation, rigidbody::dynamic, new_entity());
+    auto dynamic_id = wld.create(collider::info{box{1, 1, 1}}, position, orientation, rigidbody{.motion_type = rigidbody::type::dynamic}, new_entity());
     advance(wld);
 
     SECTION("New single dynamic body is in change list") {
@@ -47,7 +47,7 @@ TEST_CASE("World state behavior") {
         REQUIRE(*change_list.begin() == dynamic_id);
 
         SECTION("Static body will never be in change list") {
-            wld.create(collider::info{box{10, 10, 10}}, position, orientation, rigidbody::fixed, new_entity());
+            wld.create(collider::info{box{10, 10, 10}}, position, orientation, rigidbody{.motion_type = rigidbody::type::fixed}, new_entity());
             advance(wld);
             REQUIRE(change_list.size() == 1);
             REQUIRE(*change_list.begin() == dynamic_id);
@@ -72,14 +72,14 @@ TEST_CASE("World state behavior") {
 
     SECTION("Zero gravity") {
         physics_world wld{dummy_1, {.gravity = {}}};
-        auto body = wld.create(collider::info{box{1, 1, 1}}, position, orientation, rigidbody::dynamic, new_entity());
+        auto body = wld.create(collider::info{box{1, 1, 1}}, position, orientation, rigidbody{.motion_type = rigidbody::type::dynamic}, new_entity());
         advance(wld);
         REQUIRE(approx_equal(wld.transform(body).position(), position));
     }
 
     SECTION("Entity data") {
         auto en = new_entity();
-        auto id = wld.create(collider::info{box{1, 1, 1}}, position, orientation, rigidbody::fixed, en);
+        auto id = wld.create(collider::info{box{1, 1, 1}}, position, orientation, rigidbody{.motion_type = rigidbody::type::fixed}, en);
         REQUIRE(wld.entity(id) == en);
     }
 

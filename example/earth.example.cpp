@@ -39,7 +39,7 @@ struct my_system {
         auto &reg = ctx.ecs();
         reg.get<mut<transform>>(reg.view<main_camera>().front())->translate(vec_back * 8.F);
         auto earth = reg.view<earth_tag>().front();
-        reg.emplace<rigidbody>(earth, rigidbody::dynamic);
+        reg.emplace<rigidbody>(earth, rigidbody::type::dynamic);
         reg.emplace<collider>(earth, sphere{.radius = 1.5F});
 
         // Create a floor
@@ -47,7 +47,7 @@ struct my_system {
         reg.emplace<mesh_cube_builder>(floor, mesh_cube_builder{.size = {4.F, 0.1F, 4.F}});
         reg.emplace<material>(floor, material{.color = {0.6F, 0.1F, 0.3F, 1.F}});
         reg.emplace<rendered_mesh>(floor, rendered_mesh{.mesh = floor, .mat = floor});
-        reg.emplace<rigidbody>(floor, rigidbody::fixed);
+        reg.emplace<rigidbody>(floor, rigidbody{.motion_type = rigidbody::type::fixed, .is_sensor = true});
         reg.emplace<collider>(floor, box{4.F, 0.1F, 4.F});
         reg.get<mut<transform>>(floor)->translate(vec_down * 5.F).rotate(vec_right, -PI / 4).rotate(vec_up, PI / 4.F);
     }

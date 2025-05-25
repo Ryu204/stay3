@@ -9,9 +9,9 @@ import stay3.core;
 import :world;
 
 export namespace st {
-class physics {
+class motion {
 public:
-    physics(physics_world &world, const physics_world::body_id &id)
+    motion(physics_world &world, const physics_world::body_id &id)
         : world{world}, id{id} {}
     [[nodiscard]] vec3f linear_velocity() const {
         return world.get().linear_velocity(id);

@@ -53,6 +53,15 @@ public:
         }
         reg.destroy_all<no_update_physics_state>();
 
+        for(auto [en, collection]: reg.each<mut<collision_enter>>()) {
+            collection->clear();
+        }
+        for(auto [en, collection]: reg.each<mut<collision_exit>>()) {
+            collection->clear();
+        }
+        for(auto [en, collection]: reg.each<mut<collision_stay>>()) {
+            collection->clear();
+        }
         m_world->update(delta);
 
         for(const auto &id: m_world->bodies_with_changed_state()) {
@@ -77,6 +86,7 @@ private:
 
     void setup_signals(tree_context &ctx) {
         auto &reg = ctx.ecs();
+        // Rigidbody and collider
         make_soft_dependency<transform, rigidbody>(reg);
         m_on_collider_construct_args = {.ctx = &ctx, .system = this};
         reg.on<comp_event::construct, collider>()
@@ -86,29 +96,31 @@ private:
         reg.on<comp_event::update, global_transform>().connect<&physics_system::on_actual_global_transform_update>();
         reg.on<comp_event::update, transform>().connect<&physics_system::on_actual_global_transform_update>();
         reg.on<comp_event::update, rigidbody>().connect<+[](ecs_registry &, entity) {
-            assert(false && "Rigidbody type changes are not supported");
+            assert(false && "Rigidbody changes are not supported");
         }>();
         reg.on<comp_event::update, collider>().connect<+[](ecs_registry &, entity) {
             assert(false && "Collider changes are not supported");
         }>();
+        // Collision info
+        make_hard_dependency<collision_exit_unprocessed, collision_exit>(reg);
     }
 
     static void on_collider_construct(on_collider_construct_args &args, ecs_registry &reg, entity en) {
         assert(reg.contains<rigidbody>(en) && "Add rigidbody before collider");
         const auto &global_tf = sync_global_transform(*args.ctx, en).get();
         auto col = reg.get<collider>(en);
-        auto rg = *reg.get<rigidbody>(en);
+        const auto &rg = *reg.get<rigidbody>(en);
         const auto body_id = args.system->m_world->create(*col, global_tf.position(), global_tf.orientation(), rg, en);
         reg.emplace<physics_world::body_id>(en, body_id);
 
-        switch(rg) {
-        case rigidbody::fixed:
+        switch(rg.motion_type) {
+        case rigidbody::type::fixed:
             break;
-        case rigidbody::kinematic:
+        case rigidbody::type::kinematic:
             assert(false && "Unimplemented");
             break;
-        case rigidbody::dynamic:
-            reg.emplace<physics>(en, *args.system->m_world, body_id);
+        case rigidbody::type::dynamic:
+            reg.emplace<motion>(en, *args.system->m_world, body_id);
             break;
         default:
             assert(false && "Invalid value");
@@ -117,7 +129,10 @@ private:
 
     static void on_collider_destroy(ecs_registry &reg, entity en) {
         reg.destroy_if_exist<physics_world::body_id>(en);
-        reg.destroy_if_exist<physics>(en);
+        reg.destroy_if_exist<motion>(en);
+        reg.destroy_if_exist<collision_exit>(en);
+        reg.destroy_if_exist<collision_enter>(en);
+        reg.destroy_if_exist<collision_stay>(en);
     }
 
     void on_body_id_destroy(ecs_registry &reg, entity en) {

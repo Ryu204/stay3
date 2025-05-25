@@ -150,7 +150,7 @@ export class physics_world: private jolt_context_user {
 public:
     using body_id = JPH::BodyID;
     constexpr physics_world(tree_context &ctx, const physics_config &settings = {})
-        : m_settings{settings} {
+        : m_contact_listener{ctx.ecs()}, m_settings{settings} {
         constexpr auto num_body_mutexes = 0u;
         constexpr auto max_body_pairs = std::numeric_limits<std::uint16_t>::max();
         constexpr auto max_contact_constraints = 10240u;
@@ -176,6 +176,7 @@ public:
         const seconds time_per_update = 1.F / m_settings.updates_per_second;
 
         m_bodies_with_changed_state.clear();
+        m_contact_listener.removed_contacts.clear();
         while(m_pending_time > time_per_update) {
             m_pending_time -= time_per_update;
             const auto active_bodies_count = m_physics_system.GetNumActiveBodies(JPH::EBodyType::RigidBody);
@@ -200,21 +201,28 @@ public:
                 assert(false && "Invalid value");
             }
         }
+        for(const auto &contact: m_contact_listener.removed_contacts) {
+            auto en1 = entity(contact.GetBody1ID());
+            auto en2 = entity(contact.GetBody2ID());
+            m_contact_listener.add_collision_exit(en1, en2);
+        }
     }
 
     [[nodiscard]] const auto &bodies_with_changed_state() const {
         return m_bodies_with_changed_state;
     }
 
-    body_id create(const collider &col, const vec3f &position, const quaternionf &orientation, rigidbody type, entity en) {
+    body_id create(const collider &col, const vec3f &position, const quaternionf &orientation, const rigidbody &rg, entity en) {
         const auto shape_result = col.build_geometry();
         JPH::BodyCreationSettings settings{
             shape_result.Get(),
             convert(position),
             convert(orientation).Normalized(),
-            from(type),
-            type == rigidbody::fixed ? layer::non_moving : layer::moving,
+            from(rg.motion_type),
+            rg.motion_type == rigidbody::type::fixed ? layer::non_moving : layer::moving,
         };
+        settings.mIsSensor = rg.is_sensor;
+        settings.mAllowSleeping = rg.allow_sleep;
         auto &interface = m_physics_system.GetBodyInterface();
         auto result = interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
         assert(!result.IsInvalid() && "Invalid body. Maybe body limit reached?");
@@ -281,13 +289,13 @@ public:
     }
 
 private:
-    static JPH::EMotionType from(rigidbody type) {
+    static JPH::EMotionType from(rigidbody::type type) {
         switch(type) {
-        case rigidbody::fixed:
+        case rigidbody::type::fixed:
             return JPH::EMotionType::Static;
-        case rigidbody::dynamic:
+        case rigidbody::type::dynamic:
             return JPH::EMotionType::Dynamic;
-        case rigidbody::kinematic:
+        case rigidbody::type::kinematic:
             return JPH::EMotionType::Kinematic;
         default:
             assert(false && "Invalid value");
