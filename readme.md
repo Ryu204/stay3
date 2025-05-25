@@ -204,6 +204,32 @@ registry.emplace<text>(text_en, text{
 });
 ```
 
+16. Physics
+
+stay3 uses *JoltPhysics* as its physics backend. There are basic functionalities such as:
+* Rigidbody and Collider:
+    * Rigidbody declares physics body settings such as `is_sensor`, `allow_sleep`. They are not modifiable after creation.
+    * Collider defines the shape of the body. Having a collider means the entity has a physics representation in the backend.
+* Collision detection:
+    * I use a realtime query approach instead of callbacks. One can register checking for collision by adding component `collision_enter` to entity. 
+```cpp
+void setup(tree_context& ctx) {
+    entity my_en = /* ... */;
+    ctx.ecs().emplace<collision_enter>(my_en);
+}
+
+void update(seconds, tree_context& ctx) {
+    entity my_en = /* ... */;
+    for (const auto& col : ctx.ecs().get<collision_enter>(my_en)) {
+        /* Access collision info here */
+    }
+}
+```
+* There is also `collision_stay` and `collision_exit` components
+* **NOTE**: if `rigidbody::allow_sleep` was set to `true` which is the default, a contacting body pair will emit exit event when either of them goes to sleep. Set `allow_sleep` to `false` if it is not desirable.
+* `rigidbody::dynamic` and `rigidbody::kinematic` entity will have a `motion` component attached. It can be used to change velocity and force or impulse of the body.
+* Physics world transform state will be updated back to global transform component. It is best not to nest physics entity in deep node. 
+* If user explicitly modifies local or global transform of a physics entity, its physics transform will be updated accordingly in `physics_system::update`.
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
