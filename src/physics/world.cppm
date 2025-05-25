@@ -182,7 +182,9 @@ public:
             const auto active_bodies_count = m_physics_system.GetNumActiveBodies(JPH::EBodyType::RigidBody);
             JPH::BodyIDVector this_update_bodies_list;
             m_physics_system.GetActiveBodies(JPH::EBodyType::RigidBody, this_update_bodies_list);
-            m_bodies_with_changed_state.insert_range(this_update_bodies_list);
+            for(auto body: this_update_bodies_list) {
+                m_bodies_with_changed_state.insert(body);
+            }
 
             const auto error = m_physics_system.Update(time_per_update, static_cast<int>(m_settings.collision_steps), &m_temp_allocator, &m_job_system);
             switch(error) {

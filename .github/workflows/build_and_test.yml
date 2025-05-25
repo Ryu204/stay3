@@ -76,10 +76,6 @@ jobs:
         run: |
           git submodule update --init --remote
           cmake -S . -B build -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=${{ matrix.buildType }}
-      
-      - name: Configure (Clang)
-        if: contains(matrix.platform.compiler, 'clang++')
-        run: cmake -S . -B build -DCMAKE_EXE_LINKER_FLAGS="--stdlib=libc++"
 
       - name: Build
         run: cmake --build build -j4
