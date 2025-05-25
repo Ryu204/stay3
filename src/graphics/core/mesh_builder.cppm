@@ -1,6 +1,7 @@
 module;
 
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -167,4 +168,88 @@ struct mesh_cube_builder {
         // NOLINTEND(*-magic-numbers)
     }
 };
+
+struct mesh_uv_sphere_builder {
+    float radius{1.F};
+    vec3f origin{0.5F};
+    vec4f color{1.F};
+    std::uint32_t segments{32};
+    std::uint32_t rings{16};
+
+    /**
+     * @brief How the UVs look like with `(seg, ring) = (7, 5)`:
+     *  /\/\/\/\/\/\/\
+     * | | | | | | | |
+     * | | | | | | | |
+     * | | | | | | | |
+     * \/\/\/\/\/\/\/
+     */
+    [[nodiscard]] mesh_data build() const {
+        assert(rings >= 3 && segments >= 3 && "Insufficient dimensions");
+        mesh_data result;
+
+        auto &vertices = result.vertices;
+        auto &indices = result.maybe_indices.emplace();
+        vertices.reserve(((1ull + segments) * (rings - 1)) + (2ull * segments));
+        // NOLINTBEGIN(*-identifier-length)
+        // North pole
+        for(auto seg = 0; seg < segments; ++seg) {
+            const auto u = (static_cast<float>(seg) + 0.5F) / static_cast<float>(segments);
+            vertices.emplace_back(color, radius * vec_up, vec_up, vec2f{u, 0.F});
+        }
+        for(auto ring = 1; ring < rings; ++ring) {
+            const auto v = static_cast<float>(ring) / static_cast<float>(rings);
+            const auto theta = PI * v;
+            vec3f normal;
+            normal.y = std::cos(theta);
+            const auto sin_theta = std::sin(theta);
+            for(auto seg = 0; seg <= segments; ++seg) {
+                const auto u = static_cast<float>(seg) / static_cast<float>(segments);
+                const auto phi = 2 * PI * u;
+                normal.z = sin_theta * std::sin(phi);
+                normal.x = sin_theta * std::cos(phi);
+                vertices.emplace_back(color, radius * normal, normal, vec2f{u, v});
+            }
+        }
+        // South pole
+        for(auto seg = 0; seg < segments; ++seg) {
+            const auto u = (static_cast<float>(seg) + 0.5F) / static_cast<float>(segments);
+            vertices.emplace_back(color, radius * vec_down, vec_down, vec2f{u, 1.F});
+        }
+        // NOLINTEND(*-identifier-length)
+        static constexpr auto indices_per_trig = 3;
+        indices.reserve(1ull * rings * segments * 2 * indices_per_trig);
+        auto least_index = 0;
+        for(auto ring = 0; ring < rings; ++ring) {
+            if(ring == 0) {
+                for(auto seg = 0; seg < segments; ++seg) {
+                    indices.push_back(least_index);
+                    indices.push_back(least_index + segments);
+                    indices.push_back(least_index + segments + 1);
+                    ++least_index;
+                }
+            } else if(ring + 1 == rings) {
+                for(auto seg = 0; seg < segments; ++seg) {
+                    indices.push_back(least_index);
+                    indices.push_back(least_index + segments + 1);
+                    indices.push_back(least_index + 1);
+                    ++least_index;
+                }
+            } else {
+                for(auto seg = 0; seg < segments; ++seg) {
+                    indices.push_back(least_index);
+                    indices.push_back(least_index + segments + 1);
+                    indices.push_back(least_index + 1);
+                    indices.push_back(least_index + 1);
+                    indices.push_back(least_index + segments + 1);
+                    indices.push_back(least_index + segments + 2);
+                    ++least_index;
+                }
+                ++least_index;
+            }
+        }
+        return result;
+    }
+};
+
 } // namespace st

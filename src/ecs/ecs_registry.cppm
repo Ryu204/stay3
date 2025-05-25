@@ -184,6 +184,10 @@ class ecs_registry {
         iterator begin() {
             return {m_view.begin(), &m_registry.get()};
         }
+        auto front() {
+            assert(m_view.begin() != m_view.end() && "No entity with matching components");
+            return *begin();
+        }
         iterator end() {
             return {m_view.end(), &m_registry.get()};
         }
@@ -231,6 +235,10 @@ class ecs_registry {
             : m_view{view} {}
         iterator begin() {
             return {m_view.begin()};
+        }
+        entity front() {
+            assert(m_view.begin() != m_view.end() && "No entity with matching components");
+            return *begin();
         }
         iterator end() {
             return {m_view.end()};
@@ -363,6 +371,10 @@ public:
         requires is_sort_predicate<pred, comp>
     void sort(pred &&func) {
         m_registry.sort<comp>(std::forward<pred>(func));
+    }
+
+    void clear() {
+        m_registry.clear();
     }
 
     template<comp_event ev, component comp>

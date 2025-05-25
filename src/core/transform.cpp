@@ -9,6 +9,30 @@ module stay3.core;
 import :math_ops;
 
 namespace st {
+transform::transform(const vec3f &position, const quaternionf &orientation, const vec3f &scale)
+    : m_position{position}, m_orientation{orientation}, m_scale{scale} {}
+
+transform::transform(const transform &other)
+    : m_position{other.m_position}, m_orientation{other.m_orientation}, m_scale{other.m_scale} {}
+
+transform &transform::operator=(const transform &other) {
+    m_position = other.m_position;
+    m_orientation = other.m_orientation;
+    m_scale = other.m_scale;
+    if(other.m_transform_mat_ok) {
+        m_transform_mat_ok = true;
+        m_transform_mat = other.m_transform_mat;
+    } else {
+        m_transform_mat_ok = false;
+    }
+    if(other.m_inv_transform_mat_ok) {
+        m_inv_transform_mat_ok = true;
+        m_inv_transform_mat = other.m_inv_transform_mat;
+    } else {
+        m_inv_transform_mat_ok = false;
+    }
+    return *this;
+}
 
 transform &transform::rotate(const vec3f &axis, radians angle) {
     auto quat = quaternionf{axis.normalized(), angle};

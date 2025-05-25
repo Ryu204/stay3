@@ -146,3 +146,19 @@ TEST_CASE("node basic functionality") {
         }
     }
 }
+
+TEST_CASE("Destruction is safe and can be called multiple times") {
+    st::tree_context ctx;
+    auto &deep_node = ctx.root().add_child().add_child().add_child().add_child();
+    auto &shallow_node = ctx.root().add_child();
+
+    auto &reg = ctx.ecs();
+    reg.emplace<float>(deep_node.entities().create());
+    reg.emplace<std::string>(shallow_node.entities().create(), "I am writing test");
+    reg.emplace<std::string_view>(deep_node.parent().entities().create(), "string_view");
+    deep_node.reparent(shallow_node);
+
+    REQUIRE_NOTHROW(ctx.destroy_tree());
+    REQUIRE_NOTHROW(ctx.destroy_tree());
+    REQUIRE_NOTHROW(ctx.destroy_tree());
+}

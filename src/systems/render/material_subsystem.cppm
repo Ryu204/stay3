@@ -15,7 +15,6 @@ import :bind_group_layouts;
 
 namespace st {
 
-struct material_state_init_pending {};
 struct material_state_update_pending {};
 
 export class material_subsystem {
@@ -45,18 +44,43 @@ private:
         reg.on<comp_event::destroy, material>().connect<&ecs_registry::destroy_if_exist<material_state_update_pending>>();
     }
 
+    [[nodiscard]] wgpu::Buffer create_properties_buffer() const {
+        wgpu::BufferDescriptor buffer_desc{
+            .usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Uniform,
+            .size = sizeof(bind_group_layouts_data::material::properties::type),
+            .mappedAtCreation = false,
+        };
+        return m_context->device.CreateBuffer(&buffer_desc);
+    }
     void update_material_state(ecs_registry &reg, entity en) const {
         auto [state, data] = reg.get<mut<material_state>, material>(en);
-
-        wgpu::TextureView texture_view;
-        {
-            if(data->texture.is_null()) {
-                texture_view = reg.get<texture_2d_state>(*reg.view<default_texture_tag>().begin())->view;
-            } else {
-                texture_view = reg.get<texture_2d_state>(data->texture.entity())->view;
-            }
+        const auto texture_entity = data->texture.is_null()
+                                        ? *reg.view<default_texture_tag>().begin()
+                                        : data->texture.entity();
+        const auto sampler_entity = *reg.view<default_sampler_tag>().begin();
+        const auto &texture_view = reg.get<texture_2d_state>(texture_entity)->view;
+        const auto &wgpu_sampler = reg.get<sampler>(sampler_entity)->sampler;
+        // Create data buffer if it does not exist
+        if(!state->properties_buffer) {
+            state->properties_buffer = create_properties_buffer();
         }
-        const auto sampler_comp = reg.get<sampler>(*reg.view<default_sampler_tag>().begin());
+        // Recreate bind group if needed
+        if(state->texture_entity != texture_entity || state->sampler_entity != sampler_entity) {
+            state->material_bind_group = create_bind_group(texture_view, wgpu_sampler, state->properties_buffer);
+            state->texture_entity = texture_entity;
+            state->sampler_entity = sampler_entity;
+        }
+        // Upload actual data
+        {
+            static_assert(sizeof(material_uniform) % 4 == 0, "Not a multiple of 4");
+            const material_uniform upload_data{
+                .color = data->color,
+            };
+            m_context->queue.WriteBuffer(state->properties_buffer, 0, &upload_data, sizeof(upload_data));
+        }
+    }
+
+    [[nodiscard]] wgpu::BindGroup create_bind_group(const wgpu::TextureView &texture_view, const wgpu::Sampler &sampler, const wgpu::Buffer &properties_buffer) const {
         const std::array<wgpu::BindGroupEntry, bind_group_layouts_data::material::binding_count> entries{
             wgpu::BindGroupEntry{
                 .binding = bind_group_layouts_data::material::texture::binding,
@@ -64,7 +88,11 @@ private:
             },
             wgpu::BindGroupEntry{
                 .binding = bind_group_layouts_data::material::sampler::binding,
-                .sampler = sampler_comp->sampler,
+                .sampler = sampler,
+            },
+            wgpu::BindGroupEntry{
+                .binding = bind_group_layouts_data::material::properties::binding,
+                .buffer = properties_buffer,
             },
         };
         const wgpu::BindGroupDescriptor bind_group_desc{
@@ -72,7 +100,7 @@ private:
             .entryCount = entries.size(),
             .entries = entries.data(),
         };
-        state->material_bind_group = m_context->device.CreateBindGroup(&bind_group_desc);
+        return m_context->device.CreateBindGroup(&bind_group_desc);
     }
 
     void create_default_sampler_entity(tree_context &ctx) const {

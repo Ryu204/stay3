@@ -157,11 +157,33 @@ const global_transform &sync_global_transform(tree_context &ctx, entity en) {
     if(!has_parent_transform) {
         global->global = *local;
     } else {
-        auto parent_global = reg.get<global_transform>(node.parent().entities()[0]);
-        global->global.set_matrix(parent_global->global.matrix() * local->matrix());
+        auto parent_en = node.parent().entities()[0];
+        const auto &parent_global = sync_global_transform(ctx, parent_en);
+        global->global.set_matrix(parent_global.global.matrix() * local->matrix());
     }
     reg.destroy<dirty_flag>(en);
     return *reg.get<global_transform>(en);
+}
+
+void set_global_transform(tree_context &ctx, entity en, const transform &value) {
+    auto &reg = ctx.ecs();
+    assert(reg.contains<transform>(en));
+    const auto &my_node = ctx.get_node(en);
+    const auto parent_has_tf =
+        !my_node.is_root()
+        && !my_node.parent().entities().is_empty()
+        && reg.contains<transform>(my_node.parent().entities()[0]);
+    const auto is_independent = !parent_has_tf || en != my_node.entities()[0];
+    if(is_independent) {
+        *reg.get<mut<transform>>(en) = value;
+        reg.get<mut<global_transform>>(en)->global = value;
+        reg.destroy_if_exist<dirty_flag>(en);
+        return;
+    }
+    const auto &parent_tf = sync_global_transform(ctx, my_node.parent().entities()[0]).get();
+    reg.get<mut<transform>>(en)->set_matrix(parent_tf.inv_matrix() * value.matrix());
+    reg.get<mut<global_transform>>(en)->global = value;
+    reg.destroy_if_exist<dirty_flag>(en);
 }
 
 } // namespace st

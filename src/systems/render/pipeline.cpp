@@ -62,7 +62,8 @@ wgpu::RenderPipeline create_pipeline(
     const wgpu::Device &device,
     const texture_formats &texture_formats,
     const std::filesystem::path &shader_path,
-    const bind_group_layouts &layouts
+    const bind_group_layouts &layouts,
+    bool culling
 
 ) {
     wgpu::PipelineLayoutDescriptor layout_desc{
@@ -114,6 +115,7 @@ wgpu::RenderPipeline create_pipeline(
     };
     wgpu::BlendState blend_state{
         .color = {
+            // Alpha blending
             .operation = wgpu::BlendOperation::Add,
             .srcFactor = wgpu::BlendFactor::SrcAlpha,
             .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha,
@@ -151,7 +153,7 @@ wgpu::RenderPipeline create_pipeline(
             .topology = wgpu::PrimitiveTopology::TriangleList,
             .stripIndexFormat = wgpu::IndexFormat::Undefined,
             .frontFace = wgpu::FrontFace::CCW,
-            .cullMode = wgpu::CullMode::Back,
+            .cullMode = culling ? wgpu::CullMode::Back : wgpu::CullMode::None,
         },
         .depthStencil = &depth_stencil,
         .multisample = {

@@ -22,3 +22,7 @@
 	path = extern/freetype
 	url = https://github.com/freetype/freetype.git
 	branch = master
+[submodule "extern/JoltPhysics"]
+	path = extern/JoltPhysics
+	url = https://github.com/jrouwe/JoltPhysics.git
+	branch = master

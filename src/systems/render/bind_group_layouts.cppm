@@ -6,6 +6,7 @@ export module stay3.system.render:bind_group_layouts;
 
 import stay3.core;
 import :components;
+import :material;
 
 namespace st {
 
@@ -46,17 +47,22 @@ struct bind_group_layouts_data {
 
     struct material {
         static constexpr auto group = 0;
-        static constexpr auto binding_count = 2;
+        static constexpr auto binding_count = 3;
         struct texture {
             static constexpr auto binding = 0;
         };
         struct sampler {
             static constexpr auto binding = 1;
         };
+        struct properties {
+            static constexpr auto binding = 2;
+            using type = material_uniform;
+        };
         static std::array<wgpu::BindGroupLayoutEntry, binding_count> create_entries() {
             return {
                 create_bind_group_layout_entry<texture, bind_type::texture>(wgpu::ShaderStage::Fragment),
                 create_bind_group_layout_entry<sampler, bind_type::sampler>(wgpu::ShaderStage::Fragment),
+                create_bind_group_layout_entry<properties, bind_type::buffer>(wgpu::ShaderStage::Fragment),
             };
         }
     };

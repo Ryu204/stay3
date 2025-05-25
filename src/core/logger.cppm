@@ -2,11 +2,23 @@ module;
 
 #include <cstdint>
 #include <iostream>
+#include <span>
 #include <webgpu/webgpu_cpp.h>
 
 export module stay3.core:logger;
 
 export namespace st::log {
+
+template<typename t>
+std::ostream &operator<<(std::ostream &os, const std::span<t> &container) {
+    os << "[";
+    const char *sep = "";
+    for(const auto &elem: container) {
+        os << sep << elem;
+        sep = " ";
+    }
+    return os << "]";
+}
 
 std::ostream &operator<<(std::ostream &os, const wgpu::StringView &mes) {
     // TODO: emscripten is lagging behind dawn native, see: https://github.com/emscripten-core/emscripten/issues/23432

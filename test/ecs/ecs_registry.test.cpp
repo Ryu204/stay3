@@ -4,6 +4,7 @@
 
 import stay3.ecs;
 using Catch::Approx;
+using Catch::Matchers::Contains;
 using Catch::Matchers::UnorderedRangeEquals;
 
 struct dummy {
@@ -209,6 +210,19 @@ TEST_CASE("Sort and iteration") {
     registry.emplace<second_comp>(en1, 1.0f);
     registry.emplace<second_comp>(en3, 3.0f);
 
+    SECTION("Element access") {
+        auto view = registry.view<dummy>();
+        auto each = registry.each<dummy, second_comp>();
+
+        const auto view_range = {en1, en2, en3};
+        const auto each_range = {en1, en3};
+
+        SECTION("Front") {
+            REQUIRE_THAT(view_range, Contains(view.front()));
+            REQUIRE_THAT(each_range, Contains(std::get<st::entity>(each.front())));
+        }
+    }
+
     SECTION("Iteration over components") {
         SECTION("Single component iteration") {
             int count = 0;
@@ -297,5 +311,43 @@ TEST_CASE("Sort and iteration") {
 
             REQUIRE(std::ranges::is_sorted(values, std::greater<int>{}));
         }
+    }
+}
+
+TEST_CASE("Clear") {
+    st::ecs_registry reg;
+    auto entity_handler_called = 0;
+    auto component_handler_called = 0;
+
+    auto en1 = reg.create();
+    auto en2 = reg.create();
+    reg.emplace<int>(en2, 42);
+
+    auto entity_handler = [&](st::entity) {
+        ++entity_handler_called;
+    };
+    auto component_handler = [&](st::ecs_registry &, st::entity) {
+        ++component_handler_called;
+    };
+
+    reg.on_entity_destroyed().connect<&decltype(entity_handler)::operator()>(entity_handler);
+    reg.on<st::comp_event::destroy, int>().connect<&decltype(component_handler)::operator()>(component_handler);
+
+    reg.clear();
+
+    SECTION("Registry is empty") {
+        REQUIRE_FALSE(reg.contains(en1));
+        REQUIRE_FALSE(reg.contains(en2));
+    }
+    SECTION("Handlers were invoked") {
+        REQUIRE(entity_handler_called == 2);
+        REQUIRE(component_handler_called == 1);
+    }
+    SECTION("Signals handlers are not disconnected") {
+        auto new_en = reg.create();
+        reg.emplace<int>(new_en, 42);
+        reg.destroy(new_en);
+        REQUIRE(entity_handler_called == 3);
+        REQUIRE(component_handler_called == 2);
     }
 }

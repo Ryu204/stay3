@@ -36,7 +36,7 @@ void render_system::start(tree_context &ctx) {
     };
     m_depth_texture = create_depth_texture_view(m_global.device, m_surface_size, formats.depth);
     m_bind_group_layouts = bind_group_layouts{m_global.device};
-    m_pipeline = create_pipeline(m_global.device, formats, m_shader_path, *m_bind_group_layouts);
+    m_pipeline = create_pipeline(m_global.device, formats, m_shader_path, *m_bind_group_layouts, m_config.culling);
     setup_signals(ctx);
 
     m_texture_subsystem.start(ctx, m_global);
@@ -77,10 +77,10 @@ void render_system::render(tree_context &ctx) {
 
     // Sort opaque objects to be rendered before transparent object
     reg.sort<rendered_mesh>([&reg, &cam_position](entity first, entity last) {
-        auto r1 = reg.get<rendered_mesh>(first);
-        auto r2 = reg.get<rendered_mesh>(last);
-        if(!r2->transparency) { return false; }
-        if(!r1->transparency) { return true; }
+        auto m1 = reg.get<rendered_mesh>(first)->mat.get(reg);
+        auto m2 = reg.get<rendered_mesh>(last)->mat.get(reg);
+        if(!m2->transparency) { return false; }
+        if(!m1->transparency) { return true; }
         // Sort transparent objects by heuristic: distance to camera
         const auto &t1 = reg.get<global_transform>(first)->get().position();
         const auto &t2 = reg.get<global_transform>(last)->get().position();

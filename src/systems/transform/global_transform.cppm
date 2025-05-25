@@ -18,6 +18,7 @@ public:
 private:
     friend void sync_global_transform(tree_context &);
     friend const global_transform &sync_global_transform(tree_context &, entity);
+    friend void set_global_transform(tree_context &, entity, const transform &);
     transform global;
 };
 
@@ -36,5 +37,7 @@ void sync_global_transform(tree_context &ctx);
  * @brief Sync single `global_transform`
  */
 const global_transform &sync_global_transform(tree_context &ctx, entity en);
+
+void set_global_transform(tree_context &ctx, entity en, const transform &value);
 
 } // namespace st
