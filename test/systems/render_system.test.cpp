@@ -16,7 +16,7 @@ TEST_CASE("Render some entity") {
 
             texture_cmd.emplace(texture_2d::command_load{
                 .target = material_en,
-                .filename = "../assets/textures/example.jpg",
+                .filename = "assets/textures/example.jpg",
             });
             reg.emplace<material>(material_en, material{.texture = material_en});
 

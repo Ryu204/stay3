@@ -37,6 +37,7 @@ public:
     void start(tree_context &ctx) {
         m_world = std::make_unique<physics_world>(ctx, m_config);
         setup_signals(ctx);
+        log::info("Physics system started");
     }
 
     void update(seconds delta, tree_context &ctx) {

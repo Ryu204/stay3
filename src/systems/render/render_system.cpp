@@ -36,6 +36,7 @@ void render_system::start(tree_context &ctx) {
     m_texture_subsystem.start(ctx, m_global);
     m_material_subsystem.start(ctx, m_global, m_config, m_bind_group_layouts->material());
     m_mesh_subsystem.start(ctx, m_global);
+    log::info("Render system started");
 }
 
 void render_system::render(tree_context &ctx) {

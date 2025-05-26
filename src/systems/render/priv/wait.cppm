@@ -18,6 +18,7 @@ bool wgpu_wait(
 #ifdef __EMSCRIPTEN__
     constexpr auto sleep_ms = 100;
     while(!is_done.load()) {
+        instance.ProcessEvents();
         emscripten_sleep(sleep_ms);
     }
     return true;

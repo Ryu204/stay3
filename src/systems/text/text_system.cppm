@@ -25,6 +25,7 @@ public:
         make_texture_material_atlas_dependency(ctx);
         track_text_changes(reg);
         create_mesh_with_text(reg);
+        log::info("Text system started");
     }
     static void render(tree_context &ctx) {
         auto &reg = ctx.ecs();

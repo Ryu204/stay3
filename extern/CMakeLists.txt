@@ -18,6 +18,10 @@ target_compile_definitions(
 )
 
 add_subdirectory(entt)
+target_compile_definitions(
+    EnTT
+    INTERFACE ENTT_NOEXCEPTION
+)
 
 add_subdirectory(stb)
 
@@ -25,3 +29,11 @@ add_subdirectory(freetype)
 
 set(CPP_RTTI_ENABLED ON)
 add_subdirectory(JoltPhysics/Build)
+
+if(EMSCRIPTEN)
+    set(WASM_EXCEPTION_DEPENDENCIES freetype)
+    foreach(dep IN LISTS WASM_EXCEPTION_DEPENDENCIES)
+        target_compile_options(${dep} PRIVATE -fwasm-exceptions)
+        target_link_options(${dep} PRIVATE -fwasm-exceptions)
+    endforeach()
+endif()

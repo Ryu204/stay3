@@ -7,7 +7,7 @@ module;
 module stay3.system.transform;
 
 import stay3.node;
-import stay3.node;
+import stay3.core;
 import stay3.ecs;
 
 struct dirty_flag {};
@@ -102,6 +102,7 @@ void transform_sync_system::start(tree_context &ctx) {
     reg.on<comp_event::update, transform>().connect<&transform_updated_handler>(ctx);
 
     ctx.on_node_reparented().connect<&node_reparented_handler>(ctx);
+    log::info("Transform sync system started");
 }
 
 void transform_sync_system::post_update(seconds, tree_context &ctx) {

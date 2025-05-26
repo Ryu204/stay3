@@ -16,14 +16,8 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(Catch2)
-if(EMSCRIPTEN)
-    target_compile_options(Catch2 PUBLIC -fexceptions)
-    target_link_options(Catch2 PUBLIC -fexceptions)
-endif()
-
 
 include(CTest)
-
 
 add_library(test-helper)
 target_link_libraries(test-helper PRIVATE stay3)
@@ -40,8 +34,6 @@ function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
 
     if(MSVC)
         target_compile_options(${TEST_NAME} PRIVATE /W4)
-    elseif(EMSCRIPTEN)
-        target_compile_options(${TEST_NAME} PRIVATE -g)
     else()
         target_compile_options(${TEST_NAME} PRIVATE -Wall -Wextra -Wpedantic)
     endif()

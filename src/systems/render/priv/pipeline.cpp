@@ -38,7 +38,7 @@ std::optional<shader_modules> create_shader_modules(const wgpu::Instance &instan
     std::atomic_bool is_query_done{false};
     const auto shader_module = device.CreateShaderModule(&vertex_desc);
     auto fut = device.PopErrorScope(
-        wgpu::CallbackMode::AllowProcessEvents,
+        wgpu::CallbackMode::AllowSpontaneous,
         [&is_creation_successful, &shader_path, &is_query_done](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
             if(status != wgpu::PopErrorScopeStatus::Success) {
                 log::warn("Failed to check shader module creation status");

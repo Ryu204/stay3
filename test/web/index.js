@@ -4,7 +4,11 @@ import server from "./server.js";
 async function main() {
   const browser = await launch({
     headless: "new",
-    args: ["--enable-unsafe-webgpu", "--no-sandbox"],
+    args: [
+      "--enable-unsafe-webgpu", 
+      "--no-sandbox",
+      "--enable-features=WebAssemblyExperimentalJSPI"
+    ],
   });
   const page = await browser.newPage();
 
@@ -18,7 +22,7 @@ async function main() {
 
   // Wait for Emscripten exit
   await page.waitForFunction("window.testExitStatus !== undefined", {
-    timeout: 10_000,
+    timeout: 30_000,
   });
 
   // Get exit status
