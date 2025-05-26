@@ -144,10 +144,15 @@ function(stay3_add_assets TARGET SOURCE_DIR DESTINATION_DIR)
     if(EMSCRIPTEN)
         target_link_options(${TARGET} PRIVATE --preload-file=${SOURCE_DIR}@${DESTINATION_DIR})
     else()
-        add_custom_command(TARGET ${TARGET} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${SOURCE_DIR}"
-            "$<TARGET_FILE_DIR:${TARGET}>/${DESTINATION_DIR}")
+        # Generate list of files to copy
+        file(GLOB_RECURSE SOURCE_FILES RELATIVE "${SOURCE_DIR}" "${SOURCE_DIR}/*")
+        foreach(FILE IN LISTS SOURCE_FILES)
+            set(SRC "${SOURCE_DIR}/${FILE}")
+            set(DST "$<TARGET_FILE_DIR:${TARGET}>/${DESTINATION_DIR}/${FILE}")
+            add_custom_command(TARGET ${TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SRC}" "${DST}"
+                COMMENT "Copying asset: ${SRC} -> ${DST}")
+        endforeach()
     endif()
 endfunction()
 
