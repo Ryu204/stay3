@@ -35,6 +35,8 @@ target_sources(test-helper
 function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
     add_executable(${TEST_NAME} ${SOURCE_FILE})
     target_link_libraries(${TEST_NAME} PRIVATE stay3 test-helper ${LIBS})
+    stay3_app_target(${TEST_NAME})
+    stay3_add_assets(${TEST_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/assets" assets)
 
     if(MSVC)
         target_compile_options(${TEST_NAME} PRIVATE /W4)
@@ -92,5 +94,3 @@ add_custom_test(systems-render-camera systems/render_camera.test.cpp "Catch2::Ca
 add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(physics-world physics/world.test.cpp "Catch2::Catch2WithMain" "")
-
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

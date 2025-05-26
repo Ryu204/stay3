@@ -84,7 +84,7 @@ TEST_CASE("Render some entity") {
         seconds elapsed_time{};
     };
 
-    app my_app{{.assets_dir = "../assets/"}};
+    app my_app;
     my_app
         .systems()
         .add<my_render_system>()

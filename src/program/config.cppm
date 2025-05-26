@@ -20,7 +20,7 @@ export struct app_config {
     float updates_per_second{60.F};
     render_config render{};
     physics_config physics{};
-    std::string assets_dir{"assets"};
+    std::string assets_dir{"assets/stay3"};
     app_web_config web{};
     bool use_default_systems{true};
 };

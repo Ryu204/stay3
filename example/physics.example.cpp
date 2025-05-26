@@ -88,7 +88,6 @@ int main() {
         app my_app{{
             .window = {.size = {1000, 800}},
             .physics = {.debug_draw = false},
-            .assets_dir = "../assets",
         }};
         my_app
             .systems()

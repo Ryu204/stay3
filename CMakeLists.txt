@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
 
 project(stay3 VERSION 0.1 LANGUAGES CXX)
 
-option(${PROJECT_NAME}_BUILD_TESTS "Build tests" OFF)
-option(${PROJECT_NAME}_BUILD_EXAMPLES "Build examples" OFF)
+option(stay3_BUILD_TESTS "Build tests" OFF)
+option(stay3_BUILD_EXAMPLES "Build examples" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,9 +11,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(extern)
 
-add_library(${PROJECT_NAME})
+add_library(stay3)
 
-target_sources(${PROJECT_NAME}
+target_sources(stay3
     PUBLIC FILE_SET my_modules_source TYPE CXX_MODULES FILES
 
     src/main.cppm
@@ -100,6 +100,7 @@ target_sources(${PROJECT_NAME}
     src/systems/render/priv/texture_subsystem.cppm
     src/systems/render/priv/material_subsystem.cppm
     src/systems/render/priv/mesh_subsystem.cppm
+    src/systems/render/priv/wait.cppm
 
     src/systems/text/text_system.cppm
     src/systems/text/priv/mod.cppm
@@ -126,26 +127,39 @@ target_sources(${PROJECT_NAME}
     src/systems/render/render_system.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype)
+target_link_libraries(stay3 PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype)
 # Targets linked to Jolt must compile with same instruction-related flags (avx, bmi,...)
-target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
+target_link_libraries(stay3 PUBLIC Jolt)
 if(EMSCRIPTEN)
-    target_compile_options(${PROJECT_NAME} PUBLIC -fexceptions)
-    target_link_options(${PROJECT_NAME} PUBLIC -fexceptions -sASYNCIFY)
-    target_link_options(${PROJECT_NAME} PRIVATE
-        -sUSE_GLFW=3
-    )
-    target_link_libraries(${PROJECT_NAME} PRIVATE dawn::emdawnwebgpu_cpp)
+    target_compile_options(stay3 PUBLIC -fexceptions)
+    target_link_options(stay3 PUBLIC -fexceptions -sASYNCIFY)
+    target_link_options(stay3 PRIVATE -sUSE_GLFW=3)
+    target_link_libraries(stay3 PRIVATE dawn::emdawnwebgpu_cpp)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE dawn::webgpu_dawn)
+    target_link_libraries(stay3 PRIVATE dawn::webgpu_dawn)
 endif()
 
-if(${PROJECT_NAME}_BUILD_TESTS)
+# Copy SOURCE_DIR to new place so its relative path from TARGET executable will be DESTINATION_DIR
+function(stay3_add_assets TARGET SOURCE_DIR DESTINATION_DIR)
+    if(EMSCRIPTEN)
+        target_link_options(${TARGET} PRIVATE --preload-file=${SOURCE_DIR}@${DESTINATION_DIR})
+    else()
+        add_custom_command(TARGET ${TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${SOURCE_DIR}"
+            "$<TARGET_FILE_DIR:${TARGET}>/${DESTINATION_DIR}")
+    endif()
+endfunction()
+
+# Adds extra configuration for application using stay3
+function(stay3_app_target TARGET)
+    stay3_add_assets(${TARGET} "${CMAKE_SOURCE_DIR}/assets" "assets/stay3")
+endfunction()
+
+if(stay3_BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-if(${PROJECT_NAME}_BUILD_EXAMPLES)
+if(stay3_BUILD_EXAMPLES)
     add_subdirectory(example)
 endif()
-
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

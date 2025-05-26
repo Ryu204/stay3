@@ -9,3 +9,4 @@ export import :mesh_subsystem;
 export import :pipeline;
 export import :render_pass;
 export import :texture_subsystem;
+export import :wait;

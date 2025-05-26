@@ -161,7 +161,7 @@ void check_parent_transform_added_update(tree_context &ctx, const entities &es) 
         entities ens; \
     }; \
     TEST_CASE(#function) { \
-        app my_app{{.assets_dir = "../assets"}}; \
+        app my_app; \
         REQUIRE_NOTHROW(my_app.systems().add<sys_##function>().run_as<sys_type::start>().run_as<sys_type::update>()); \
         REQUIRE_THROWS_MATCHES(my_app.run(), std::runtime_error, Message("OK")); \
     }

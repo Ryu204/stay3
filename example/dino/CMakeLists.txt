@@ -8,6 +8,5 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(dino main.cpp)
 target_link_libraries(dino PRIVATE stay3)
-
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../../assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+stay3_app_target(dino)
+stay3_add_assets(dino "${CMAKE_CURRENT_SOURCE_DIR}/assets" "assets")

@@ -1,5 +1,6 @@
 module;
 
+#include <atomic>
 #include <filesystem>
 #include <optional>
 #include <webgpu/webgpu_cpp.h>
@@ -10,6 +11,7 @@ import stay3.core;
 import stay3.graphics.core;
 import :bind_group_layouts;
 import :pipeline;
+import :wait;
 
 namespace st {
 
@@ -33,10 +35,11 @@ std::optional<shader_modules> create_shader_modules(const wgpu::Instance &instan
 
     device.PushErrorScope(wgpu::ErrorFilter::Validation);
     bool is_creation_successful{false};
+    std::atomic_bool is_query_done{false};
     const auto shader_module = device.CreateShaderModule(&vertex_desc);
     auto fut = device.PopErrorScope(
         wgpu::CallbackMode::AllowProcessEvents,
-        [&is_creation_successful, &shader_path](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
+        [&is_creation_successful, &shader_path, &is_query_done](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
             if(status != wgpu::PopErrorScopeStatus::Success) {
                 log::warn("Failed to check shader module creation status");
             } else if(type == wgpu::ErrorType::NoError) {
@@ -44,8 +47,9 @@ std::optional<shader_modules> create_shader_modules(const wgpu::Instance &instan
             } else {
                 log::error("Shader module creation from ", shader_path, " failed:\n", message, " (code ", static_cast<std::uint32_t>(status), ")");
             }
+            is_query_done.store(true);
         });
-    if(instance.WaitAny(fut, 0) != wgpu::WaitStatus::Success) {
+    if(!wgpu_wait(instance, fut, is_query_done)) {
         return std::nullopt;
     }
     if(!is_creation_successful) {

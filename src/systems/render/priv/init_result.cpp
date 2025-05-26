@@ -1,5 +1,6 @@
 module;
 
+#include <atomic>
 #include <webgpu/webgpu_cpp.h>
 
 module stay3.system.render.priv;
@@ -8,6 +9,7 @@ import stay3.core;
 import stay3.graphics.core;
 import stay3.system.render.config;
 import :init_result;
+import :wait;
 
 namespace st {
 
@@ -18,19 +20,20 @@ std::optional<wgpu::Adapter> create_adapter(const wgpu::Instance &instance, cons
     };
 
     std::optional<wgpu::Adapter> maybe_adapter;
-
+    std::atomic_bool is_request_done{false};
     const auto adapter_future = instance.RequestAdapter(
         &options,
         wgpu::CallbackMode::AllowSpontaneous,
-        [&maybe_adapter](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
+        [&maybe_adapter, &is_request_done](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
             if(status != wgpu::RequestAdapterStatus::Success) {
                 log::error("Request adapter failed: ", message);
-                return;
+            } else {
+                maybe_adapter = std::move(adapter);
             }
-            maybe_adapter = std::move(adapter);
+            is_request_done.store(true);
         });
 
-    if(instance.WaitAny(adapter_future, 0) != wgpu::WaitStatus::Success) {
+    if(!wgpu_wait(instance, adapter_future, is_request_done)) {
         log::error("Failed to wait for adapter");
     }
     return maybe_adapter;
@@ -75,18 +78,20 @@ std::optional<wgpu::Device> create_device(const wgpu::Instance &instance, const 
         });
 
     std::optional<wgpu::Device> maybe_device;
+    std::atomic_bool is_request_done{false};
     const auto device_fut = adapter.RequestDevice(
         &desc,
         wgpu::CallbackMode::AllowSpontaneous,
-        [&maybe_device](wgpu::RequestDeviceStatus status, wgpu::Device device, wgpu::StringView message) {
+        [&maybe_device, &is_request_done](wgpu::RequestDeviceStatus status, wgpu::Device device, wgpu::StringView message) {
             if(status != wgpu::RequestDeviceStatus::Success) {
                 log::error("Request device failed:\n", message, " (code ", static_cast<std::uint32_t>(status), ')');
-                return;
+            } else {
+                maybe_device = std::move(device);
             }
-            maybe_device = std::move(device);
+            is_request_done.store(true);
         });
 
-    if(instance.WaitAny(device_fut, 0) != wgpu::WaitStatus::Success) {
+    if(!wgpu_wait(instance, device_fut, is_request_done)) {
         log::error("Failed to wait for device");
     }
     return maybe_device;
