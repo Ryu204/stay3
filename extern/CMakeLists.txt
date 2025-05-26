@@ -7,6 +7,13 @@ endif()
 
 # Apparently dawn has support for webgpu emscripten version
 set(DAWN_FETCH_DEPENDENCIES ON)
+set(TINT_BUILD_CMD_TOOLS OFF)
+set(TINT_BUILD_TESTS OFF)
+if(EMSCRIPTEN)
+    set(TINT_BUILD_WGSL_READER OFF)
+    set(TINT_BUILD_GLSL_VALIDATOR OFF)
+    set(TINT_BUILD_WGSL_WRITER OFF)
+endif()
 add_subdirectory(dawn)
 # chromium/7200 only defines NOMINMAX for MSVC when defining this Dawn's specific target
 target_compile_definitions(tint_utils_containers PUBLIC NOMINMAX)
