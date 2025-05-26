@@ -1,7 +1,7 @@
 [submodule "extern/dawn"]
 	path = extern/dawn
 	url = https://dawn.googlesource.com/dawn
-	branch = chromium/7075
+	branch = chromium/7200
 [submodule "extern/glfw"]
 	path = extern/glfw
 	url = https://github.com/glfw/glfw

@@ -8,3 +8,4 @@ export import :entities_holder;
 export import :entity;
 export import :system_data;
 export import :system_manager;
+export import :system_wrapper;

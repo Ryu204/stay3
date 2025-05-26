@@ -6,7 +6,7 @@ module;
 #include <type_traits>
 #include <utility>
 
-module stay3.ecs:system_wrapper;
+export module stay3.ecs:system_wrapper;
 
 import stay3.core;
 import stay3.input;

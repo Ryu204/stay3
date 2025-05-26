@@ -134,8 +134,8 @@ if(EMSCRIPTEN)
     target_link_options(${PROJECT_NAME} PUBLIC -fexceptions -sASYNCIFY)
     target_link_options(${PROJECT_NAME} PRIVATE
         -sUSE_GLFW=3
-        -sUSE_WEBGPU
     )
+    target_link_libraries(${PROJECT_NAME} PRIVATE dawn::emdawnwebgpu_cpp)
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE
         dawn::webgpu_dawn webgpu_glfw
