@@ -2,25 +2,19 @@ name: web_build
 
 on: [push, pull_request]
 
-env:
-  CMAKE_GENERATOR: Ninja
-
 jobs:
   web-build:
     defaults:
       run:
         shell: bash
 
-    name: Build on ubuntu
+    name: Build on Windows
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install nodejs npm
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
@@ -33,7 +27,7 @@ jobs:
       - name: Configure
         run: |
           git submodule update --init --remote
-          emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -DCMAKE_BUILD_TYPE=Release -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON
+          emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -DCMAKE_BUILD_TYPE=Release -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -GNinja
 
       - name: Build
         run: cmake --build build -j4
