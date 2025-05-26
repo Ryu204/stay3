@@ -32,7 +32,10 @@ jobs:
       - name: Build
         run: cmake --build build -j4
 
-      - name: Test
+      - name: Prepare test environment
         run: |
-          cd test/web && npm i && cd ../../
-          ctest --test-dir build/test --output-on-failure
+          cd test/web
+          npm i
+
+      - name: Test
+        run: ctest --test-dir build/test --output-on-failure
