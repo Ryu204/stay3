@@ -5,7 +5,7 @@ async function main() {
   const browser = await launch({
     headless: "new",
     args: [
-      "--enable-unsafe-webgpu", 
+      "--enable-unsafe-webgpu",
       "--no-sandbox",
       "--enable-features=WebAssemblyExperimentalJSPI"
     ],

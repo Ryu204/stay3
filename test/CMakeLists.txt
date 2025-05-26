@@ -20,7 +20,7 @@ FetchContent_MakeAvailable(Catch2)
 include(CTest)
 
 add_library(test-helper)
-target_link_libraries(test-helper PRIVATE stay3)
+target_link_libraries(test-helper PRIVATE stay3 Catch2::Catch2)
 target_sources(test-helper
     PUBLIC FILE_SET my_modules_source TYPE CXX_MODULES FILES
     core/test_helper.cppm

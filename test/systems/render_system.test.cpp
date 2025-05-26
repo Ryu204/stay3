@@ -1,7 +1,12 @@
 #include <cmath>
 #include <catch2/catch_all.hpp>
 import stay3;
+import stay3.test_helper;
 using namespace st;
+
+#ifdef __EMSCRIPTEN__
+CATCH_REGISTER_LISTENER(wasm_runtime_may_not_exit)
+#endif
 
 TEST_CASE("Render some entity") {
     struct my_render_system {
