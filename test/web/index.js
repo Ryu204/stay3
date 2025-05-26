@@ -3,11 +3,11 @@ import server from "./server.js";
 
 async function main() {
   const browser = await launch({
-    headless: "new",
+    headless: false,
     args: [
       "--enable-unsafe-webgpu",
       "--no-sandbox",
-      "--enable-features=WebAssemblyExperimentalJSPI"
+      "--enable-features=WebAssemblyExperimentalJSPI,Vulkan",
     ],
   });
   const page = await browser.newPage();
