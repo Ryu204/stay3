@@ -6,6 +6,8 @@ module;
 #include <vector>
 // Needed for `ecs::registry::get` structured binding
 #include <tuple>
+// Needed for `std::unordered_set` ranged for loop
+#include <unordered_set>
 
 export module stay3.system.physics;
 
