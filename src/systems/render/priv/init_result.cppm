@@ -10,6 +10,7 @@ import stay3.system.render.config;
 
 export namespace st {
 struct init_result {
+    wgpu::Instance instance;
     wgpu::Device device;
     wgpu::Queue queue;
     wgpu::Surface surface;

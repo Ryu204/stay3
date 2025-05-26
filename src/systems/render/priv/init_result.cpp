@@ -46,7 +46,7 @@ void log_adapter_info(const wgpu::Adapter &adapter) {
         "\n\tVendor: ", adapter_info.vendor);
 }
 
-std::optional<wgpu::Device> create_device(const wgpu::Adapter &adapter) {
+std::optional<wgpu::Device> create_device(const wgpu::Instance &instance, const wgpu::Adapter &adapter) {
     wgpu::DeviceDescriptor desc{wgpu::DeviceDescriptor::Init{
         .label = "My device",
         .requiredFeatureCount = 0,
@@ -86,7 +86,7 @@ std::optional<wgpu::Device> create_device(const wgpu::Adapter &adapter) {
             maybe_device = std::move(device);
         });
 
-    if(adapter.GetInstance().WaitAny(device_fut, 0) != wgpu::WaitStatus::Success) {
+    if(instance.WaitAny(device_fut, 0) != wgpu::WaitStatus::Success) {
         log::error("Failed to wait for device");
     }
     return maybe_device;
@@ -131,7 +131,7 @@ init_result create_and_config(glfw_window &window, const render_config &config, 
     }
     const auto &adapter = maybe_adapter.value();
     log_adapter_info(adapter);
-    const auto maybe_device = create_device(adapter);
+    const auto maybe_device = create_device(instance, adapter);
     if(!maybe_device.has_value()) {
         throw graphics_error{"Failed to create device"};
     }
@@ -140,6 +140,7 @@ init_result create_and_config(glfw_window &window, const render_config &config, 
     const auto preferred_texture_format = get_first_surface_format(surface, adapter);
     config_surface(surface, device, preferred_texture_format, surface_size);
     return {
+        .instance = instance,
         .device = device,
         .queue = queue,
         .surface = surface,

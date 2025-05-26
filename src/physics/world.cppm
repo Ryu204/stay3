@@ -70,6 +70,7 @@ struct layer_impl: public JPH::BroadPhaseLayerInterface {
         default:
             assert(false && "Invalid value");
         }
+        return non_moving;
     }
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
@@ -82,6 +83,7 @@ struct layer_impl: public JPH::BroadPhaseLayerInterface {
         default:
             assert(false && "Invalid value");
         }
+        return "moving";
     }
 #endif
 };

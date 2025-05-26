@@ -18,7 +18,7 @@ struct shader_modules {
     wgpu::ShaderModule fragment;
 };
 
-std::optional<shader_modules> create_shader_modules(const wgpu::Device &device, const std::filesystem::path &shader_path) {
+std::optional<shader_modules> create_shader_modules(const wgpu::Instance &instance, const wgpu::Device &device, const std::filesystem::path &shader_path) {
     const auto maybe_source = read_file_as_str_nothrow(shader_path);
     if(!maybe_source.has_value()) {
         log::error("Shader file not found");
@@ -34,20 +34,20 @@ std::optional<shader_modules> create_shader_modules(const wgpu::Device &device, 
     device.PushErrorScope(wgpu::ErrorFilter::Validation);
     bool is_creation_successful{false};
     const auto shader_module = device.CreateShaderModule(&vertex_desc);
-    device.PopErrorScope(
-        wgpu::CallbackMode::AllowSpontaneous,
+    auto fut = device.PopErrorScope(
+        wgpu::CallbackMode::AllowProcessEvents,
         [&is_creation_successful, &shader_path](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
             if(status != wgpu::PopErrorScopeStatus::Success) {
                 log::warn("Failed to check shader module creation status");
-                return;
-            }
-            if(type == wgpu::ErrorType::NoError) {
+            } else if(type == wgpu::ErrorType::NoError) {
                 is_creation_successful = true;
-                return;
+            } else {
+                log::error("Shader module creation from ", shader_path, " failed:\n", message, " (code ", static_cast<std::uint32_t>(status), ")");
             }
-            log::error("Shader module creation from ", shader_path, " failed:\n", message, " (code ", static_cast<std::uint32_t>(status), ")");
         });
-    device.Tick();
+    if(instance.WaitAny(fut, 0) != wgpu::WaitStatus::Success) {
+        return std::nullopt;
+    }
     if(!is_creation_successful) {
         return std::nullopt;
     }
@@ -59,6 +59,7 @@ std::optional<shader_modules> create_shader_modules(const wgpu::Device &device, 
 }
 
 wgpu::RenderPipeline create_pipeline(
+    const wgpu::Instance &instance,
     const wgpu::Device &device,
     const texture_formats &texture_formats,
     const std::filesystem::path &shader_path,
@@ -71,8 +72,8 @@ wgpu::RenderPipeline create_pipeline(
         .bindGroupLayouts = layouts.all_layouts().data(),
     };
     const auto layout = device.CreatePipelineLayout(&layout_desc);
-    const auto shader_modules = [](const auto &device, const auto &path) {
-        auto maybe_modules = create_shader_modules(device, path);
+    const auto shader_modules = [&instance](const auto &device, const auto &path) {
+        auto maybe_modules = create_shader_modules(instance, device, path);
         if(!maybe_modules.has_value()) {
             throw graphics_error{"Failed to create shader"};
         }

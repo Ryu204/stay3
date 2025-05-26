@@ -126,7 +126,7 @@ target_sources(${PROJECT_NAME}
     src/systems/render/render_system.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glm EnTT::EnTT stb freetype)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype)
 # Targets linked to Jolt must compile with same instruction-related flags (avx, bmi,...)
 target_link_libraries(${PROJECT_NAME} PUBLIC Jolt)
 if(EMSCRIPTEN)
@@ -137,9 +137,7 @@ if(EMSCRIPTEN)
     )
     target_link_libraries(${PROJECT_NAME} PRIVATE dawn::emdawnwebgpu_cpp)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        dawn::webgpu_dawn webgpu_glfw
-    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE dawn::webgpu_dawn)
 endif()
 
 if(${PROJECT_NAME}_BUILD_TESTS)
