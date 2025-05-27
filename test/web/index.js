@@ -1,15 +1,7 @@
-import { launch } from "puppeteer";
 import server from "./server.js";
+import browser from "./browser.js";
 
 async function main() {
-  const browser = await launch({
-    headless: false,
-    args: [
-      "--enable-unsafe-webgpu",
-      "--no-sandbox",
-      "--enable-features=WebAssemblyExperimentalJSPI,Vulkan",
-    ],
-  });
   const page = await browser.newPage();
 
   page.on("console", (msg) => {
