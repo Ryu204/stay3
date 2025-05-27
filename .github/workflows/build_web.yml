@@ -68,6 +68,7 @@ jobs:
           path: build/example
 
   deploy-examples:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: web-build
     defaults:
       run:
