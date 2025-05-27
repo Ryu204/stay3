@@ -13,23 +13,36 @@ jobs:
 
     name: Build on Ubuntu
 
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Find Chromium executable path
+        id: find_chrome
+        run: |
+          CHROME_PATH=$(which chromium || which chromium-browser || which google-chrome || which chrome || echo "")
+          if [ -z "$CHROME_PATH" ]; then
+            echo "Chromium not found!"
+            exit 1
+          fi
+          echo "CHROME_PATH=$CHROME_PATH" >> $GITHUB_ENV
+
+      - name: Log Chromium path env var
+        run: echo "Chromium executable path is $CHROME_PATH"
+
       - name: TMP
         run: |
-          # sudo apt-get install -y xorg-dev xvfb fluxbox
-          # Xvfb $DISPLAY -screen 0 1280x1024x16 &
-          # sleep 5
-          # fluxbox > /dev/null 2>&1 &
-          # sleep 5
+          sudo apt-get install -y xorg-dev xvfb fluxbox
+          Xvfb $DISPLAY -screen 0 1280x1024x16 &
+          sleep 5
+          fluxbox > /dev/null 2>&1 &
+          sleep 5
           cd test/web && npm i && node bullshit.js
 
-      # - name: Install build dependencies
-      #   run: sudo apt-get update && sudo apt-get install -y nodejs npm
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y nodejs npm
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
