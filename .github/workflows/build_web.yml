@@ -26,7 +26,7 @@ jobs:
           sleep 5
           fluxbox > /dev/null 2>&1 &
           sleep 5
-          cd test/web && npm i && node browser.js
+          cd test/web && npm i && node bullshit.js
 
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y nodejs npm
@@ -47,15 +47,15 @@ jobs:
       - name: Build
         run: cmake --build build -j4
 
-      - name: Prepare test environment
-        run: |
-          sudo apt-get install -y xorg-dev xvfb fluxbox
-          Xvfb $DISPLAY -screen 0 1280x1024x16 &
-          sleep 5
-          fluxbox > /dev/null 2>&1 &
-          sleep 5
-          cd test/web
-          npm i
+      # - name: Prepare test environment
+      #   run: |
+      #     sudo apt-get install -y xorg-dev xvfb fluxbox
+      #     Xvfb $DISPLAY -screen 0 1280x1024x16 &
+      #     sleep 5
+      #     fluxbox > /dev/null 2>&1 &
+      #     sleep 5
+      #     cd test/web
+      #     npm i
 
       - name: Test
         run: ctest --test-dir build/test --output-on-failure

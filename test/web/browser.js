@@ -14,22 +14,4 @@ const browser = await launch({
     ]
 });
 
-const page = await browser.newPage();
-
-// Navigate to chrome://version manually by setting the URL via evaluate or simply open a blank page
-await page.goto('about:blank');
-
-// Use Puppeteer to navigate the browser's address bar to chrome://version via evaluate
-await page.goto("chrome://version");
-
-// Wait for the page content to load
-await page.waitForSelector('#command_line'); // The command line string is inside element with id "command_line"
-
-// Extract the command line string
-const commandLine = await page.$eval('#command_line', el => el.textContent);
-
-console.log('Chrome command line:', commandLine);
-
-await browser.close();
-
 export default browser;
