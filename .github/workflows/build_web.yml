@@ -2,9 +2,6 @@ name: web_build
 
 on: [push, pull_request]
 
-env:
-  DISPLAY: :99
-
 jobs:
   web-build:
     defaults:
@@ -13,14 +10,11 @@ jobs:
 
     name: Build on Ubuntu
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y nodejs npm xorg-dev xvfb fluxbox
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
@@ -40,12 +34,33 @@ jobs:
 
       - name: Prepare test environment
         run: |
-          Xvfb $DISPLAY -screen 0 1920x1080x24 &
-          sleep 5
-          fluxbox > /dev/null 2>&1 &
-          sleep 5
           cd test/web
           npm i
 
       - name: Test
         run: ctest --test-dir build/test --output-on-failure
+
+  deploy:
+    needs: web-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Clean old CMake files
+        run: rm -rf build/example/CMakeFiles/
+
+      - name: Generate Directory Listings
+        uses: jayanta525/github-pages-directory-listing@v4.0.0
+        with:
+          FOLDER: build/example
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/example
