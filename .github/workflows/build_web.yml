@@ -13,7 +13,7 @@ jobs:
 
     name: Build on Ubuntu
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout source
@@ -21,15 +21,15 @@ jobs:
 
       - name: TMP
         run: |
-          sudo apt-get install -y xorg-dev xvfb fluxbox
-          Xvfb $DISPLAY -screen 0 1280x1024x16 &
-          sleep 5
-          fluxbox > /dev/null 2>&1 &
-          sleep 5
+          # sudo apt-get install -y xorg-dev xvfb fluxbox
+          # Xvfb $DISPLAY -screen 0 1280x1024x16 &
+          # sleep 5
+          # fluxbox > /dev/null 2>&1 &
+          # sleep 5
           cd test/web && npm i && node bullshit.js
 
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y nodejs npm
+      # - name: Install build dependencies
+      #   run: sudo apt-get update && sudo apt-get install -y nodejs npm
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
