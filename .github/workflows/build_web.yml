@@ -2,25 +2,45 @@ name: web_build
 
 on: [push, pull_request]
 
-env:
-  DISPLAY: :99
-
 jobs:
   web-build:
     defaults:
       run:
         shell: bash
 
-    name: Build on Ubuntu
+    name: Build on Windows
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y nodejs npm
+      - name: Find Chrome on Windows and set CHROME_PATH
+        shell: pwsh
+        run: |
+          $paths = @(
+            "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+            "${env:LocalAppData}\Google\Chrome\Application\chrome.exe"
+          )
+          foreach ($p in $paths) {
+            if (Test-Path $p) {
+              echo "CHROME_PATH=$p" >> $env:GITHUB_ENV
+              echo "Found Chrome at $p"
+              exit 0
+            }
+          }
+          Write-Error "Chrome not found!"
+          exit 1
+
+      - name: Check browser environment
+        run: |
+          cd test/web
+          PUPPETEER_CHROME_SKIP_DOWNLOAD=true npm i
+          node check_browser.js
+          printf "\nchrome://gpu:\n" && cat browser_data/gpu-info.txt
+          printf "\nchrome:://version:\n" && cat browser_data/launch-command.txt
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
@@ -30,42 +50,47 @@ jobs:
         with:
           version: latest
 
-      - name: Configure
+      - name: Configure CMake with Emscripten
         run: |
           git submodule update --init --remote
           emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -DCMAKE_BUILD_TYPE=Release -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -GNinja
 
-      - name: Build
+      - name: Build web targets
         run: cmake --build build -j4
-
-      - name: Prepare test environment
-        run: |
-          sudo apt-get install -y xorg-dev xvfb fluxbox
-          Xvfb $DISPLAY -screen 0 1280x1024x16 &
-          sleep 5
-          fluxbox > /dev/null 2>&1 &
-          sleep 5
-          cd test/web
-          npm i
 
       - name: Test
         run: ctest --test-dir build/test --output-on-failure
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-example-build
+          path: build/example
 
-  deploy:
+  deploy-examples:
     needs: web-build
-    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
+
+    name: Deploy examples to GitHub Pages
+
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Clean old CMake files
-        run: rm -rf build/example/CMakeFiles/
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: web-example-build
+          path: build/example
+      
+      - name: Delete build files
+        run: find build/example -type d -name CMakeFiles -exec rm -rf {} +
 
-      - name: Generate Directory Listings
+      - name: Generate directory listing
         uses: jayanta525/github-pages-directory-listing@v4.0.0
         with:
           FOLDER: build/example
@@ -75,3 +100,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: build/example
+
+
