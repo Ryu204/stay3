@@ -64,10 +64,10 @@ jobs:
       - name: Clean build artifacts
         run: rm -rf build/example/CMakeFiles/
 
-      - name: Generate Directory Listings
-        uses: jayanta525/github-pages-directory-listing@v4.0.0
+      - name: Generate index.html
+        uses: gacts/directory-listing@v1
         with:
-          FOLDER: build/example
+          target: ./build/example
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

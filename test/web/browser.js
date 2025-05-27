@@ -16,5 +16,6 @@ const browser = await launch({
         "--headless=new",
         "--disable-gpu",
     ],
+    timeout: 0,
 });
 export default browser;
