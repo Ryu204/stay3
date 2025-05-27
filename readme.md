@@ -6,6 +6,22 @@ As of document writing (01/2025), only Ninja and Visual Studio support modules.
 
 However, currently `EnTT` failed to build if used inside a module with MSVC.
 
+# Demo
+
+Since the web version makes use of some features that are not wildly supported yet, it's recommended viewer use a Chromium based browser on desktop.
+
+In order to run the test, please go to `chrome://flags` on the search bar and enable:
+* Experimental WebAssembly JavaScript Promise Integration (JSPI)
+* Unsafe WebGPU Support
+
+Alternately, you can directly go to the address and enable the flags:
+* `chrome://flags/#enable-experimental-webassembly-jspi`
+* `chrome://flags/#enable-unsafe-webgpu`
+
+![alt text](docs/media/chromium_flags.png)
+
+Checkout the demos [here](https://ryu204.github.io/stay3/).
+
 # Important note
 
 1. Coordinate system is left handed, and positive rotation means clockwise. For example, 90 deg rotation around X+ axis is from Y+ to Z+.
