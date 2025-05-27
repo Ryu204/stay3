@@ -19,6 +19,15 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: TMP
+        run: |
+          sudo apt-get install -y xorg-dev xvfb fluxbox
+          Xvfb $DISPLAY -screen 0 1280x1024x16 &
+          sleep 5
+          fluxbox > /dev/null 2>&1 &
+          sleep 5
+          cd test/web && npm i && node browser.js
+
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y nodejs npm
 
@@ -34,9 +43,6 @@ jobs:
         run: |
           git submodule update --init --remote
           emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -DCMAKE_BUILD_TYPE=Release -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -GNinja
-
-      - name: TMP
-        run: cd test/web && npm i && node browser.js
 
       - name: Build
         run: cmake --build build -j4
