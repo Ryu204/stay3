@@ -13,36 +13,43 @@ jobs:
 
     name: Build on Ubuntu
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Find Chromium executable path
-        id: find_chrome
+      - name: Find Chrome on Windows and set CHROME_PATH
+        shell: pwsh
         run: |
-          CHROME_PATH=$(which chromium || which chromium-browser || which google-chrome || which chrome || echo "")
-          if [ -z "$CHROME_PATH" ]; then
-            echo "Chromium not found!"
-            exit 1
-          fi
-          echo "CHROME_PATH=$CHROME_PATH" >> $GITHUB_ENV
-
+          $paths = @(
+            "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+            "${env:LocalAppData}\Google\Chrome\Application\chrome.exe"
+          )
+          foreach ($p in $paths) {
+            if (Test-Path $p) {
+              echo "CHROME_PATH=$p" >> $env:GITHUB_ENV
+              echo "Found Chrome at $p"
+              exit 0
+            }
+          }
+          Write-Error "Chrome not found!"
+          exit 1
       - name: Log Chromium path env var
         run: echo "Chromium executable path is $CHROME_PATH"
 
       - name: TMP
         run: |
-          sudo apt-get install -y xorg-dev xvfb fluxbox
-          Xvfb $DISPLAY -screen 0 1280x1024x16 &
-          sleep 5
-          fluxbox > /dev/null 2>&1 &
-          sleep 5
+          # sudo apt-get install -y xorg-dev xvfb fluxbox
+          # Xvfb $DISPLAY -screen 0 1280x1024x16 &
+          # sleep 5
+          # fluxbox > /dev/null 2>&1 &
+          # sleep 5
           cd test/web && npm i && node bullshit.js
 
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y nodejs npm
+      # - name: Install build dependencies
+      #   run: sudo apt-get update && sudo apt-get install -y nodejs npm
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
