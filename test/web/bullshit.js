@@ -1,44 +1,79 @@
-import { launch, defaultArgs } from "puppeteer";
+import { launch } from 'puppeteer';
+import { writeFileSync } from 'fs';
 
-console.log(defaultArgs());
-const browser = await launch({
-    headless: false,
-    executablePath: process.env.CHROME_PATH,
-    args: [
-        "--no-sandbox",
-        "--enable-unsafe-webgpu",
-        "--enable-webgpu-developer-features",
-        "--enable-features=WebAssemblyExperimentalJSPI,Vulkan,VulkanFromANGLE,DefaultANGLEVulkan",
-    ],
-    ignoreDefaultArgs: [
-        "--headless=new"
-    ]
-});
+(async () => {
+    let browser;
+    try {
+        browser = await launch({
+            headless: false,
+            executablePath: process.env.CHROME_PATH,
+            args: [
+                "--no-sandbox",
+                "--enable-unsafe-webgpu",
+                "--enable-webgpu-developer-features",
+                "--enable-features=WebAssemblyExperimentalJSPI,Vulkan,VulkanFromANGLE,DefaultANGLEVulkan",
+            ],
+            ignoreDefaultArgs: ["--headless=new"]
+        });
 
-const page = await browser.newPage();
+        const page = await browser.newPage();
 
-// Navigate to chrome://version manually by setting the URL via evaluate or simply open a blank page
-await page.goto('about:blank');
+        // Navigate to chrome://gpu
+        await page.goto('chrome://gpu', { waitUntil: 'networkidle0' });
 
-// Use Puppeteer to navigate the browser's address bar to chrome://version via evaluate
-await page.goto("chrome://version")
+        // Wait for the shadow DOM to load
+        await page.waitForSelector('info-view');
 
-// Wait for the page content to load
-await page.waitForSelector('#command_line'); // The command line string is inside element with id "command_line"
+        // Extract WebGPU status from shadow DOM
+        const webgpuStatus = await page.evaluate(() => {
+            const infoView = document.querySelector('info-view');
+            const shadowRoot = infoView.shadowRoot;
 
-// Extract the command line string
-const commandLine = await page.$eval('#command_line', el => el.textContent);
+            // Find the WebGPU status item
+            const items = shadowRoot.querySelectorAll('#content li');
+            for (const item of items) {
+                if (item.textContent.includes('WebGPU:')) {
+                    const statusElement = item.querySelector('.feature-green, .feature-yellow, .feature-red');
+                    return statusElement ? statusElement.textContent.trim() : 'Status not found';
+                }
+            }
+            return 'WebGPU entry not found';
+        });
 
-console.log('Chrome command line:', commandLine);
+        console.log(`WebGPU Status: ${webgpuStatus}`);
 
-await page.goto('chrome://gpu');
+        // Take screenshot of the relevant section
+        await page.evaluate(() => {
+            const infoView = document.querySelector('info-view');
+            const shadowRoot = infoView.shadowRoot;
+            const content = shadowRoot.querySelector('#content');
+            content.style.border = '2px solid red'; // Highlight the section
+        });
 
-// Verify: log the WebGPU status or save the GPU report as PDF
-const txt = await page.waitForSelector('text/WebGPU');
-const status = await txt.evaluate(g => g.parentElement.textContent);
-console.log(status);
-await page.pdf({ path: './gpu.pdf' });
+        await page.screenshot({
+            path: 'gpu-status.png',
+            fullPage: true
+        });
 
-await browser.close();
+        console.log('Screenshot saved as gpu-status.png');
 
-export default browser;
+        // Save the full GPU info to a text file
+        const fullGpuInfo = await page.evaluate(() => {
+            const infoView = document.querySelector('info-view');
+            return infoView.shadowRoot.querySelector('#content').innerText;
+        });
+
+        writeFileSync('gpu-info.txt', fullGpuInfo);
+        console.log('Full GPU info saved to gpu-info.txt');
+
+        // Try to access adapter
+        const gpu = await page.evaluate('(async () => { return (await navigator.gpu.requestAdapter()) != null; })()');
+        console.log(`Adapter exists: ${gpu !== null}`);
+    } catch (error) {
+        console.error('Error:', error);
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+})();

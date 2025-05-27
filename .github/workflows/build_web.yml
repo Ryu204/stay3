@@ -47,6 +47,9 @@ jobs:
           # fluxbox > /dev/null 2>&1 &
           # sleep 5
           cd test/web && npm i && node bullshit.js
+      
+      - name: Log chrome://gpu
+        run: cat test/web/gpu-info.txt
 
       # - name: Install build dependencies
       #   run: sudo apt-get update && sudo apt-get install -y nodejs npm
