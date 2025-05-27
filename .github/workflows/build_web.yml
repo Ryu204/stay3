@@ -16,59 +16,56 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Find Chrome on Windows and set CHROME_PATH
+        shell: pwsh
+        run: |
+          $paths = @(
+            "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+            "${env:LocalAppData}\Google\Chrome\Application\chrome.exe"
+          )
+          foreach ($p in $paths) {
+            if (Test-Path $p) {
+              echo "CHROME_PATH=$p" >> $env:GITHUB_ENV
+              echo "Found Chrome at $p"
+              exit 0
+            }
+          }
+          Write-Error "Chrome not found!"
+          exit 1
+
+      - name: Check browser environment
+        run: |
+          cd test/web
+          PUPPETEER_CHROME_SKIP_DOWNLOAD=true npm i
+          node check_browser.js
+          printf "\nchrome://gpu:\n" && cat browser_data/gpu-info.txt
+          printf "\nchrome:://version:\n" && cat browser_data/launch-command.txt
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Configure CMake with Emscripten
+        run: |
+          git submodule update --init --remote
+          emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -DCMAKE_BUILD_TYPE=Release -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -GNinja
+
+      - name: Build web targets
+        run: cmake --build build -j4
+
+      - name: Test
+        run: ctest --test-dir build/test --output-on-failure
+      
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: my-artifact
-          path: src
-
-      # - name: Find Chrome on Windows and set CHROME_PATH
-      #   shell: pwsh
-      #   run: |
-      #     $paths = @(
-      #       "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe",
-      #       "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-      #       "${env:LocalAppData}\Google\Chrome\Application\chrome.exe"
-      #     )
-      #     foreach ($p in $paths) {
-      #       if (Test-Path $p) {
-      #         echo "CHROME_PATH=$p" >> $env:GITHUB_ENV
-      #         echo "Found Chrome at $p"
-      #         exit 0
-      #       }
-      #     }
-      #     Write-Error "Chrome not found!"
-      #     exit 1
-
-      # - name: Check browswer environment
-      #   run: |
-      #     cd test/web
-      #     PUPPETEER_CHROME_SKIP_DOWNLOAD=true npm i
-      #     node check_browser.js
-      #     printf "\nchrome://gpu:\n" && cat browser_data/gpu-info.txt
-      #     printf "\nchrome:://version:\n" && cat browser_data/launch-command.txt
-
-      # - name: Install Ninja
-      #   uses: seanmiddleditch/gha-setup-ninja@master
-
-      # - name: Install Emscripten
-      #   uses: mymindstorm/setup-emsdk@v14
-      #   with:
-      #     version: latest
-
-      # - name: Configure
-      #   run: |
-      #     git submodule update --init --remote
-      #     emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -DCMAKE_BUILD_TYPE=Release -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -GNinja
-
-      # - name: Build
-      #   run: cmake --build build -j4
-
-      # - name: Test
-      #   run: ctest --test-dir build/test --output-on-failure
-
-      # - name: Clean build artifacts
-      #   run: rm -rf build/example/CMakeFiles/
+          name: web-example-build
+          path: build/example
 
   deploy-examples:
     needs: web-build
@@ -87,7 +84,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: my-artifact
+          name: web-example-build
           path: build/example
       
       - name: Delete build files
