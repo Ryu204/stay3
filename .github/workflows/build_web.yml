@@ -2,16 +2,13 @@ name: web_build
 
 on: [push, pull_request]
 
-env:
-  DISPLAY: :99
-
 jobs:
   web-build:
     defaults:
       run:
         shell: bash
 
-    name: Build on Ubuntu
+    name: Build on Windows
 
     runs-on: windows-latest
 
@@ -36,23 +33,14 @@ jobs:
           }
           Write-Error "Chrome not found!"
           exit 1
-      - name: Log Chromium path env var
-        run: echo "Chromium executable path is $CHROME_PATH"
 
-      - name: TMP
+      - name: Check browswer environment
         run: |
-          # sudo apt-get install -y xorg-dev xvfb fluxbox
-          # Xvfb $DISPLAY -screen 0 1280x1024x16 &
-          # sleep 5
-          # fluxbox > /dev/null 2>&1 &
-          # sleep 5
-          cd test/web && npm i && node bullshit.js
-      
-      - name: Log chrome://gpu
-        run: cat test/web/gpu-info.txt
-
-      # - name: Install build dependencies
-      #   run: sudo apt-get update && sudo apt-get install -y nodejs npm
+          cd test/web
+          PUPPETEER_CHROME_SKIP_DOWNLOAD=true npm i
+          node check_browser.js
+          printf "\nchrome://gpu:\n" && cat browser_data/gpu-info.txt
+          printf "\nchrome:://version:\n" && cat browser_data/launch-command.txt
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
@@ -70,31 +58,10 @@ jobs:
       - name: Build
         run: cmake --build build -j4
 
-      # - name: Prepare test environment
-      #   run: |
-      #     sudo apt-get install -y xorg-dev xvfb fluxbox
-      #     Xvfb $DISPLAY -screen 0 1280x1024x16 &
-      #     sleep 5
-      #     fluxbox > /dev/null 2>&1 &
-      #     sleep 5
-      #     cd test/web
-      #     npm i
-
       - name: Test
         run: ctest --test-dir build/test --output-on-failure
 
-  deploy:
-    needs: web-build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Clean old CMake files
+      - name: Clean build artifacts
         run: rm -rf build/example/CMakeFiles/
 
       - name: Generate Directory Listings
