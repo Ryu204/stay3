@@ -1,18 +1,19 @@
-import { launch, defaultArgs } from "puppeteer";
+import { launch } from "puppeteer";
 
-console.log(defaultArgs());
 const browser = await launch({
     headless: false,
     executablePath: process.env.CHROME_PATH,
     args: [
         "--no-sandbox",
+        "--disable-gpu-sandbox",
+        "--ignore-gpu-blocklist",
         "--enable-unsafe-webgpu",
         "--enable-webgpu-developer-features",
         "--enable-features=WebAssemblyExperimentalJSPI,Vulkan,VulkanFromANGLE,DefaultANGLEVulkan",
     ],
     ignoreDefaultArgs: [
-        "--headless=new"
-    ]
+        "--headless=new",
+        "--disable-gpu",
+    ],
 });
-
 export default browser;
