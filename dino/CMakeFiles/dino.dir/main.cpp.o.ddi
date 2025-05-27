@@ -1,0 +1,14 @@
+{
+  "revision": 0,
+  "rules": [
+    {
+      "primary-output": "example\\dino\\CMakeFiles\\dino.dir\\main.cpp.o",
+      "requires": [
+        {
+          "logical-name": "stay3"
+        }
+      ]
+    }
+  ],
+  "version": 1
+}
