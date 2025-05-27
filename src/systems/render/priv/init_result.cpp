@@ -1,13 +1,15 @@
 module;
 
+#include <atomic>
 #include <webgpu/webgpu_cpp.h>
 
-module stay3.system.render;
+module stay3.system.render.priv;
 
 import stay3.core;
 import stay3.graphics.core;
+import stay3.system.render.config;
 import :init_result;
-import :config;
+import :wait;
 
 namespace st {
 
@@ -18,19 +20,20 @@ std::optional<wgpu::Adapter> create_adapter(const wgpu::Instance &instance, cons
     };
 
     std::optional<wgpu::Adapter> maybe_adapter;
-
+    std::atomic_bool is_request_done{false};
     const auto adapter_future = instance.RequestAdapter(
         &options,
         wgpu::CallbackMode::AllowSpontaneous,
-        [&maybe_adapter](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
+        [&maybe_adapter, &is_request_done](wgpu::RequestAdapterStatus status, wgpu::Adapter adapter, wgpu::StringView message) {
             if(status != wgpu::RequestAdapterStatus::Success) {
                 log::error("Request adapter failed: ", message);
-                return;
+            } else {
+                maybe_adapter = std::move(adapter);
             }
-            maybe_adapter = std::move(adapter);
+            is_request_done.store(true);
         });
 
-    if(instance.WaitAny(adapter_future, 0) != wgpu::WaitStatus::Success) {
+    if(!wgpu_wait(instance, adapter_future, is_request_done)) {
         log::error("Failed to wait for adapter");
     }
     return maybe_adapter;
@@ -46,7 +49,7 @@ void log_adapter_info(const wgpu::Adapter &adapter) {
         "\n\tVendor: ", adapter_info.vendor);
 }
 
-std::optional<wgpu::Device> create_device(const wgpu::Adapter &adapter) {
+std::optional<wgpu::Device> create_device(const wgpu::Instance &instance, const wgpu::Adapter &adapter) {
     wgpu::DeviceDescriptor desc{wgpu::DeviceDescriptor::Init{
         .label = "My device",
         .requiredFeatureCount = 0,
@@ -75,18 +78,20 @@ std::optional<wgpu::Device> create_device(const wgpu::Adapter &adapter) {
         });
 
     std::optional<wgpu::Device> maybe_device;
+    std::atomic_bool is_request_done{false};
     const auto device_fut = adapter.RequestDevice(
         &desc,
         wgpu::CallbackMode::AllowSpontaneous,
-        [&maybe_device](wgpu::RequestDeviceStatus status, wgpu::Device device, wgpu::StringView message) {
+        [&maybe_device, &is_request_done](wgpu::RequestDeviceStatus status, wgpu::Device device, wgpu::StringView message) {
             if(status != wgpu::RequestDeviceStatus::Success) {
                 log::error("Request device failed:\n", message, " (code ", static_cast<std::uint32_t>(status), ')');
-                return;
+            } else {
+                maybe_device = std::move(device);
             }
-            maybe_device = std::move(device);
+            is_request_done.store(true);
         });
 
-    if(adapter.GetInstance().WaitAny(device_fut, 0) != wgpu::WaitStatus::Success) {
+    if(!wgpu_wait(instance, device_fut, is_request_done)) {
         log::error("Failed to wait for device");
     }
     return maybe_device;
@@ -131,7 +136,7 @@ init_result create_and_config(glfw_window &window, const render_config &config, 
     }
     const auto &adapter = maybe_adapter.value();
     log_adapter_info(adapter);
-    const auto maybe_device = create_device(adapter);
+    const auto maybe_device = create_device(instance, adapter);
     if(!maybe_device.has_value()) {
         throw graphics_error{"Failed to create device"};
     }
@@ -140,6 +145,7 @@ init_result create_and_config(glfw_window &window, const render_config &config, 
     const auto preferred_texture_format = get_first_surface_format(surface, adapter);
     config_surface(surface, device, preferred_texture_format, surface_size);
     return {
+        .instance = instance,
         .device = device,
         .queue = queue,
         .surface = surface,

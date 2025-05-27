@@ -6,6 +6,8 @@ module;
 #include <vector>
 // Needed for `ecs::registry::get` structured binding
 #include <tuple>
+// Needed for `std::unordered_set` ranged for loop
+#include <unordered_set>
 
 export module stay3.system.physics;
 
@@ -37,6 +39,7 @@ public:
     void start(tree_context &ctx) {
         m_world = std::make_unique<physics_world>(ctx, m_config);
         setup_signals(ctx);
+        log::info("Physics system started");
     }
 
     void update(seconds delta, tree_context &ctx) {

@@ -6,7 +6,8 @@ module;
 #include <vector>
 #define STB_RECT_PACK_IMPLEMENTATION
 #include <stb/stb_rect_pack.h>
-export module stay3.system.text:font_atlas;
+
+export module stay3.system.text.priv:font_atlas;
 
 import stay3.graphics.core;
 import stay3.graphics.text;

@@ -1,15 +1,17 @@
 module;
 
+#include <atomic>
 #include <filesystem>
 #include <optional>
 #include <webgpu/webgpu_cpp.h>
 
-module stay3.system.render;
+module stay3.system.render.priv;
 
 import stay3.core;
 import stay3.graphics.core;
 import :bind_group_layouts;
 import :pipeline;
+import :wait;
 
 namespace st {
 
@@ -18,7 +20,7 @@ struct shader_modules {
     wgpu::ShaderModule fragment;
 };
 
-std::optional<shader_modules> create_shader_modules(const wgpu::Device &device, const std::filesystem::path &shader_path) {
+std::optional<shader_modules> create_shader_modules(const wgpu::Instance &instance, const wgpu::Device &device, const std::filesystem::path &shader_path) {
     const auto maybe_source = read_file_as_str_nothrow(shader_path);
     if(!maybe_source.has_value()) {
         log::error("Shader file not found");
@@ -33,21 +35,23 @@ std::optional<shader_modules> create_shader_modules(const wgpu::Device &device, 
 
     device.PushErrorScope(wgpu::ErrorFilter::Validation);
     bool is_creation_successful{false};
+    std::atomic_bool is_query_done{false};
     const auto shader_module = device.CreateShaderModule(&vertex_desc);
-    device.PopErrorScope(
+    auto fut = device.PopErrorScope(
         wgpu::CallbackMode::AllowSpontaneous,
-        [&is_creation_successful, &shader_path](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
+        [&is_creation_successful, &shader_path, &is_query_done](wgpu::PopErrorScopeStatus status, wgpu::ErrorType type, const wgpu::StringView &message) {
             if(status != wgpu::PopErrorScopeStatus::Success) {
                 log::warn("Failed to check shader module creation status");
-                return;
-            }
-            if(type == wgpu::ErrorType::NoError) {
+            } else if(type == wgpu::ErrorType::NoError) {
                 is_creation_successful = true;
-                return;
+            } else {
+                log::error("Shader module creation from ", shader_path, " failed:\n", message, " (code ", static_cast<std::uint32_t>(status), ")");
             }
-            log::error("Shader module creation from ", shader_path, " failed:\n", message, " (code ", static_cast<std::uint32_t>(status), ")");
+            is_query_done.store(true);
         });
-    device.Tick();
+    if(!wgpu_wait(instance, fut, is_query_done)) {
+        return std::nullopt;
+    }
     if(!is_creation_successful) {
         return std::nullopt;
     }
@@ -59,6 +63,7 @@ std::optional<shader_modules> create_shader_modules(const wgpu::Device &device, 
 }
 
 wgpu::RenderPipeline create_pipeline(
+    const wgpu::Instance &instance,
     const wgpu::Device &device,
     const texture_formats &texture_formats,
     const std::filesystem::path &shader_path,
@@ -71,8 +76,8 @@ wgpu::RenderPipeline create_pipeline(
         .bindGroupLayouts = layouts.all_layouts().data(),
     };
     const auto layout = device.CreatePipelineLayout(&layout_desc);
-    const auto shader_modules = [](const auto &device, const auto &path) {
-        auto maybe_modules = create_shader_modules(device, path);
+    const auto shader_modules = [&instance](const auto &device, const auto &path) {
+        auto maybe_modules = create_shader_modules(instance, device, path);
         if(!maybe_modules.has_value()) {
             throw graphics_error{"Failed to create shader"};
         }

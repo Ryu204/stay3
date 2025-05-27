@@ -14,13 +14,7 @@ import stay3.graphics.core;
 import stay3.core;
 import stay3.system.runtime_info;
 import stay3.system.transform;
-
-import :init_result;
-import :pipeline;
-import :render_pass;
-import :material;
-import :components;
-import :mesh_subsystem;
+import stay3.system.render.priv;
 
 namespace st {
 
@@ -36,12 +30,13 @@ void render_system::start(tree_context &ctx) {
     };
     m_depth_texture = create_depth_texture_view(m_global.device, m_surface_size, formats.depth);
     m_bind_group_layouts = bind_group_layouts{m_global.device};
-    m_pipeline = create_pipeline(m_global.device, formats, m_shader_path, *m_bind_group_layouts, m_config.culling);
+    m_pipeline = create_pipeline(m_global.instance, m_global.device, formats, m_shader_path, *m_bind_group_layouts, m_config.culling);
     setup_signals(ctx);
 
     m_texture_subsystem.start(ctx, m_global);
     m_material_subsystem.start(ctx, m_global, m_config, m_bind_group_layouts->material());
     m_mesh_subsystem.start(ctx, m_global);
+    log::info("Render system started");
 }
 
 void render_system::render(tree_context &ctx) {

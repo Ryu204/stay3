@@ -3,7 +3,7 @@ module;
 #include <cstdint>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:config;
+export module stay3.system.render.config;
 
 export namespace st {
 

@@ -11,7 +11,7 @@ struct show_atlas {
 
         const auto en1 = root.entities().create();
         const auto en2 = root.entities().create();
-        reg.emplace<font>(en1, "./assets/fonts/Roboto-Regular.ttf");
+        reg.emplace<font>(en1, "./assets/stay3/fonts/Roboto-Regular.ttf");
         reg.emplace<font>(en2, "./assets/fonts/Tagesschrift-Regular.ttf");
 
         auto txt = reg.emplace<text>(en1, text{.content = u8"the quick brown dog jump over the lazy fox", .font = en1});

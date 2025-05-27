@@ -19,7 +19,7 @@ struct my_system {
         auto &texture_cmds = ctx.vars().get<texture_2d::commands>();
         texture_cmds.emplace(texture_2d::command_load{
             .target = earth,
-            .filename = "assets/2k_earth_daymap.jpg"});
+            .filename = "assets/textures/2k_earth_daymap.jpg"});
         reg.emplace<material>(earth, material{.texture = earth});
         reg.emplace<rendered_mesh>(earth, rendered_mesh{.mesh = earth, .mat = earth});
         create_default_camera(ctx);
@@ -64,7 +64,7 @@ struct my_system {
 
 int main() {
     try {
-        app my_app{{.assets_dir = "../assets"}};
+        app my_app;
         my_app.systems()
             .add<my_system>()
             .run_as<sys_type::start>()

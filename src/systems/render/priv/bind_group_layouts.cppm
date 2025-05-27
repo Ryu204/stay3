@@ -2,7 +2,7 @@ module;
 
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:bind_group_layouts;
+export module stay3.system.render.priv:bind_group_layouts;
 
 import stay3.core;
 import :components;
@@ -42,7 +42,7 @@ wgpu::BindGroupLayoutEntry create_bind_group_layout_entry(wgpu::ShaderStage visi
     return result;
 }
 
-struct bind_group_layouts_data {
+export struct bind_group_layouts_data {
     static constexpr auto group_count = 2;
 
     struct material {
@@ -99,7 +99,7 @@ struct bind_group_layouts_data {
     };
 };
 
-class bind_group_layouts {
+export class bind_group_layouts {
 public:
     bind_group_layouts(const wgpu::Device &device)
         : m_layouts{bind_group_layouts_data::create_group_layouts(device)} {}

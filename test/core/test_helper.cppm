@@ -3,11 +3,31 @@ module;
 #include <cmath>
 #include <format>
 #include <iostream>
+
+#ifdef __EMSCRIPTEN__
+#    include <catch2/catch_all.hpp>
+#    include <emscripten.h>
+#endif
+
 export module stay3.test_helper;
 
 import stay3;
 
 export namespace st {
+
+#ifdef __EMSCRIPTEN__
+/** @brief In case wasm runtime does not exit and report back to JavaScript, the compiled C++ code will do it */
+struct wasm_runtime_may_not_exit: public Catch::EventListenerBase {
+    using Catch::EventListenerBase::EventListenerBase;
+    void testRunEnded(Catch::TestRunStats const &test_run_stats) override {
+        if(test_run_stats.aborting) {
+            EM_ASM(window.testExitStatus = -1);
+        } else {
+            EM_ASM(window.testExitStatus = 0);
+        }
+    }
+};
+#endif
 
 std::ostream &operator<<(std::ostream &os, const mat4f &mat) {
     os << "mat4f[\n";

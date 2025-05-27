@@ -3,7 +3,7 @@ module;
 #include <filesystem>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:pipeline;
+export module stay3.system.render.priv:pipeline;
 
 import :bind_group_layouts;
 
@@ -15,6 +15,7 @@ struct texture_formats {
 };
 
 wgpu::RenderPipeline create_pipeline(
+    const wgpu::Instance &instance,
     const wgpu::Device &device,
     const texture_formats &texture_formats,
     const std::filesystem::path &shader_path,

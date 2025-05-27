@@ -2,7 +2,7 @@ module;
 
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:render_pass;
+export module stay3.system.render.priv:render_pass;
 
 import stay3.core;
 import stay3.graphics.core;

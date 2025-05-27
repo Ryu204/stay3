@@ -2,7 +2,7 @@ module;
 
 #include <unordered_map>
 
-export module stay3.system.text:font_state;
+export module stay3.system.text.priv:font_state;
 
 import stay3.graphics.text;
 import stay3.ecs;

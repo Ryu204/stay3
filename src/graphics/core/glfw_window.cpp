@@ -4,11 +4,9 @@ module;
 #include <memory>
 #include <mutex>
 #include <GLFW/glfw3.h>
-#ifdef __EMSCRIPTEN__
+#include <webgpu/webgpu_cpp.h>
+#include <webgpu/webgpu_glfw.h>
 
-#else
-#    include <webgpu/webgpu_glfw.h>
-#endif
 module stay3.graphics.core;
 
 import stay3.input;
@@ -154,13 +152,8 @@ void glfw_window::own_glfw_user_pointer() {
 
     glfwSetWindowUserPointer(m_window, static_cast<void *>(this));
 }
-
 wgpu::Surface glfw_window::create_wgpu_surface(const wgpu::Instance &instance) {
-#ifdef __EMSCRIPTEN__
-
-#else
     return wgpu::glfw::CreateSurfaceForWindow(instance, m_window);
-#endif
 }
 
 vec2u glfw_window::size() const {

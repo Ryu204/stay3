@@ -1,7 +1,12 @@
 #include <cmath>
 #include <catch2/catch_all.hpp>
 import stay3;
+import stay3.test_helper;
 using namespace st;
+
+#ifdef __EMSCRIPTEN__
+CATCH_REGISTER_LISTENER(wasm_runtime_may_not_exit)
+#endif
 
 TEST_CASE("Render some entity") {
     struct my_render_system {
@@ -16,7 +21,7 @@ TEST_CASE("Render some entity") {
 
             texture_cmd.emplace(texture_2d::command_load{
                 .target = material_en,
-                .filename = "../assets/textures/example.jpg",
+                .filename = "assets/texture_checker.jpg",
             });
             reg.emplace<material>(material_en, material{.texture = material_en});
 
@@ -84,7 +89,7 @@ TEST_CASE("Render some entity") {
         seconds elapsed_time{};
     };
 
-    app my_app{{.assets_dir = "../assets/"}};
+    app my_app;
     my_app
         .systems()
         .add<my_render_system>()

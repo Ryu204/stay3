@@ -4,7 +4,7 @@ module;
 #include <utility>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:material_subsystem;
+export module stay3.system.render.priv:material_subsystem;
 
 import stay3.node;
 import stay3.ecs;

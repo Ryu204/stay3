@@ -3,7 +3,7 @@ module;
 #include <cassert>
 #include <webgpu/webgpu_cpp.h>
 
-export module stay3.system.render:mesh_subsystem;
+export module stay3.system.render.priv:mesh_subsystem;
 
 import stay3.node;
 import stay3.ecs;
@@ -35,7 +35,7 @@ void register_one_mesh_builder(ecs_registry &reg) {
     }>();
 }
 
-template<typename... builders>
+export template<typename... builders>
 void register_mesh_builders(ecs_registry &reg) {
     (register_one_mesh_builder<builders>(reg), ...);
 }
