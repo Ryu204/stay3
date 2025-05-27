@@ -9,11 +9,16 @@ import { writeFileSync } from 'fs';
             executablePath: process.env.CHROME_PATH,
             args: [
                 "--no-sandbox",
+                "--disable-gpu-sandbox",
+                "--ignore-gpu-blocklist",
                 "--enable-unsafe-webgpu",
                 "--enable-webgpu-developer-features",
                 "--enable-features=WebAssemblyExperimentalJSPI,Vulkan,VulkanFromANGLE,DefaultANGLEVulkan",
             ],
-            ignoreDefaultArgs: ["--headless=new"]
+            ignoreDefaultArgs: [
+                "--headless=new",
+                "--disable-gpu",
+            ],
         });
 
         const page = await browser.newPage();
