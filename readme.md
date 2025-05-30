@@ -257,11 +257,11 @@ Web build is based on [Emscripten toolchain](https://emscripten.org). There is a
     * All internal data are stored inside the `app` instance. If you allocate an `app` in the stack and call its `run` method, the `app` will be destroyed before the game loop is even entered. So if you want to use `app`, you must allocate it somewhere else (static storage or the heap) so it will persist after `int main()`.
     * `app_launcher` is designed to solve this problem. Internally it allocates an `app` instance on the heap and does not free it in the destructor.
     * You should prefer `app_launcher` over `app` in both web and native builds.
-* Alternatively, you can config `exit_main` properties of `app_config::web` to `false` when creating an instance. This will make the program behaves exactly like the native version. However, the rendering performance will be very poor [^1].
+* Alternatively, you can config `exit_main` properties of `app_config::web` to `false` when creating an instance. This will make the program behaves exactly like the native version. However, the rendering performance will be very poor [^2].
 
 Please note these limitations are only relevant in the web context.
 
-[^1]: Internally, the first approach uses JavaScript `requestAnimationFrame` to simulate a loop. This ensures proper synchronization between monitor, browser and our application. However, it requires control over our program execution, hence the weird limitations.
+[^2]: Internally, the first approach uses JavaScript `requestAnimationFrame` to simulate a loop. This ensures proper synchronization between monitor, browser and our application. However, it requires control over our program execution, hence the weird limitations.
 
 # Build instructions
 
