@@ -21,6 +21,7 @@ target_sources(stay3
     src/program/mod.cppm
     src/program/config.cppm
     src/program/app.cppm
+    src/program/app_launcher.cppm
 
     src/graphics/core/mod.cppm
     src/graphics/core/error.cppm

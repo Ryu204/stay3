@@ -89,7 +89,7 @@ TEST_CASE("Render some entity") {
         seconds elapsed_time{};
     };
 
-    app my_app;
+    app my_app{{.web = {.exit_main = false}}};
     my_app
         .systems()
         .add<my_render_system>()

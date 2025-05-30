@@ -479,7 +479,7 @@ int main() {
     constexpr vec2u win_size{800u, 300u};
     constexpr auto updates_per_sec = 120;
     try {
-        app my_app{{
+        app_launcher my_app{{
             .window = {
                 .size = win_size,
                 .name = "Dino game",
@@ -518,7 +518,7 @@ int main() {
             .add<ground_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::update>();
-        my_app.run();
+        my_app.launch();
     } catch(std::exception &e) {
         std::cerr << "Exception happened: " << e.what() << '\n';
     }

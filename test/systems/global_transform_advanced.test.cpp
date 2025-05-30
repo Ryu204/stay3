@@ -114,7 +114,7 @@ void check_parent_transform_added_update(tree_context &ctx, const entities &es) 
         entities ens; \
     }; \
     TEST_CASE(#function) { \
-        app my_app{{.use_default_systems = false}}; \
+        app my_app{{.use_default_systems = false, .web = {.exit_main = false}}}; \
         my_app.systems().add<transform_sync_system>().run_as<sys_type::start>(sys_priority::very_high); \
         REQUIRE_NOTHROW(my_app.systems().add<sys_##function>().run_as<sys_type::start>().run_as<sys_type::update>()); \
         my_app.run(); \

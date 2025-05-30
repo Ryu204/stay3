@@ -85,7 +85,7 @@ private:
 
 int main() {
     try {
-        app my_app{{
+        app_launcher my_app{{
             .window = {.size = {1000, 800}},
             .physics = {.debug_draw = false},
         }};
@@ -95,7 +95,7 @@ int main() {
             .run_as<sys_type::start>()
             .run_as<sys_type::input>()
             .run_as<sys_type::update>();
-        my_app.run();
+        my_app.launch();
     } catch(std::exception &e) {
         std::cerr << "Exception happened: " << e.what() << '\n';
     }

@@ -1,7 +1,6 @@
 module;
 
 #include <cstdint>
-#include <filesystem>
 
 export module stay3.program:app;
 
@@ -46,14 +45,11 @@ private:
     stop_watch m_watch;
     seconds m_pending_time{0.F};
     seconds m_time_per_update;
-    unsigned int m_emscripten_sleep_milli;
 
     glfw_window m_window;
 
     system_manager<tree_context> m_ecs_systems;
     tree_context m_tree_context;
-    render_config m_render_config;
-    physics_config m_physics_config;
-    std::filesystem::path m_assets_dir;
+    app_config m_config;
 };
 } // namespace st

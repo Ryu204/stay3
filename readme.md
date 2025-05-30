@@ -246,11 +246,29 @@ void update(seconds, tree_context& ctx) {
 * `rigidbody::dynamic` and `rigidbody::kinematic` entity will have a `motion` component attached. It can be used to change velocity and force or impulse of the body.
 * Physics world transform state will be updated back to global transform component. It is best not to nest physics entity in deep node. 
 * If user explicitly modifies local or global transform of a physics entity, its physics transform will be updated accordingly in `physics_system::update`.
+
+17. Web build
+
+Web build is based on [Emscripten toolchain](https://emscripten.org). There is a few limitations, some of them are because of how JavaScript and C++ works.
+
+* There can only be one window instance at a time
+* Consequently, there can only be one app instance at a time
+* Most importantly, `app::run` ( and `app_launcher::launch`) does not start the app immediately like native version. It will schedule the app to run **AFTER** the `int main()` function returns. It brings some nuances and implications.
+    * All internal data are stored inside the `app` instance. If you allocate an `app` in the stack and call its `run` method, the `app` will be destroyed before the game loop is even entered. So if you want to use `app`, you must allocate it somewhere else (static storage or the heap) so it will persist after `int main()`.
+    * `app_launcher` is designed to solve this problem. Internally it allocates an `app` instance on the heap and does not free it in the destructor.
+    * You should prefer `app_launcher` over `app` in both web and native builds.
+* Alternatively, you can config `exit_main` properties of `app_config::web` to `false` when creating an instance. This will make the program behaves exactly like the native version. However, the rendering performance will be very poor [^1].
+
+Please note these limitations are only relevant in the web context.
+
+[^1]: Internally, the first approach uses JavaScript `requestAnimationFrame` to simulate a loop. This ensures proper synchronization between monitor, browser and our application. However, it requires control over our program execution, hence the weird limitations.
+
 # Build instructions
 
-Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to:
+Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to (May 30th 2025):
+
 * `clang >= 19`
-* <del>`emscripten>=4`
+* `emscripten>=4`
 * <del>`msvc >= v17.14`
 * <del>`gcc>=14`
 
@@ -292,4 +310,4 @@ ctest --test-dir build/test --output-on-failure
 
 If you are using `clangd` as language server, it might work better with `clang++` as compiler.
 
-More build and run instruction can be found in `.github/workflows` directory.
+More build and run commands can be found in `.github/workflows` directory.

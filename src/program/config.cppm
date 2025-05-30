@@ -10,9 +10,12 @@ import stay3.physics;
 
 namespace st {
 
-struct app_web_config {
-    static constexpr unsigned int default_sleep_milli{100};
-    unsigned int sleep_milli{default_sleep_milli};
+struct web_app_config {
+    /**
+     * @brief If set to true, the application will run after `main` exits.
+     * Else, the behavior is similar to native build. However rendering performance is very poor.
+     */
+    bool exit_main{true};
 };
 
 export struct app_config {
@@ -20,8 +23,8 @@ export struct app_config {
     float updates_per_second{60.F};
     render_config render{};
     physics_config physics{};
+    web_app_config web{};
     std::string assets_dir{"assets/stay3"};
-    app_web_config web{};
     bool use_default_systems{true};
 };
 }; // namespace st
