@@ -64,13 +64,13 @@ struct my_system {
 
 int main() {
     try {
-        app my_app;
+        app_launcher my_app;
         my_app.systems()
             .add<my_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::update>()
             .run_as<sys_type::input>();
-        my_app.run();
+        my_app.launch();
     } catch(std::exception &e) {
         std::cerr << e.what() << '\n';
     }

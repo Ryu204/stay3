@@ -89,7 +89,7 @@ jobs:
           path: build/example
       
       - name: Delete build files
-        run: find build/example -type d -name CMakeFiles -exec rm -rf {} +
+        run: find build/example \( -type d -name CMakeFiles -o -type f -name cmake_install.cmake \) -exec rm -rf {} +
 
       - name: Generate directory listing
         uses: jayanta525/github-pages-directory-listing@v4.0.0

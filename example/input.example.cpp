@@ -60,13 +60,13 @@ struct input_system {
 
 int main() {
     try {
-        app my_app;
+        app_launcher my_app;
         my_app
             .systems()
             .add<input_system>()
             .run_as<sys_type::start>()
             .run_as<sys_type::input>();
-        my_app.run();
+        my_app.launch();
     } catch(std::exception &e) {
         std::cerr << "Exception happened: " << e.what() << '\n';
     }

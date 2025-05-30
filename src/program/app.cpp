@@ -1,4 +1,7 @@
 module;
+
+#include <filesystem>
+
 #ifdef __EMSCRIPTEN__
 #    include <emscripten.h>
 #endif
@@ -15,7 +18,7 @@ import :config;
 namespace st {
 
 app::app(const app_config &config)
-    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_emscripten_sleep_milli{config.web.sleep_milli}, m_render_config{config.render}, m_physics_config{config.physics}, m_assets_dir{config.assets_dir} {
+    : m_window{config.window}, m_time_per_update{1.F / config.updates_per_second}, m_config{config} {
     if(config.use_default_systems) {
         enable_default_systems();
     }
@@ -37,7 +40,7 @@ app &app::enable_default_systems() {
         .run_as<sys_type::start>(sys_priority::very_high)
         .run_as<sys_type::post_update>(sys_priority::very_low);
     m_ecs_systems
-        .add<render_system>(m_window.size(), m_assets_dir / "shaders" / "my_shader.wgsl", m_render_config)
+        .add<render_system>(m_window.size(), std::filesystem::path{m_config.assets_dir} / "shaders" / "my_shader.wgsl", m_config.render)
         .run_as<sys_type::start>(sys_priority::very_high)
         .run_as<sys_type::render>()
         .run_as<sys_type::cleanup>(sys_priority::very_low);
@@ -47,10 +50,10 @@ app &app::enable_default_systems() {
         .run_as<sys_type::render>(sys_priority::high);
     auto physics =
         m_ecs_systems
-            .add<physics_system>(m_physics_config)
+            .add<physics_system>(m_config.physics)
             .run_as<sys_type::start>(sys_priority::very_high)
             .run_as<sys_type::update>(sys_priority::very_high);
-    if(m_physics_config.debug_draw) {
+    if(m_config.physics.debug_draw) {
         physics.run_as<sys_type::render>(sys_priority::very_high);
     }
 
@@ -60,12 +63,32 @@ app &app::enable_default_systems() {
 void app::run() {
     add_runtime_info();
     m_ecs_systems.start(m_tree_context);
+#ifndef __EMSCRIPTEN__
     while(m_window.is_open()) {
         on_frame();
-#ifdef __EMSCRIPTEN__
-        emscripten_sleep(m_emscripten_sleep_milli);
-#endif
     }
+#else
+    if(m_config.web.exit_main) {
+        emscripten_set_main_loop_arg(
+            /* callback */ +[](void *this_app) {
+            auto casted_app = static_cast<app *>(this_app);
+            if(casted_app->m_window.is_open()) { 
+                casted_app->on_frame(); 
+            } else {
+                emscripten_cancel_main_loop();
+                delete casted_app;
+            } },
+            /* arg */ static_cast<void *>(this),
+            /* fps */ 0,
+            /* simulate_infinite_loop */ false);
+    } else {
+        while(m_window.is_open()) {
+            constexpr auto sleep_milli = 100;
+            on_frame();
+            emscripten_sleep(sleep_milli);
+        }
+    }
+#endif
 }
 
 void app::on_frame() {

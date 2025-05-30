@@ -41,7 +41,7 @@ struct show_atlas {
 };
 
 int main() try {
-    app my_app;
+    app_launcher my_app;
     my_app
         .systems()
         .add<show_atlas>()
@@ -50,7 +50,7 @@ int main() try {
         .systems()
         .add<show_atlas>()
         .run_as<sys_type::input>();
-    my_app.run();
+    my_app.launch();
 } catch(std::exception &e) {
     std::cerr << e.what() << '\n';
 } catch(...) {

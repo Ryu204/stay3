@@ -18,6 +18,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 include(CTest)
+include(${Catch2_SOURCE_DIR}/extras/Catch.cmake)
 
 add_library(test-helper)
 target_link_libraries(test-helper PRIVATE stay3 Catch2::Catch2)
@@ -47,7 +48,7 @@ function(add_custom_test TEST_NAME SOURCE_FILE LIBS ARGS)
         )
         add_test(NAME ${TEST_NAME} COMMAND node ${CMAKE_CURRENT_SOURCE_DIR}/web/index.js -d ${CMAKE_CURRENT_BINARY_DIR} -i ${TEST_NAME}.html ${ARGS})
     else()
-        add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME} ${ARGS})
+        catch_discover_tests(${TEST_NAME})
     endif()
 endfunction()
 
@@ -70,6 +71,7 @@ add_custom_test(input-keyboard input/keyboard.test.cpp "Catch2::Catch2WithMain" 
 
 add_custom_test(graphics-glfw-window graphics/glfw_window.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(graphics-mesh-builder graphics/mesh_builder.test.cpp "Catch2::Catch2WithMain" "")
+add_custom_test(graphics-camera graphics/camera.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(ecs-ecs-registry ecs/ecs_registry.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(ecs-ecs-registry-advanced ecs/ecs_registry_advanced.test.cpp "Catch2::Catch2WithMain" "")
@@ -82,7 +84,6 @@ add_custom_test(ecs-entity ecs/entity.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(systems-global-transform systems/global_transform.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-global-transform-advanced systems/global_transform_advanced.test.cpp "Catch2::Catch2WithMain" "")
-add_custom_test(systems-render-camera systems/render_camera.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(physics-world physics/world.test.cpp "Catch2::Catch2WithMain" "")
