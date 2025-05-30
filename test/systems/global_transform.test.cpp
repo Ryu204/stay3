@@ -159,7 +159,7 @@ struct transform_setter {
 };
 
 TEST_CASE("Happy path") {
-    app my_app{{.use_default_systems = false, .web = {.exit_main = false}}};
+    app my_app{{.web = {.exit_main = false}, .use_default_systems = false}};
     my_app.systems()
         .add<transform_sync_system>()
         .run_as<sys_type::start>(sys_priority::very_high)

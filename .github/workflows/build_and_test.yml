@@ -43,24 +43,24 @@ jobs:
                                   libwayland-dev libxkbcommon-dev xorg-dev xvfb fluxbox
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
-    
+
       - name: Install MSVC (Windows)
         if: contains(matrix.platform.name, 'MSVC')
         uses: ilammy/msvc-dev-cmd@v1
-      
+
       - name: Install LLVM and Clang (Windows)
         if: contains(matrix.platform.name, 'Windows with Clang')
         uses: KyleMayes/install-llvm-action@v2.0.6
         with:
           version: ${{ matrix.platform.version }}
           directory: ${{ runner.temp }}/llvm
-      
+
       - name: Setup Clang environment (Windows)
         if: contains(matrix.platform.name, 'Windows with Clang')
         run: |
           echo "CXX=clang++" >> "$GITHUB_ENV"
           echo "PATH=${{ runner.temp }}/llvm/bin:$PATH" >> "$GITHUB_ENV"
-      
+
       - name: Install compiler (Linux)
         if: contains(matrix.platform.name, 'ubuntu')
         run: |
@@ -78,7 +78,7 @@ jobs:
           cmake -S . -B build -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=${{ matrix.buildType }}
 
       - name: Build
-        run: cmake --build build -j4
+        run: cmake --build build -j
 
       - name: Create graphics server (Linux)
         if: contains(matrix.platform.name, 'ubuntu')
@@ -87,9 +87,10 @@ jobs:
           sleep 5
           fluxbox > /dev/null 2>&1 &
           sleep 5
+
       - name: Copy DLL files (Windows)
         if: contains(matrix.platform.name, 'windows')
         run: cp build/extern/dawn/webgpu_dawn.dll build/test/
-      
+
       - name: Test
         run: ctest --test-dir build/test --output-on-failure
