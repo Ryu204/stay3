@@ -9,22 +9,24 @@ using namespace st;
 
 namespace data {
 constexpr vec3f camera_offset{0.F, 2.F, -7.F};
-constexpr vec3f platform_size{6.F, 30.F, 30.F};
+constexpr vec3f platform_size{6.F, 2.F, 50.F};
 constexpr auto ball_radius = 1.F;
-constexpr auto gravity_scale = 7.F;
+constexpr vec3f gravity{0.F, -18.F, 4.F};
 constexpr auto left_keys = {scancode::left, scancode::a};
 constexpr auto right_keys = {scancode::right, scancode::d};
 constexpr auto default_density = 1000.F;
 const auto ball_mass = 4 * PI * std::pow(ball_radius, 3.F) / 3.F * default_density;
 const auto move_force = 60.F * ball_mass;
-const auto stop_force = 3.F * ball_mass;
+const auto stop_force = 0.2F * ball_mass;
+const vec3f boost_impulse = vec3f{0.F, 15.F, 6.F} * ball_mass;
+const auto boost_stop_force = 0.1F * ball_mass;
 constexpr auto ball_spawn_ahead_length = 40.F;
-constexpr auto platform_spawn_margin = 0.25F;
+constexpr auto platform_spawn_margin = 0.2F;
 constexpr auto platform_total_length = static_cast<int>(
     platform_size.z + platform_size.z * 2.F * platform_spawn_margin);
-constexpr auto platform_distance_y = 4.F;
+constexpr auto platform_distance_y = 6.5F;
 constexpr auto platform_rotation_y_max = PI / 4;
-constexpr auto platform_rotation_z_max = PI / 8;
+constexpr auto platform_rotation_z_max = PI / 10;
 } // namespace data
 
 namespace utils {
@@ -38,6 +40,7 @@ float random() {
 
 struct tags {
     struct ball {};
+    struct sensor {};
 };
 
 struct camera_system {
@@ -87,36 +90,50 @@ struct ball_system {
             .motion_type = rigidbody::type::dynamic,
             .allow_sleep = false,
             .friction = 1.F,
-            .linear_damping = 0.3F,
+            .linear_damping = 0.2F,
+            .angular_damping = 0.3F,
         };
         reg.emplace<rigidbody>(ball_en, rg);
         reg.emplace<collider>(ball_en, sphere{.radius = data::ball_radius});
+        reg.emplace<collision_enter>(ball_en);
 
         return ball_en;
     }
 
     static void update(seconds delta, tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        auto ball_motion = reg.get<mut<motion>>(reg.view<tags::ball>().front());
+        update_horizontal_movement(ctx, *ball_motion);
+        update_vertical_movement(*ball_motion);
+    }
+
+    static void update_vertical_movement(motion &ball_motion) {
+        auto velocity = ball_motion.linear_velocity().z;
+        if(velocity > 0.F) {
+            ball_motion.add_force(vec_back * velocity * data::boost_stop_force);
+        }
+    }
+
+    static void update_horizontal_movement(tree_context &ctx, motion &ball_motion) {
         auto &window = ctx.vars().get<runtime_info>().window();
         const auto is_key_down = [&window](scancode key) { return window.get_key(key) == key_status::pressed; };
         const auto left = std::ranges::any_of(data::left_keys, is_key_down);
         const auto right = std::ranges::any_of(data::right_keys, is_key_down);
 
         auto &reg = ctx.ecs();
-        auto ball_motion = reg.get<mut<motion>>(reg.view<tags::ball>().front());
         if(left || right) {
             const auto direction = static_cast<float>(left) * (-1.F) + static_cast<float>(right) * 1.F;
-            ball_motion->add_force(direction * data::move_force * vec_right);
+            ball_motion.add_force(direction * data::move_force * vec_right);
         } else {
-            const auto vx = ball_motion->linear_velocity().x;
-            ball_motion->add_force(-vx * data::stop_force * vec_right);
+            const auto vx = ball_motion.linear_velocity().x;
+            ball_motion.add_force(-vx * data::stop_force * vec_right);
         }
     }
 };
 
 struct platform_system {
     void start(tree_context &ctx) {
-        auto en = ctx.root().entities().create();
-        create_platform(ctx, en, vec3f{}, 0.F, true);
+        create_platform(ctx, vec3f{}, 0.F, true);
         max_platform_index = 0;
         max_platform_z = data::platform_total_length / 2.F;
         current_platform_x = 0.F;
@@ -134,12 +151,26 @@ struct platform_system {
     void update(seconds delta, tree_context &ctx) {
         auto &reg = ctx.ecs();
         const auto [ball_en, tag, ball_tf] = reg.each<tags::ball, transform>().front();
-        const auto spawn_ahead_z = static_cast<int>(ball_tf->position().z + data::ball_spawn_ahead_length);
+        spawn_platforms(ctx, ball_tf->position());
+        check_sensor_boost(ball_en, reg);
+    }
+
+    static void check_sensor_boost(entity ball, ecs_registry &reg) {
+        auto ball_motion = reg.get<mut<motion>>(ball);
+        for(const auto &col: *reg.get<collision_enter>(ball)) {
+            const auto is_sensor = reg.contains<tags::sensor>(col.other);
+            if(is_sensor) {
+                ball_motion->add_impulse(data::boost_impulse);
+            }
+        }
+    }
+
+    void spawn_platforms(tree_context &ctx, const vec3f &ball_position) {
+        const auto spawn_ahead_z = static_cast<int>(ball_position.z + data::ball_spawn_ahead_length);
         while(max_platform_z < spawn_ahead_z) {
-            auto new_platform_en = ctx.root().entities().create();
             const auto next_platform_tf = calculate_next_transform();
             ++max_platform_index;
-            create_platform(ctx, new_platform_en, next_platform_tf.top_center, next_platform_tf.rotation);
+            create_platform(ctx, next_platform_tf.top_center, next_platform_tf.rotation);
         }
     }
 
@@ -171,8 +202,10 @@ private:
         return mesh_en;
     }
 
-    static void create_platform(tree_context &ctx, entity en, const vec3f &top_center, float rotation, bool no_rotate = false) {
+    static void create_platform(tree_context &ctx, const vec3f &top_center, float rotation, bool no_rotate = false) {
         auto &reg = ctx.ecs();
+        auto &node = ctx.root().add_child();
+        auto en = node.entities().create();
         reg.emplace<rendered_mesh>(en, rendered_mesh{.mesh = default_mesh_en(reg), .mat = default_material_en(ctx)});
         {
             auto tf = reg.get<mut<transform>>(en);
@@ -189,6 +222,13 @@ private:
         };
         reg.emplace<rigidbody>(en, rg);
         reg.emplace<collider>(en, box{data::platform_size});
+        auto sensor_en = node.add_child().entities().create();
+        reg.emplace<rigidbody>(sensor_en, rigidbody{.motion_type = rigidbody::type::fixed, .is_sensor = true, .allow_sleep = false});
+        reg.emplace<collider>(sensor_en, box{data::platform_size.x * 1.5F, 4 * data::ball_radius, 4 * data::ball_radius});
+        reg.get<mut<transform>>(sensor_en)
+            ->translate(vec_up * data::platform_size.y / 2.F)
+            .translate(vec_forward * (data::platform_size.z / 2.F - 2 * data::ball_radius));
+        reg.emplace<tags::sensor>(sensor_en);
     }
 
     platform_init_args calculate_next_transform() {
@@ -213,7 +253,10 @@ int main() {
         app_launcher app{{
             .window = {.size = {800u, 500u}, .name = "Slope clone"},
             .render = {.culling = false},
-            .physics = {.gravity = (vec_down + vec_forward) * data::gravity_scale},
+            .physics = {
+                .gravity = data::gravity,
+                .debug_draw = false,
+            },
         }};
         app.systems()
             .add<ball_system>()
