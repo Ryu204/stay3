@@ -3,7 +3,9 @@
 #include <exception>
 #include <iostream>
 #include <random>
+#include <string>
 #include <tuple>
+#include <unordered_set>
 import stay3;
 using namespace st;
 
@@ -11,7 +13,7 @@ namespace data {
 constexpr vec3f camera_offset{0.F, 2.F, -7.F};
 constexpr vec3f platform_size{6.F, 2.F, 50.F};
 constexpr auto ball_radius = 1.F;
-constexpr vec3f gravity{0.F, -18.F, 4.F};
+constexpr vec3f gravity{0.F, -18.F, 5.F};
 constexpr auto left_keys = {scancode::left, scancode::a};
 constexpr auto right_keys = {scancode::right, scancode::d};
 constexpr auto default_density = 1000.F;
@@ -20,7 +22,7 @@ const auto move_force = 60.F * ball_mass;
 const auto stop_force = 0.2F * ball_mass;
 const vec3f boost_impulse = vec3f{0.F, 15.F, 6.F} * ball_mass;
 const auto boost_stop_force = 0.1F * ball_mass;
-constexpr auto ball_spawn_ahead_length = 40.F;
+constexpr auto ball_spawn_ahead_length = 100.F;
 constexpr auto platform_spawn_margin = 0.2F;
 constexpr auto platform_total_length = static_cast<int>(
     platform_size.z + platform_size.z * 2.F * platform_spawn_margin);
@@ -36,6 +38,10 @@ float random() {
     thread_local std::uniform_real_distribution<float> dist{min, max};
     return dist(rng);
 }
+std::u8string int_to_str(int value) {
+    std::string str = std::to_string(value);
+    return {str.begin(), str.end()};
+}
 } // namespace utils
 
 struct tags {
@@ -46,7 +52,7 @@ struct tags {
 struct camera_system {
     static void start(tree_context &ctx) {
         auto &reg = ctx.ecs();
-        auto cam_en = ctx.root().entities().create();
+        auto cam_en = ctx.root().add_child().entities().create();
         reg.emplace<main_camera>(cam_en);
         reg.emplace<camera>(cam_en, camera{.far = 100.F, .clear_color = vec4f{32, 41, 56, 255} / 255.F});
         reg.get<mut<transform>>(cam_en)->translate(data::camera_offset / 2.F);
@@ -91,7 +97,7 @@ struct ball_system {
             .allow_sleep = false,
             .friction = 1.F,
             .linear_damping = 0.2F,
-            .angular_damping = 0.3F,
+            .angular_damping = 0.5F,
         };
         reg.emplace<rigidbody>(ball_en, rg);
         reg.emplace<collider>(ball_en, sphere{.radius = data::ball_radius});
@@ -102,7 +108,7 @@ struct ball_system {
 
     static void update(seconds delta, tree_context &ctx) {
         auto &reg = ctx.ecs();
-        auto ball_motion = reg.get<mut<motion>>(reg.view<tags::ball>().front());
+        auto [en, ball_motion, tag] = reg.each<mut<motion>, tags::ball>().front();
         update_horizontal_movement(ctx, *ball_motion);
         update_vertical_movement(*ball_motion);
     }
@@ -248,6 +254,53 @@ private:
     }
 };
 
+struct score_system {
+    struct score_tag {};
+    void start(tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        auto cam_en = reg.view<camera>().front();
+        auto &score_text_node = ctx.get_node(cam_en).add_child();
+        auto score_text_en = score_text_node.entities().create();
+        reg.emplace<text>(score_text_en, text{.content = u8"0", .size = 60, .font = default_font_entity(ctx)});
+        reg.emplace<score_tag>(score_text_en);
+        reg.emplace<mut<transform>>(score_text_en, vec_forward + vec_up * 0.4F)->scale(0.15F);
+    }
+
+    void update(seconds, tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        auto [ball_en, collision_list, tag] = reg.each<collision_enter, tags::ball>().front();
+        for(const auto &col: *collision_list) {
+            if(col.normal.y > -0.1F) {
+                continue;
+            }
+            if(reg.get<rigidbody>(col.other)->is_sensor) {
+                continue;
+            }
+            if(collided_platforms.contains(col.other)) {
+                continue;
+            }
+            ++score;
+            reg.get<mut<text>>(reg.view<score_tag>().front())->content = utils::int_to_str(score);
+        }
+    }
+
+    struct font_tag {};
+    static entity default_font_entity(tree_context &ctx) {
+        auto &reg = ctx.ecs();
+        auto view = reg.view<font_tag>();
+        if(view.begin() != view.end()) {
+            return view.front();
+        }
+        auto font_en = ctx.root().entities().create();
+        reg.emplace<font>(font_en, "assets/stay3/fonts/Roboto-Regular.ttf");
+        reg.emplace<font_tag>(font_en);
+        return font_en;
+    }
+
+    int score{};
+    std::unordered_set<entity, entity_hasher, entity_equal> collided_platforms;
+};
+
 int main() {
     try {
         app_launcher app{{
@@ -269,6 +322,10 @@ int main() {
         app.systems()
             .add<platform_system>()
             .run_as<sys_type::start>()
+            .run_as<sys_type::update>();
+        app.systems()
+            .add<score_system>()
+            .run_as<sys_type::start>(sys_priority::very_low)
             .run_as<sys_type::update>();
         app.launch();
         return 0;
