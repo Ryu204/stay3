@@ -59,7 +59,6 @@ TEST_CASE("Entities event") {
         REQUIRE(lis.node == &root);
 
         auto &child = root.add_child();
-        context.on_entity_created().connect<&event_listener::on_event>(lis);
         en = child.entities().create();
         REQUIRE(lis.en == en);
         REQUIRE(lis.node == (&child));
@@ -78,7 +77,6 @@ TEST_CASE("Entities event") {
         REQUIRE(lis.node == &root);
 
         auto &child = root.add_child();
-        context.on_entity_destroyed().connect<&event_listener::on_event>(lis);
         en = child.entities().create();
         child.entities().destroy(0);
         REQUIRE(lis.en == en);
@@ -89,5 +87,13 @@ TEST_CASE("Entities event") {
         child.entities().destroy(0);
         REQUIRE(lis.en != en);
         REQUIRE(lis.node == (&child));
+
+        SECTION("Destroy from registry") {
+            context.on_entity_destroyed().connect<&event_listener::on_event>(lis);
+            en = child.entities().create();
+            context.ecs().destroy(en);
+            REQUIRE(lis.en == en);
+            REQUIRE(lis.node == &child);
+        }
     }
 }

@@ -90,8 +90,8 @@ private:
         const auto is_stray_entity = it == m_entity_to_node.end();
         if(is_stray_entity) { return; }
         node &owner = it->second;
-        m_entity_to_node.erase(it);
         owner.entities().discard(en);
+        m_entity_to_node.erase(it);
     }
 
     [[nodiscard]] node::id_type register_node(node &node) {
