@@ -57,7 +57,7 @@ private:
                         * default_texture_size.x * default_texture_size.y,
                     0),
             });
-            reg.emplace<material>(en, material{.texture = en});
+            reg.emplace<material>(en, material{.texture = en, .transparency = true});
         }>(ctx);
         reg.on<comp_event::destroy, font_atlas>().connect<&ecs_registry::destroy_if_exist<texture_2d>>();
     }
@@ -142,6 +142,23 @@ private:
             append_geometry(*mesh, pen_x, glyph.metrics, glyph.texture_rect, texture_size);
             pen_x += static_cast<float>(glyph.metrics.advance) / 64.F;
             previous_character = character;
+        }
+        float whole_offset_x{};
+        switch(txt->alignment) {
+        case text::align::left:
+            whole_offset_x = 0.F;
+            break;
+        case text::align::center:
+            whole_offset_x = -pen_x / pixels_per_unit * 0.5F;
+            break;
+        case text::align::right:
+            whole_offset_x = -pen_x / pixels_per_unit;
+            break;
+        default:
+            break;
+        }
+        for(auto &vert: mesh->vertices) {
+            vert.position.x += whole_offset_x;
         }
     }
     static entity create_font_atlas(tree_context &ctx, entity font_holder) {

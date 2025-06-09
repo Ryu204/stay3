@@ -217,8 +217,11 @@ registry.emplace<text>(text_en, text{
     .font=font_en,
     .content=u8"Hello",
     .size=30,
+    .alignment = text::align::left,
 });
 ```
+
+Note that vertical alignment is at bottom.
 
 16. Physics
 
