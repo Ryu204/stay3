@@ -74,12 +74,13 @@ public:
     [[nodiscard]] bool is_ancestor_of(const node &other) const;
     [[nodiscard]] node &child(const id_type &id) const;
     void destroy_child(const id_type &id);
+    void destroy_children();
 
     /**
      * @brief Iterates over children nodes
      */
-    const_iterator begin() const;
-    const_iterator end() const;
+    [[nodiscard]] const_iterator begin() const;
+    [[nodiscard]] const_iterator end() const;
     iterator begin();
     iterator end();
     /**

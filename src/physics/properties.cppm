@@ -1,7 +1,7 @@
 module;
 
-#include <optional>
 #include <functional>
+#include <optional>
 
 export module stay3.physics:properties;
 
@@ -33,6 +33,10 @@ public:
 
     void add_force(const vec3f &force, const std::optional<vec3f> &point = std::nullopt) {
         world.get().add_force(id, force, point);
+    }
+
+    void add_impulse(const vec3f &force, const std::optional<vec3f> &point = std::nullopt) {
+        world.get().add_impulse(id, force, point);
     }
 
 private:

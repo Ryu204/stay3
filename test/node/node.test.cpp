@@ -32,6 +32,18 @@ TEST_CASE("node basic functionality") {
         }
     }
 
+    SECTION("Destroy child nodes") {
+        REQUIRE(root.begin() == root.end());
+        auto &child1 = root.add_child();
+        REQUIRE(root.begin() != root.end());
+        root.destroy_child(child1.id());
+        REQUIRE(root.begin() == root.end());
+        root.add_child();
+        root.add_child();
+        root.destroy_children();
+        REQUIRE(root.begin() == root.end());
+    }
+
     SECTION("Parent-child relationship is maintained") {
         auto &child = root.add_child();
         REQUIRE(&child.parent() == &root);

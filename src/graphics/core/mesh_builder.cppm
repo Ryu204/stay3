@@ -124,40 +124,40 @@ struct mesh_cube_builder {
         auto &vertices = result.vertices;
         vertices.reserve(24);
         // Top face vertices (normal: +Y)
-        vertices.emplace_back(color, vec3f{0.F, 0.F, size.z}, vec_up, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, 0.F, size.z}, vec_up, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, 0.F, 0.F}, vec_up, vec2f{});
-        vertices.emplace_back(color, vec3f{0.F, 0.F, 0.F}, vec_up, vec2f{});
+        vertices.emplace_back(color, vec3f{0.F, 0.F, size.z}, vec_up, vec2f{0.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, 0.F, size.z}, vec_up, vec2f{1.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, 0.F, 0.F}, vec_up, vec2f{1.F, 0.F});
+        vertices.emplace_back(color, vec3f{0.F, 0.F, 0.F}, vec_up, vec2f{0.F, 0.F});
 
         // Front face vertices (normal: +Z)
-        vertices.emplace_back(color, vec3f{0.F, 0.F, size.z}, vec_forward, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, 0.F, size.z}, vec_forward, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, -size.y, size.z}, vec_forward, vec2f{});
-        vertices.emplace_back(color, vec3f{0.F, -size.y, size.z}, vec_forward, vec2f{});
+        vertices.emplace_back(color, vec3f{0.F, 0.F, size.z}, vec_forward, vec2f{0.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, 0.F, size.z}, vec_forward, vec2f{1.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, -size.y, size.z}, vec_forward, vec2f{1.F, 0.F});
+        vertices.emplace_back(color, vec3f{0.F, -size.y, size.z}, vec_forward, vec2f{0.F, 0.F});
 
         // Bottom face vertices (normal: -Y)
-        vertices.emplace_back(color, vec3f{0.F, -size.y, size.z}, vec_down, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, -size.y, size.z}, vec_down, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, -size.y, 0.F}, vec_down, vec2f{});
-        vertices.emplace_back(color, vec3f{0.F, -size.y, 0.F}, vec_down, vec2f{});
+        vertices.emplace_back(color, vec3f{0.F, -size.y, size.z}, vec_down, vec2f{0.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, -size.y, size.z}, vec_down, vec2f{1.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, -size.y, 0.F}, vec_down, vec2f{1.F, 0.F});
+        vertices.emplace_back(color, vec3f{0.F, -size.y, 0.F}, vec_down, vec2f{0.F, 0.F});
 
         // Back face vertices (normal: -Z)
-        vertices.emplace_back(color, vec3f{0.F, 0.F, 0.F}, vec_back, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, 0.F, 0.F}, vec_back, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, -size.y, 0.F}, vec_back, vec2f{});
-        vertices.emplace_back(color, vec3f{0.F, -size.y, 0.F}, vec_back, vec2f{});
+        vertices.emplace_back(color, vec3f{0.F, 0.F, 0.F}, vec_back, vec2f{0.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, 0.F, 0.F}, vec_back, vec2f{1.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, -size.y, 0.F}, vec_back, vec2f{1.F, 0.F});
+        vertices.emplace_back(color, vec3f{0.F, -size.y, 0.F}, vec_back, vec2f{0.F, 0.F});
 
         // Left face vertices (normal: -X)
-        vertices.emplace_back(color, vec3f{0.F, 0.F, size.z}, vec_left, vec2f{});
-        vertices.emplace_back(color, vec3f{0.F, 0.F, 0.F}, vec_left, vec2f{});
-        vertices.emplace_back(color, vec3f{0.F, -size.y, 0.F}, vec_left, vec2f{});
-        vertices.emplace_back(color, vec3f{0.F, -size.y, size.z}, vec_left, vec2f{});
+        vertices.emplace_back(color, vec3f{0.F, 0.F, size.z}, vec_left, vec2f{1.F, 1.F});
+        vertices.emplace_back(color, vec3f{0.F, 0.F, 0.F}, vec_left, vec2f{0.F, 1.F});
+        vertices.emplace_back(color, vec3f{0.F, -size.y, 0.F}, vec_left, vec2f{0.F, 0.F});
+        vertices.emplace_back(color, vec3f{0.F, -size.y, size.z}, vec_left, vec2f{1.F, 0.F});
 
         // Right face vertices (normal: +X)
-        vertices.emplace_back(color, vec3f{size.x, 0.F, size.z}, vec_right, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, 0.F, 0.F}, vec_right, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, -size.y, 0.F}, vec_right, vec2f{});
-        vertices.emplace_back(color, vec3f{size.x, -size.y, size.z}, vec_right, vec2f{});
+        vertices.emplace_back(color, vec3f{size.x, 0.F, size.z}, vec_right, vec2f{1.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, 0.F, 0.F}, vec_right, vec2f{0.F, 1.F});
+        vertices.emplace_back(color, vec3f{size.x, -size.y, 0.F}, vec_right, vec2f{0.F, 0.F});
+        vertices.emplace_back(color, vec3f{size.x, -size.y, size.z}, vec_right, vec2f{1.F, 0.F});
 
         const vec3f offset{-size.x * origin.x, size.y * origin.y, -size.z * origin.z};
         for(auto &vert: vertices) {

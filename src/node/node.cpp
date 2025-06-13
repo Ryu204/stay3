@@ -76,6 +76,10 @@ void node::destroy_child(const id_type &id) {
     m_children.erase(id);
 }
 
+void node::destroy_children() {
+    m_children.clear();
+}
+
 node::const_iterator node::begin() const {
     return m_children.cbegin();
 }

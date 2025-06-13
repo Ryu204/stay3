@@ -225,6 +225,9 @@ public:
             from(rg.motion_type),
             rg.motion_type == rigidbody::type::fixed ? layer::non_moving : layer::moving,
         };
+        settings.mFriction = rg.friction;
+        settings.mLinearDamping = rg.linear_damping;
+        settings.mAngularDamping = rg.angular_damping;
         settings.mIsSensor = rg.is_sensor;
         settings.mAllowSleeping = rg.allow_sleep;
         auto &interface = m_physics_system.GetBodyInterface();
@@ -273,6 +276,23 @@ public:
         } else {
             interface.AddForce(id, convert(force));
         }
+    }
+
+    void add_impulse(const body_id &id, const vec3f &force, const std::optional<vec3f> &point = std::nullopt) {
+        auto &interface = m_physics_system.GetBodyInterface();
+        if(point.has_value()) {
+            interface.AddImpulse(id, convert(force), convert(point.value()));
+        } else {
+            interface.AddImpulse(id, convert(force));
+        }
+    }
+
+    void set_friction(const body_id &id, float friction) {
+        m_physics_system.GetBodyInterface().SetFriction(id, friction);
+    }
+
+    [[nodiscard]] float friction(const body_id &id) const {
+        return m_physics_system.GetBodyInterface().GetFriction(id);
     }
 
     void set_transform(const body_id &id, const vec3f &position, const quaternionf &orientation) {

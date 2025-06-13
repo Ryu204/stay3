@@ -146,7 +146,7 @@ function(stay3_add_assets TARGET SOURCE_DIR DESTINATION_DIR)
         target_link_options(${TARGET} PRIVATE --preload-file=${SOURCE_DIR}@${DESTINATION_DIR})
     else()
         # Generate list of files to copy
-        file(GLOB_RECURSE SOURCE_FILES RELATIVE "${SOURCE_DIR}" "${SOURCE_DIR}/*")
+        file(GLOB_RECURSE SOURCE_FILES RELATIVE "${SOURCE_DIR}" CONFIGURE_DEPENDS "${SOURCE_DIR}/*")
         foreach(FILE IN LISTS SOURCE_FILES)
             set(SRC "${SOURCE_DIR}/${FILE}")
             set(DST "$<TARGET_FILE_DIR:${TARGET}>/${DESTINATION_DIR}/${FILE}")

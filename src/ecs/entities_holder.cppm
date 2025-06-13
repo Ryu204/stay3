@@ -52,7 +52,7 @@ public:
     };
 
     entities_holder(ecs_registry &reg)
-        : m_registry{reg} {};
+        : m_registry{reg} {}
     ~entities_holder() {
         clear();
     }
@@ -81,7 +81,6 @@ public:
             (index > 0 || m_entities.size() == 1)
             && "Entity at index 0 must be destroyed last");
         const auto destroyed_entity = m_entities[index];
-        m_on_entity_destroy.publish(destroyed_entity);
         m_registry.get().destroy(destroyed_entity);
         assert(!std::ranges::contains(m_entities, destroyed_entity) && "Caller did not call discard");
     }
@@ -96,6 +95,7 @@ public:
             ((it == m_entities.begin() && m_entities.size() == 1)
              || it != m_entities.begin())
             && "Cannot discard entity at index 0 before others");
+        m_on_entity_destroy.publish(en);
         m_entities.erase(it);
     }
 
