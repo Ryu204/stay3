@@ -74,7 +74,15 @@ public:
     }
 
     void destroy_tree() {
+        if(m_root == nullptr) {
+            return;
+        }
+        // Destroy entities with respect to tree order
+        m_root->entities().clear();
+        m_root->destroy_children();
+        // Clear the registry together with stray entities
         m_ecs_reg.clear();
+        // Remove the root node
         m_root.reset();
     }
 
