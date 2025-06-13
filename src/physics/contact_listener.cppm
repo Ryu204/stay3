@@ -91,7 +91,7 @@ public:
             reg.get<mut<collision_enter>>(en1)->emplace_back(en2, convert(manifold.mWorldSpaceNormal));
         }
         if(reg.contains<collision_enter>(en2)) {
-            reg.get<mut<collision_enter>>(en2)->emplace_back(en1, convert(manifold.mWorldSpaceNormal));
+            reg.get<mut<collision_enter>>(en2)->emplace_back(en1, convert(-manifold.mWorldSpaceNormal));
         }
     }
 
@@ -115,7 +115,7 @@ public:
             reg.get<mut<collision_stay>>(en1)->emplace_back(en2, convert(manifold.mWorldSpaceNormal));
         }
         if(reg.contains<collision_stay>(en2)) {
-            reg.get<mut<collision_stay>>(en2)->emplace_back(en1, convert(manifold.mWorldSpaceNormal));
+            reg.get<mut<collision_stay>>(en2)->emplace_back(en1, convert(-manifold.mWorldSpaceNormal));
         }
     }
 
