@@ -31,6 +31,7 @@ enum class level : std::uint8_t {
     info,
     warn,
     error,
+    debug,
 };
 
 template<typename... ts>
@@ -46,6 +47,9 @@ void write(level lvl, ts &&...messages) {
         break;
     case level::error:
         stream << "[ERROR] ";
+        break;
+    case level::debug:
+        stream << "[DEBUG] ";
         break;
     }
 
@@ -65,6 +69,11 @@ void warn(ts &&...messages) {
 template<typename... ts>
 void error(ts &&...messages) {
     write(level::error, std::forward<ts>(messages)...);
+}
+
+template<typename... ts>
+void debug(ts &&...messages) {
+    write(level::debug, std::forward<ts>(messages)...);
 }
 
 } // namespace st::log
