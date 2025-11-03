@@ -56,6 +56,12 @@ app &app::enable_default_systems() {
     if(m_config.physics.debug_draw) {
         physics.run_as<sys_type::render>(sys_priority::very_high);
     }
+    m_ecs_systems
+        .add<lua_script_system>()
+        .run_as<sys_type::start>(sys_priority::very_low)
+        .run_as<sys_type::update>(sys_priority::very_low)
+        .run_as<sys_type::post_update>(sys_priority::very_low)
+        .run_as<sys_type::input>(sys_priority::very_low);
 
     return *this;
 }

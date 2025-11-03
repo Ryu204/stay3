@@ -86,3 +86,5 @@ add_custom_test(systems-global-transform-advanced systems/global_transform_advan
 add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Catch2WithMain" "")
 
 add_custom_test(physics-world physics/world.test.cpp "Catch2::Catch2WithMain" "")
+
+add_custom_test(systems-script-lua-delete-me systems/script/lua/delete_me.test.cpp "" "")

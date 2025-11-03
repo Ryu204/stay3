@@ -111,6 +111,14 @@ target_sources(stay3
 
     src/systems/physics/physics_system.cppm
 
+    src/systems/scripts/script_system.cppm
+    src/systems/scripts/script_component.cppm
+    src/systems/scripts/script_database.cppm
+    src/systems/scripts/error.cppm
+    src/systems/scripts/script_langs.cppm
+
+    src/systems/scripts/lua/lua_system.cppm
+
     PRIVATE
 
     src/program/app.cpp
