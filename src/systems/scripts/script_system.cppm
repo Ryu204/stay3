@@ -37,6 +37,8 @@ public:
     using path = script_component::path;
     void start(tree_context &ctx) {
         setup_signals(ctx.ecs());
+        const auto init_result = initialize();
+        check_scripts_operations(init_result, sys_type::start);
     }
     void post_update(seconds dt, tree_context &ctx) {
         const auto result = post_update_all_scripts();
@@ -49,6 +51,10 @@ public:
     void input(const event &ev, tree_context &ctx) {
         const auto result = input_all_scripts();
         check_scripts_operations(result, sys_type::input);
+    }
+    void cleanup(tree_context &ctx) {
+        const auto result = shutdown();
+        check_scripts_operations(result, sys_type::cleanup);
     }
 
     script_system() = default;
@@ -63,6 +69,12 @@ public:
     }
 
 protected:
+    [[nodiscard]] virtual scripts_operation_result initialize() {
+        return {.is_ok = true};
+    }
+    [[nodiscard]] virtual scripts_operation_result shutdown() {
+        return {.is_ok = true};
+    }
     [[nodiscard]] virtual script_validation_result load_script(const script_component::path &filepath) = 0;
     [[nodiscard]] virtual scripts_operation_result update_all_scripts() = 0;
     [[nodiscard]] virtual scripts_operation_result post_update_all_scripts() = 0;

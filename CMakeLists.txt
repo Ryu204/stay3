@@ -136,7 +136,7 @@ target_sources(stay3
     src/systems/render/render_system.cpp
 )
 
-target_link_libraries(stay3 PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype)
+target_link_libraries(stay3 PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype lua sol2::sol2)
 # Targets linked to Jolt must compile with same instruction-related flags (avx, bmi,...)
 target_link_libraries(stay3 PUBLIC Jolt)
 if(EMSCRIPTEN)

@@ -1,6 +1,7 @@
 module;
 
 #include <cassert>
+#include <filesystem>
 #include <unordered_map>
 
 export module stay3.system.script:script_database;
@@ -13,7 +14,7 @@ class script_database {
 public:
     const script_component &register_script(const script_component::path &path) {
         for(auto &&[id, comp]: components) {
-            if(path == comp.filepath()) {
+            if(std::filesystem::equivalent(path, comp.filepath())) {
                 throw st::script_error{"Same script file is registered twice"};
             }
         }

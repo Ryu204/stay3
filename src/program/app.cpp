@@ -61,7 +61,8 @@ app &app::enable_default_systems() {
         .run_as<sys_type::start>(sys_priority::very_low)
         .run_as<sys_type::update>(sys_priority::very_low)
         .run_as<sys_type::post_update>(sys_priority::very_low)
-        .run_as<sys_type::input>(sys_priority::very_low);
+        .run_as<sys_type::input>(sys_priority::very_low)
+        .run_as<sys_type::cleanup>(sys_priority::very_high);
 
     return *this;
 }
