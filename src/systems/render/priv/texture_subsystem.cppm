@@ -105,7 +105,6 @@ public:
 private:
     void setup_signals(tree_context &ctx) {
         auto &reg = ctx.ecs();
-        make_hard_dependency<texture_2d::commands, texture_2d>(reg);
         reg.on<comp_event::construct, texture_2d>().connect<&texture_subsystem::initialize_texture_2d_state>(*this);
         reg.on<comp_event::destroy, texture_2d>().connect<&ecs_registry::destroy_if_exist<texture_2d_state>>();
         auto &global = ctx.vars();
