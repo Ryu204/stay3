@@ -25,6 +25,9 @@ public:
         assert(!m_available_ids.contains(id) && "Id was recycled");
         m_available_ids.insert(id);
     }
+    [[nodiscard]] bool is_id_active(type id) const {
+        return id < m_next_max_id && !m_available_ids.contains(id);
+    }
 
 private:
     std::unordered_set<type> m_available_ids;

@@ -1,20 +1,32 @@
 #include <iostream>
 import stay3;
+using namespace st;
+
+namespace scripts_name {
+st::script_id bird{};
+}
 
 struct sys {
-    static void start(st::tree_context &ctx) {
+    static void start(tree_context &ctx) {
+        add_scripts(ctx);
         auto &cam_node = ctx.root().add_child();
         auto cam_en = cam_node.entities().create();
         auto &ecs = ctx.ecs();
-        ecs.emplace<st::main_camera>(cam_en);
-        ecs.emplace<st::camera>(cam_en, st::camera{});
+        ecs.emplace<main_camera>(cam_en);
+        ecs.emplace<camera>(cam_en, camera{});
+        ecs.emplace<mut<lua_script_manager>>(cam_en)->add_scripts(scripts_name::bird);
+    }
+
+    static void add_scripts(tree_context &ctx) {
+        auto &&scripts = ctx.vars().get<lua_scripts>();
+        scripts_name::bird = scripts.register_script("./assets/scripts/bird.lua");
     }
 };
 
 int main() {
     try {
-        st::app_launcher app{};
-        app.systems().add<sys>().run_as<st::sys_type::start>();
+        app_launcher app{};
+        app.systems().add<sys>().run_as<sys_type::start>(sys_priority::lowest);
         app.launch();
     } catch(std::exception &e) {
         std::cerr << e.what() << '\n';

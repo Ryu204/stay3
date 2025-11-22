@@ -33,4 +33,15 @@ TEST_CASE("id_generator basic functionality") {
         }
         REQUIRE(created_ids.size() == mx);
     }
+
+    SECTION("Created, unrecycled id is active") {
+        const auto id1 = generator.create();
+        const auto id2 = generator.create();
+        const auto id3 = generator.create();
+
+        generator.recycle(id1);
+        REQUIRE(!generator.is_id_active(id1));
+        REQUIRE(generator.is_id_active(id2));
+        REQUIRE(generator.is_id_active(id3));
+    }
 }

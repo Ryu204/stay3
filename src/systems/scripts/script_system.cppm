@@ -1,8 +1,10 @@
 module;
 
 #include <cassert>
+#include <functional>
 #include <optional>
 #include <string>
+#include <variant>
 
 export module stay3.system.script;
 import stay3.ecs;
@@ -13,12 +15,14 @@ import :script_component;
 import :error;
 
 export import :script_langs;
+export import :script_manager;
 
 namespace st {
 
 export struct script_validation_result {
     std::optional<std::string> error_message{std::nullopt};
     bool is_valid{false};
+    std::optional<std::string> name{std::nullopt};
 };
 
 export struct scripts_operation_result {
@@ -26,17 +30,40 @@ export struct scripts_operation_result {
     bool is_ok{false};
 };
 
-export template<int script_lang>
-struct script_register {
-    script_component::path path;
-};
-
-export template<int script_lang>
+export template<script_lang lang>
 class script_system {
 public:
+    using script_id = script_component::id_type;
     using path = script_component::path;
+    using script_name = script_component::script_name;
+
+    class script_register {
+    public:
+        script_register(script_system &system): system{system} {}
+
+        template<std::ranges::range cont>
+        void register_scripts(const cont &filepaths) {
+            for(auto &&filepath: filepaths) {
+                system.get().register_script(filepath);
+            }
+        };
+
+        template<typename filepath>
+        script_id register_script(const filepath &path) {
+            return system.get().register_script(path).value();
+        }
+
+        [[nodiscard]] script_id id(const script_name &name) const {
+            return system.get().database.id_from_name(name);
+        }
+
+    private:
+        std::reference_wrapper<script_system> system;
+    };
+
     void start(tree_context &ctx) {
         setup_signals(ctx.ecs());
+        ctx.vars().emplace<script_register>(*this);
         const auto init_result = initialize();
         check_scripts_operations(init_result, sys_type::start);
     }
@@ -55,6 +82,7 @@ public:
     void cleanup(tree_context &ctx) {
         const auto result = shutdown();
         check_scripts_operations(result, sys_type::cleanup);
+        ctx.vars().erase<script_register>();
     }
 
     script_system() = default;
@@ -75,42 +103,69 @@ protected:
     [[nodiscard]] virtual scripts_operation_result shutdown() {
         return {.is_ok = true};
     }
-    [[nodiscard]] virtual script_validation_result load_script(const script_component::path &filepath) = 0;
+    [[nodiscard]] virtual script_validation_result load_script(const path &filepath, script_id script_id) = 0;
     [[nodiscard]] virtual scripts_operation_result update_all_scripts() = 0;
     [[nodiscard]] virtual scripts_operation_result post_update_all_scripts() = 0;
     [[nodiscard]] virtual scripts_operation_result input_all_scripts() = 0;
+    [[nodiscard]] virtual scripts_operation_result attach_script(entity en, script_id script_id) = 0;
+    [[nodiscard]] virtual scripts_operation_result detach_script(entity en, script_id script_id) = 0;
 
 private:
     void setup_signals(ecs_registry &reg) {
         reg
-            .on<comp_event::construct, script_register<script_lang>>()
-            .template connect<&script_system::on_register_construct>(*this);
-        reg
-            .on<comp_event::update, script_register<script_lang>>()
-            .template connect<&script_system::warn_register_ops_unimplemented>();
+            .on<comp_event::update, script_manager<lang>>()
+            .template connect<&script_system::on_script_manager_changed>(*this);
     }
 
-    void on_register_construct(ecs_registry &reg, entity en) {
-        auto &&[path] = *reg.get<script_register<script_lang>>(en);
-        auto &&[error_message, is_valid] = load_script(path);
+    std::optional<script_id> register_script(const path &path) {
+        const auto maybe_id = database.create_script_id();
+        auto &&[error_message, is_valid, name] = load_script(path, maybe_id);
         if(!is_valid) {
-            log::warn("[Script, LANG ID: ", script_lang, "] Failed to load script: ", path.string());
+            log::warn("[Script, LANG ID: ", script_lang_name(lang), "] Failed to load script: ", path.string());
             log::warn("Details: ", error_message ? *error_message : "There are no other diagnostics.");
-            return;
+            database.delete_unused_script_id(maybe_id);
+            return std::nullopt;
         }
-        database.register_script(path);
-    }
-
-    static void warn_register_ops_unimplemented(ecs_registry &, entity) {
-        throw script_error{"Script register component only support construction"};
+        assert(name.has_value() && "Valid script must have a name");
+        database.register_script(maybe_id, path, name.value());
+        log::info("[Script, LANG ID: ", script_lang_name(lang), "] Loaded \"", name.value(), "\" from ", path.string());
+        return maybe_id;
     }
 
     static void check_scripts_operations(const scripts_operation_result &res, sys_type ops) {
         if(res.is_ok) { return; }
-        log::error("[Script, LANG ID: ", script_lang, "] Failed at operation ", static_cast<int>(ops), " (TODO: Readable ops)");
+        log::error("[Script, LANG ID: ", script_lang_name(lang), "] Failed at operation: \"", sys_type_name(ops), '"');
         log::error("Details: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
+    }
+
+    void on_script_manager_changed(ecs_registry &reg, entity en) {
+        auto manager = reg.get<script_manager<lang>>(en);
+        if(!manager->has_unsaved_changes()) { return; }
+        const visit_helper visitor{
+            [en, this](const script_manager<lang>::add &ch) {
+                const auto res = attach_script(en, ch.id);
+                if(!res.is_ok) {
+                    log::error("[Script, LANG ID: ", script_lang_name(lang), "] Errors adding script component: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
+                }
+            },
+            [en, this](const script_manager<lang>::remove &ch) {
+                const auto res = detach_script(en, ch.id);
+                if(!res.is_ok) {
+                    log::error("[Script, LANG ID: ", script_lang_name(lang), "] Errors removing script component: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
+                }
+            }};
+        for(auto &&change: manager->unsaved_changes()) {
+            std::visit(visitor, change);
+        }
+        reg.get<mut<script_manager<lang>>>(en)->save();
     }
 
     script_database database;
 };
+
+export template<script_lang lang>
+using scripts = script_system<lang>::script_register;
+
+export using script_id = script_component::id_type;
+
 } // namespace st

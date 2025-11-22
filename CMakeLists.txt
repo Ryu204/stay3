@@ -116,8 +116,10 @@ target_sources(stay3
     src/systems/scripts/script_database.cppm
     src/systems/scripts/error.cppm
     src/systems/scripts/script_langs.cppm
+    src/systems/scripts/script_manager.cppm
 
     src/systems/scripts/lua/lua_system.cppm
+    src/systems/scripts/lua/global_fields.cppm
 
     PRIVATE
 

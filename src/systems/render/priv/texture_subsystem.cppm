@@ -22,6 +22,7 @@ public:
     void start(tree_context &tree_ctx, init_result &graphics_context) {
         m_context = &graphics_context;
         setup_signals(tree_ctx);
+        tree_ctx.vars().emplace<texture_2d::commands>();
         create_default_texture_entity(tree_ctx);
     }
 
@@ -108,7 +109,6 @@ private:
         reg.on<comp_event::construct, texture_2d>().connect<&texture_subsystem::initialize_texture_2d_state>(*this);
         reg.on<comp_event::destroy, texture_2d>().connect<&ecs_registry::destroy_if_exist<texture_2d_state>>();
         auto &global = ctx.vars();
-        global.emplace<texture_2d::commands>();
     }
     static void create_default_texture_entity(tree_context &ctx) {
         auto &reg = ctx.ecs();
