@@ -68,11 +68,11 @@ public:
         check_scripts_operations(init_result, sys_type::start);
     }
     void post_update(seconds dt, tree_context &ctx) {
-        const auto result = post_update_all_scripts();
+        const auto result = post_update_all_scripts(dt);
         check_scripts_operations(result, sys_type::post_update);
     }
     void update(seconds dt, tree_context &ctx) {
-        const auto result = update_all_scripts();
+        const auto result = update_all_scripts(dt);
         check_scripts_operations(result, sys_type::update);
     }
     void input(const event &ev, tree_context &ctx) {
@@ -104,8 +104,8 @@ protected:
         return {.is_ok = true};
     }
     [[nodiscard]] virtual script_validation_result load_script(const path &filepath, script_id script_id) = 0;
-    [[nodiscard]] virtual scripts_operation_result update_all_scripts() = 0;
-    [[nodiscard]] virtual scripts_operation_result post_update_all_scripts() = 0;
+    [[nodiscard]] virtual scripts_operation_result update_all_scripts(float dt) = 0;
+    [[nodiscard]] virtual scripts_operation_result post_update_all_scripts(float dt) = 0;
     [[nodiscard]] virtual scripts_operation_result input_all_scripts() = 0;
     [[nodiscard]] virtual scripts_operation_result attach_script(entity en, script_id script_id) = 0;
     [[nodiscard]] virtual scripts_operation_result detach_script(entity en, script_id script_id) = 0;
