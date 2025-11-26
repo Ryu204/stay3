@@ -3,12 +3,17 @@ component.__index = component
 
 function component:new()
 	local obj = setmetatable({}, self)
-	obj._entity = "null"
+	obj.entity = "null"
 	return obj
 end
 
 function component:_on_attached(entity)
-	self._entity = entity
+	self.entity = entity
+	self.is_valid = true
+end
+
+function component:_on_detached()
+	self.is_valid = false
 end
 
 function component:start() end

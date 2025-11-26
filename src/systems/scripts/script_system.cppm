@@ -115,6 +115,9 @@ private:
         reg
             .on<comp_event::update, script_manager<lang>>()
             .template connect<&script_system::on_script_manager_changed>(*this);
+        reg
+            .on<comp_event::destroy, script_manager<lang>>()
+            .template connect<&script_system::on_script_manager_destroy>(*this);
     }
 
     std::optional<script_id> register_script(const path &path) {
@@ -157,7 +160,18 @@ private:
         for(auto &&change: manager->unsaved_changes()) {
             std::visit(visitor, change);
         }
-        reg.get<mut<script_manager<lang>>>(en)->save();
+        manager->save();
+    }
+
+    void on_script_manager_destroy(ecs_registry &reg, entity en) {
+        auto manager = reg.get<script_manager<lang>>(en);
+        assert(!manager->has_unsaved_changes() && "On update handler should have been called and flushed the changes");
+        for(const auto &id: manager->current_scripts()) {
+            const auto res = detach_script(en, id);
+            if(!res.is_ok) {
+                log::error("[Script, LANG ID: ", script_lang_name(lang), "] Errors removing script component: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
+            }
+        }
     }
 
     script_database database;

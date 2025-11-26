@@ -24,12 +24,6 @@ app::app(const app_config &config)
     }
 }
 
-app::~app() {
-    // Zero the tree, then systems can be safely destroyed
-    // If this step is skipped, the destroyed systems cannot handle `ecs_registry`'s signals
-    m_tree_context.destroy_tree();
-}
-
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
 }
@@ -151,6 +145,7 @@ app::window_closed app::input() {
 }
 
 void app::close_window() {
+    m_tree_context.destroy_tree();
     m_ecs_systems.cleanup(m_tree_context);
     m_window.close();
 }

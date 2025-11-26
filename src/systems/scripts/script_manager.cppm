@@ -32,7 +32,7 @@ class script_manager {
     [[nodiscard]] bool has_unsaved_changes() const {
         return !m_unsaved_changes.empty();
     }
-    void save() {
+    void save() const {
         m_unsaved_changes.clear();
     }
 
@@ -51,7 +51,7 @@ class script_manager {
         m_unsaved_changes.emplace_back(remove{.id = id});
     }
     std::unordered_set<script_id> m_current_scripts;
-    change_container m_unsaved_changes;
+    mutable change_container m_unsaved_changes;
 
 public:
     template<typename... args>
@@ -63,6 +63,9 @@ public:
         requires std::conjunction_v<std::is_same<args, script_id>...>
     void remove_scripts(args... ids) {
         (remove_single_script(ids), ...);
+    }
+    [[nodiscard]] const auto &current_scripts() const {
+        return m_current_scripts;
     }
 };
 } // namespace st

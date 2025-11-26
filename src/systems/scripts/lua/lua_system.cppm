@@ -3,6 +3,7 @@ module;
 #include <cassert>
 #include <exception>
 #include <filesystem>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -72,8 +73,8 @@ protected:
         try {
             maybe_state = sol::state{};
             environment = sol::environment{*maybe_state, maybe_state->globals()};
-            // Needed for `setmetatable` and `unpack`
-            maybe_state->open_libraries(sol::lib::base, sol::lib::table);
+            // Needed for `setmetatable`
+            maybe_state->open_libraries(sol::lib::base);
             entities_data = maybe_state->create_table();
             const auto maybe_component_type = maybe_state->safe_script_file(system_config.component_script.string(), sol::load_mode::text);
             auto validation_result = validate_base_component(maybe_component_type);
@@ -96,6 +97,7 @@ protected:
             return {.error_message = e.what(), .is_ok = false};
         }
     }
+
     [[nodiscard]] scripts_operation_result shutdown() override {
         try {
             batch_methods.clear();
@@ -200,7 +202,10 @@ protected:
             }
             const sol::table instance{raw_instance};
             try {
-                instance.get<sol::function>(lua_field_component_base_on_attach)(en_num);
+                const auto result = instance.get<sol::function>(lua_field_component_base_on_attach)(instance, en_num);
+                if(!result.valid()) {
+                    throw sol::error{result};
+                }
             } catch(std::exception &e) {
                 return {
                     .error_message = std::string{"Failed to call "} + lua_field_component_base_on_attach + ": " + e.what(),
@@ -209,13 +214,64 @@ protected:
             }
             this_entity_components.set(type, instance);
 
+            try {
+                const auto result = instance.get<sol::function>(lua_field_component_base_start)(instance);
+                if(!result.valid()) {
+                    throw sol::error{result};
+                }
+            } catch(std::exception &e) {
+                return {
+                    .error_message = std::format("Failed to call {}: {}", lua_field_component_base_start, e.what()),
+                    .is_ok = false,
+                };
+            }
+
             return {.is_ok = true};
         } catch(std::exception &e) {
             return {.error_message = e.what(), .is_ok = false};
         }
     }
     [[nodiscard]] scripts_operation_result detach_script(entity en, script_id script_id) override {
-        return {.error_message = "Also unimplemented", .is_ok = false};
+        try {
+            assert(registered_scripts.contains(script_id) && "Not a registered script id");
+            sol::table script_type = registered_scripts.at(script_id);
+            sol::table entity_components;
+            sol::table instance;
+            try {
+                entity_components = entities_data[en.numeric()][lua_field_entities_data_components];
+                instance = entity_components[script_type];
+            } catch(std::exception &e) {
+                return {
+                    .error_message = std::format("Entity does not have component to detach"),
+                    .is_ok = false,
+                };
+            }
+            {
+                const auto on_destroy_result = instance.get<sol::function>(lua_field_component_base_on_destroy)(instance);
+                if(!on_destroy_result.valid()) {
+                    return {
+                        .error_message = std::format("On destroy handler: {}", sol::error{on_destroy_result}.what()),
+                        .is_ok = false,
+                    };
+                }
+            }
+            {
+                const auto on_detach_result = instance.get<sol::function>(lua_field_component_base_on_detach)(instance);
+                if(!on_detach_result.valid()) {
+                    return {
+                        .error_message = std::format("On detach handler: {}", sol::error{on_detach_result}.what()),
+                        .is_ok = false,
+                    };
+                }
+            }
+            entity_components[script_type] = sol::nil;
+            return {.is_ok = true};
+        } catch(std::exception &e) {
+            return {
+                .error_message = e.what(),
+                .is_ok = false,
+            };
+        }
     }
 
 private:
