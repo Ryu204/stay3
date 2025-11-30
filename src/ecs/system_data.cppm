@@ -1,6 +1,8 @@
 module;
 
+#include <cassert>
 #include <cstdint>
+#include <string_view>
 #include <type_traits>
 
 export module stay3.ecs:system_data;
@@ -22,6 +24,25 @@ enum class sys_type : std::uint8_t {
     input = 1 << 6,
 };
 using sys_type_t = std::underlying_type_t<sys_type>;
+constexpr std::string_view sys_type_name(sys_type type) {
+    switch(type) {
+    case sys_type::update:
+        return "update";
+    case sys_type::start:
+        return "start";
+    case sys_type::cleanup:
+        return "cleanup";
+    case sys_type::render:
+        return "render";
+    case sys_type::post_update:
+        return "post_update";
+    case sys_type::input:
+        return "input";
+    default:
+        assert(false && "Unimplemented");
+        return "unimplemented name";
+    }
+}
 
 template<typename sys, typename context>
 concept is_update_system = requires(sys &system, seconds delta, context &ctx) {
@@ -81,6 +102,7 @@ enum class sys_priority : std::uint8_t {
     medium = 3,
     low = 2,
     very_low = 1,
+    lowest = 0,
 };
 using sys_priority_t = std::underlying_type_t<sys_priority>;
 

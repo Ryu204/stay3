@@ -16,11 +16,6 @@ export namespace st {
 class app {
 public:
     app(const app_config &config = {});
-    ~app();
-    app(const app &) = delete;
-    app &operator=(const app &) = delete;
-    app(app &&) noexcept = delete;
-    app &operator=(app &&) noexcept = delete;
     system_manager<tree_context> &systems();
     void run();
 

@@ -109,6 +109,8 @@ class ecs_registry {
         void publish_update_event() noexcept {
             try {
                 if(m_registry != nullptr) {
+                    assert(m_registry->contains<comp>(m_entity)
+                           && "Component was removed, but a dangling proxy is still alive. This is probably due to incorrect usage.");
                     m_registry->publish_event<comp_event::update, comp>(m_registry->m_registry, m_entity);
                 }
             } catch(std::exception &e) {

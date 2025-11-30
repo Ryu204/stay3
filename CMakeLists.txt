@@ -111,6 +111,16 @@ target_sources(stay3
 
     src/systems/physics/physics_system.cppm
 
+    src/systems/scripts/script_system.cppm
+    src/systems/scripts/script_component.cppm
+    src/systems/scripts/script_database.cppm
+    src/systems/scripts/error.cppm
+    src/systems/scripts/script_langs.cppm
+    src/systems/scripts/script_manager.cppm
+
+    src/systems/scripts/lua/lua_system.cppm
+    src/systems/scripts/lua/global_fields.cppm
+
     PRIVATE
 
     src/program/app.cpp
@@ -128,7 +138,7 @@ target_sources(stay3
     src/systems/render/render_system.cpp
 )
 
-target_link_libraries(stay3 PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype)
+target_link_libraries(stay3 PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype lua sol2::sol2)
 # Targets linked to Jolt must compile with same instruction-related flags (avx, bmi,...)
 target_link_libraries(stay3 PUBLIC Jolt)
 if(EMSCRIPTEN)

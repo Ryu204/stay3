@@ -137,6 +137,9 @@ TEST_CASE("Added system run with priority") {
         .add<render_system>("first")
         .run_as<sys_type::render>(sys_priority::medium);
     manager
+        .add<render_system>("fourth")
+        .run_as<sys_type::render>(static_cast<std::underlying_type_t<sys_priority>>(sys_priority::lowest));
+    manager
         .add<render_system>("third")
         .run_as<sys_type::render>(sys_priority::very_low);
     manager
@@ -144,8 +147,8 @@ TEST_CASE("Added system run with priority") {
         .run_as<sys_type::render>(static_cast<std::underlying_type_t<sys_priority>>(sys_priority::low));
     manager.render(ctx);
 
-    REQUIRE(ctx.render_count == 3);
-    REQUIRE_THAT(ctx.messages, RangeEquals({"render first", "render second", "render third"}));
+    REQUIRE(ctx.render_count == 4);
+    REQUIRE_THAT(ctx.messages, RangeEquals({"render first", "render second", "render third", "render fourth"}));
 }
 
 TEST_CASE("System is instantiated once") {

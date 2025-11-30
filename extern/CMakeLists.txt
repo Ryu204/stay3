@@ -46,3 +46,7 @@ if(EMSCRIPTEN)
         target_link_options(${dep} PRIVATE -fwasm-exceptions)
     endforeach()
 endif()
+
+add_subdirectory(lua)
+set(SOL2_LUA_VERSION "5.4")
+add_subdirectory(sol2)

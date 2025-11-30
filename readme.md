@@ -266,6 +266,16 @@ Please note these limitations are only relevant in the web context.
 
 [^2]: Internally, the first approach uses JavaScript `requestAnimationFrame` to simulate a loop. This ensures proper synchronization between monitor, browser and our application. However, it requires control over our program execution, hence the weird limitations.
 
+18. Why not lua for scripting language?
+
+Initially I used lua to facilitate scripting. However, I was unable to bind the access proxies of ecs registry to lua. There are 2 problems.
+
+In lua, we want read proxy to be semantically const, as in it will not allow mutating the real component. This is similiar but not the same to immutable table. It's const in the sense that this specific variable won't be able to mutate the value, but the value can still be mutated by other non-const variable. Either way, it's also slower if we want to enforce that via metamethod `__newindex`. And finally, it's not trivial to me how we deal with transitive const-ness of table inside a table, especially when the hierarchy can go deep.
+
+Apart from read proxy, write proxy also has a problem. In C++ they notify change in their destructor. In lua, the only way to execute something when a variable goes out of its initial scope is via keyword `<close>`. However, this one is declared by caller not callee, so it's dependent on the user, not the library provider. We can use some macro trick to change every `let var` statement that retrieves a proxy to `let var <const>`. That works and I don't have a problem with it. But it feels flakey, moreover `<close>` is a controversal feature of lua v5.4.
+
+The first reason is why I steered away and decided to use angelscript for this framework.
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to (May 30th 2025):

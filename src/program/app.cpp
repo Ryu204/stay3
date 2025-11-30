@@ -24,12 +24,6 @@ app::app(const app_config &config)
     }
 }
 
-app::~app() {
-    // Zero the tree, then systems can be safely destroyed
-    // If this step is skipped, the destroyed systems cannot handle `ecs_registry`'s signals
-    m_tree_context.destroy_tree();
-}
-
 system_manager<tree_context> &app::systems() {
     return m_ecs_systems;
 }
@@ -56,6 +50,13 @@ app &app::enable_default_systems() {
     if(m_config.physics.debug_draw) {
         physics.run_as<sys_type::render>(sys_priority::very_high);
     }
+    m_ecs_systems
+        .add<lua_script_system>(lua_script_system_config{.component_script = std::filesystem::path{m_config.assets_dir} / "scripts" / "component.lua"})
+        .run_as<sys_type::start>(sys_priority::very_low)
+        .run_as<sys_type::update>(sys_priority::very_low)
+        .run_as<sys_type::post_update>(sys_priority::very_low)
+        .run_as<sys_type::input>(sys_priority::very_low)
+        .run_as<sys_type::cleanup>(sys_priority::very_high);
 
     return *this;
 }
@@ -144,6 +145,7 @@ app::window_closed app::input() {
 }
 
 void app::close_window() {
+    m_tree_context.destroy_tree();
     m_ecs_systems.cleanup(m_tree_context);
     m_window.close();
 }

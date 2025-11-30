@@ -26,3 +26,11 @@
 	path = extern/JoltPhysics
 	url = https://github.com/jrouwe/JoltPhysics.git
 	branch = master
+[submodule "extern/sol2"]
+	path = extern/sol2
+	url = https://github.com/ThePhD/sol2
+	branch = main
+[submodule "extern/lua/lua"]
+	path = extern/lua/lua
+	url = https://github.com/lua/lua
+	branch = v5.4
