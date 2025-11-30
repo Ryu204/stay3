@@ -22,11 +22,9 @@ TEST_CASE("any_map basic functionality", "[any_map]") {
         map.emplace<float>(3.14f);
 
         map.erase<int>();
-        REQUIRE_THROWS_AS(map.get<int>(), std::out_of_range);
         REQUIRE_NOTHROW(map.get<float>());
 
         map.clear();
-        REQUIRE_THROWS_AS(map.get<float>(), std::out_of_range);
     }
 }
 

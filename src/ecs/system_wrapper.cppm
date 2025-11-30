@@ -1,11 +1,10 @@
 module;
 
-#include <any>
 #include <cassert>
 #include <functional>
 #include <type_traits>
 #include <utility>
-
+#include <mcpp/unique_any.hpp>
 export module stay3.ecs:system_wrapper;
 
 import stay3.core;
@@ -44,7 +43,7 @@ public:
 private:
     template<typename sys>
     void check_system_types() {
-        auto *object = std::any_cast<std::decay_t<sys>>(&m_underlying);
+        auto *object = mcpp::any_cast<std::decay_t<sys>>(&m_underlying);
 
         // Update
         if constexpr(is_update_system<sys, context>) {
@@ -137,7 +136,7 @@ private:
         }
     }
 
-    std::any m_underlying;
+    mcpp::unique_any m_underlying;
     std::function<sys_run_result(seconds, context &)> m_update_callback;
     std::function<sys_run_result(context &)> m_start_callback;
     std::function<sys_run_result(context &)> m_cleanup_callback;

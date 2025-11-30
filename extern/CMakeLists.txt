@@ -5,6 +5,8 @@ else()
     target_link_options(glfw INTERFACE -sUSE_GLFW=3)
 endif()
 
+add_subdirectory(unique-any)
+
 # Apparently dawn has support for webgpu emscripten version
 set(DAWN_FETCH_DEPENDENCIES ON)
 set(TINT_BUILD_CMD_TOOLS OFF)
@@ -50,3 +52,5 @@ endif()
 add_subdirectory(lua)
 set(SOL2_LUA_VERSION "5.4")
 add_subdirectory(sol2)
+
+add_subdirectory(angelscript/sdk/angelscript/projects/cmake)

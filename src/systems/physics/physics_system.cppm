@@ -27,14 +27,6 @@ export class physics_system {
 public:
     physics_system(const physics_config &settings = {})
         : m_config{settings} {}
-    // Currently system wrapper impl uses `std::any` which requires copy ctor for no real benefit
-    physics_system(const physics_system &) {
-        assert(false && "Cannot copy");
-    }
-    physics_system(physics_system &&) noexcept = delete;
-    physics_system &operator=(const physics_system &) = delete;
-    physics_system &operator=(physics_system &&) noexcept = delete;
-    ~physics_system() = default;
 
     void start(tree_context &ctx) {
         m_world = std::make_unique<physics_world>(ctx, m_config);

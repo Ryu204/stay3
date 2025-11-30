@@ -121,6 +121,9 @@ target_sources(stay3
     src/systems/scripts/lua/lua_system.cppm
     src/systems/scripts/lua/global_fields.cppm
 
+    src/systems/scripts/angelscript/angelscript_system.cppm
+    src/systems/scripts/angelscript/engine.cppm
+
     PRIVATE
 
     src/program/app.cpp
@@ -138,7 +141,12 @@ target_sources(stay3
     src/systems/render/render_system.cpp
 )
 
-target_link_libraries(stay3 PRIVATE glfw webgpu_glfw glm EnTT::EnTT stb freetype lua sol2::sol2)
+target_link_libraries(stay3
+    PRIVATE
+    glfw webgpu_glfw glm EnTT::EnTT stb freetype
+    lua sol2::sol2 angelscript
+    mcpp::unique-any
+)
 # Targets linked to Jolt must compile with same instruction-related flags (avx, bmi,...)
 target_link_libraries(stay3 PUBLIC Jolt)
 if(EMSCRIPTEN)

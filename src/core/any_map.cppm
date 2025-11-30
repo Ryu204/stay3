@@ -36,7 +36,9 @@ public:
 
     template<typename type>
     const type &get() const {
-        return std::any_cast<const type &>(m_variables.at(std::type_index{typeid(type)}));
+        const std::type_index key{typeid(type)};
+        assert(m_variables.contains(key) && "This type has not been emplaced to the map");
+        return std::any_cast<const type &>(m_variables.at(key));
     }
 
     template<typename type>
