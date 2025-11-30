@@ -34,3 +34,10 @@
 	path = extern/lua/lua
 	url = https://github.com/lua/lua
 	branch = v5.4
+[submodule "extern/angelscript"]
+	path = extern/angelscript
+	url = https://github.com/anjo76/angelscript
+	branch = master
+[submodule "extern/boost/any"]
+	path = extern/boost/any
+	url = https://github.com/boostorg/any
