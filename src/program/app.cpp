@@ -51,7 +51,7 @@ app &app::enable_default_systems() {
         physics.run_as<sys_type::render>(sys_priority::very_high);
     }
     m_ecs_systems
-        .add<lua_script_system>(lua_script_system_config{.component_script = std::filesystem::path{m_config.assets_dir} / "scripts" / "component.lua"})
+        .add<angelscript_system>()
         .run_as<sys_type::start>(sys_priority::very_low)
         .run_as<sys_type::update>(sys_priority::very_low)
         .run_as<sys_type::post_update>(sys_priority::very_low)

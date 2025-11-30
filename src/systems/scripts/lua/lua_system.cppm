@@ -57,16 +57,6 @@ class lua_script_system: public script_system<script_lang::lua> {
 public:
     lua_script_system(lua_script_system_config config): system_config{std::move(config)} {
     }
-    lua_script_system(const lua_script_system &other): script_system(other) {
-        assert(false && "Unimplemented");
-    }
-    lua_script_system &operator=(const lua_script_system &) {
-        assert(false && "Unimplmented");
-        return *this;
-    }
-    lua_script_system(lua_script_system &&) noexcept = delete;
-    lua_script_system &operator=(lua_script_system &&) noexcept = delete;
-    ~lua_script_system() override = default;
 
 protected:
     [[nodiscard]] scripts_operation_result initialize() override {

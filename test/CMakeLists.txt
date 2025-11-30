@@ -87,4 +87,4 @@ add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Ca
 
 add_custom_test(physics-world physics/world.test.cpp "Catch2::Catch2WithMain" "")
 
-add_custom_test(systems-script-lua-delete-me systems/script/lua/delete_me.test.cpp "" "")
+add_custom_test(systems-script-angelscript-smoke-test systems/script/angelscript/smoke_test.test.cpp "" "")

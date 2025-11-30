@@ -144,7 +144,7 @@ target_sources(stay3
 target_link_libraries(stay3
     PRIVATE
     glfw webgpu_glfw glm EnTT::EnTT stb freetype
-    lua sol2::sol2 angelscript
+    lua sol2::sol2 angelscript-with-addons
     mcpp::unique-any
 )
 # Targets linked to Jolt must compile with same instruction-related flags (avx, bmi,...)

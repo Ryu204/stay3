@@ -14,12 +14,12 @@ struct sys {
         auto &ecs = ctx.ecs();
         ecs.emplace<main_camera>(cam_en);
         ecs.emplace<camera>(cam_en, camera{});
-        ecs.emplace<mut<lua_script_manager>>(cam_en)->add_scripts(scripts_name::bird);
+        ecs.emplace<mut<ags_script_manager>>(cam_en)->add_scripts(scripts_name::bird);
     }
 
     static void add_scripts(tree_context &ctx) {
-        auto &&scripts = ctx.vars().get<lua_scripts>();
-        scripts_name::bird = scripts.register_script("./assets/scripts/bird.lua");
+        auto &&scripts = ctx.vars().get<ags_scripts>();
+        scripts_name::bird = scripts.register_script("./assets/scripts/bird.as");
     }
 };
 

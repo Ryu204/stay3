@@ -16,6 +16,7 @@ import :error;
 
 export import :script_langs;
 export import :script_manager;
+export import :error;
 
 namespace st {
 
@@ -124,8 +125,9 @@ private:
         const auto maybe_id = database.create_script_id();
         auto &&[error_message, is_valid, name] = load_script(path, maybe_id);
         if(!is_valid) {
-            log::warn("[Script, LANG ID: ", script_lang_name(lang), "] Failed to load script: ", path.string());
-            log::warn("Details: ", error_message ? *error_message : "There are no other diagnostics.");
+            log::warn(
+                "[Script, LANG ID: ", script_lang_name(lang), "] Failed to load script: ", path.string(),
+                ".\n\tDetails: ", error_message ? *error_message : "There are no other diagnostics.");
             database.delete_unused_script_id(maybe_id);
             return std::nullopt;
         }
@@ -137,8 +139,8 @@ private:
 
     static void check_scripts_operations(const scripts_operation_result &res, sys_type ops) {
         if(res.is_ok) { return; }
-        log::error("[Script, LANG ID: ", script_lang_name(lang), "] Failed at operation: \"", sys_type_name(ops), '"');
-        log::error("Details: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
+        log::error("[Script, LANG ID: ", script_lang_name(lang), "] Failed at operation: \"", sys_type_name(ops), '"',
+                   "\n\tDetails: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
     }
 
     void on_script_manager_changed(ecs_registry &reg, entity en) {

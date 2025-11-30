@@ -7,12 +7,16 @@ export module stay3.system.script:script_langs;
 
 export namespace st {
 enum class script_lang : std::uint8_t {
+    // TODO: Remove lua as script_lang
     lua,
+    angelscript,
 };
 constexpr std::string_view script_lang_name(script_lang lang) {
     switch(lang) {
     case script_lang::lua:
         return "lua";
+    case script_lang::angelscript:
+        return "angelscript";
     default:
         return "Unimplemented name";
     }

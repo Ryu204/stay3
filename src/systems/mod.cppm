@@ -6,4 +6,4 @@ export import stay3.system.text;
 export import stay3.system.transform;
 export import stay3.system.runtime_info;
 export import stay3.system.script;
-export import stay3.system.script.lua;
+export import stay3.system.script.angelscript;
