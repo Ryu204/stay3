@@ -4,7 +4,6 @@ module;
 #include <exception>
 #include <format>
 #include <memory>
-#include <optional>
 #include <string>
 #include <angelscript.h>
 #include <scriptbuilder/scriptbuilder.h>
@@ -90,14 +89,8 @@ protected:
                 };
             }
             {
-                std::optional<std::string> filename{std::nullopt};
-                const char *c_filename{};
-                if constexpr(std::is_same_v<path::string_type::value_type, char>) {
-                    c_filename = filepath.c_str();
-                } else {
-                    filename = filepath.string();
-                    c_filename = filename->c_str();
-                }
+                std::string filename = filepath.string();
+                const char *c_filename = filename.c_str();
                 if(!check_call(sbuilder.AddSectionFromFile(c_filename))) {
                     return {
                         .error_message = "Invalid filename or invalid preprocessor in script",
