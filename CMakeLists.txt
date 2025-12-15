@@ -122,8 +122,10 @@ target_sources(stay3
     src/systems/scripts/lua/global_fields.cppm
 
     src/systems/scripts/angelscript/angelscript_system.cppm
+    src/systems/scripts/angelscript/ops_check.cppm
     src/systems/scripts/angelscript/engine.cppm
-    src/systems/scripts/angelscript/object.cppm
+    src/systems/scripts/angelscript/objects.cppm
+    src/systems/scripts/angelscript/entity_scripts_runner.cppm
     src/systems/scripts/angelscript/register/entity.cppm
     src/systems/scripts/angelscript/register/logger.cppm
     src/systems/scripts/angelscript/register/all.cppm

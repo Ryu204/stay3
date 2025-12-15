@@ -42,8 +42,8 @@ public:
         return engine;
     }
 
-    asIScriptContext *context() {
-        return default_context;
+    asIScriptContext &context() {
+        return *default_context;
     }
 
 private:

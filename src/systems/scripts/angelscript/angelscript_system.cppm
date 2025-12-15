@@ -9,6 +9,7 @@ module;
 #include <optional>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <angelscript.h>
 #include <scriptarray/scriptarray.h>
@@ -21,8 +22,10 @@ import stay3.system.script;
 import stay3.ecs;
 import stay3.core;
 import :engine;
-import :object;
+import :objects;
+import :entity_scripts_runner;
 import :register_all;
+import :ops_check;
 
 namespace st {
 
@@ -44,25 +47,6 @@ struct system_state {
     }
 };
 
-bool check_call(int result) {
-    return result >= 0;
-}
-scripts_operation_result check_exec(asIScriptContext *ctx, int exec_result) {
-    if(exec_result != asEXECUTION_FINISHED) {
-        if(exec_result == asEXECUTION_EXCEPTION) {
-            return {
-                .error_message = std::format("Exception occured: {}", ctx->GetExceptionString()),
-                .is_ok = false,
-            };
-        }
-        return {
-            .error_message = std::format("Execution error, code {}. Check angelscript docs for more info.", exec_result),
-            .is_ok = false,
-        };
-    }
-    return {.is_ok = true};
-}
-
 script_validation_result build_module(const char *name, CScriptBuilder &builder, const std::filesystem::path &path, ags_engine &engine) {
     if(!check_call(builder.StartNewModule(engine.get(), name))) {
         return {
@@ -72,7 +56,7 @@ script_validation_result build_module(const char *name, CScriptBuilder &builder,
     }
     {
         std::string filename = path.string();
-        const char *c_filename = path.c_str();
+        const char *c_filename = filename.c_str();
         if(!check_call(builder.AddSectionFromFile(c_filename))) {
             return {
                 .error_message = "Invalid filename or invalid preprocessor in script",
@@ -115,13 +99,32 @@ load_base_component_result load_base_component(const std::filesystem::path &path
     return {.error_message = "No type named \"Component\" found in base script"};
 }
 
+struct component_script_info {
+    std::string name;
+    ags::function factory;
+    ags::function on_attached;
+    ags::function on_detached;
+};
+
 export class angelscript_system: public script_system<script_lang::angelscript> {
 private:
     std::unique_ptr<system_state> m_state;
     angelscript_system_config m_config;
+    std::unordered_map<script_id, component_script_info> m_scripts_info;
+    std::unordered_map<entity, ags::entity_scripts_runner, entity_hasher, entity_equal> m_script_runners;
+
     system_state &state() {
         assert(m_state && "Uninitialized or failed initialization");
         return *m_state;
+    }
+    [[nodiscard]] const std::string &get_module_name(script_id id) {
+        auto iter = m_scripts_info.find(id);
+        if(iter == m_scripts_info.end()) {
+            auto &&[new_iter, ok] = m_scripts_info.emplace(id, std::format("Module{}", id));
+            assert(ok && "Failed to emplace new module name");
+            iter = new_iter;
+        }
+        return iter->second.name;
     }
 
 public:
@@ -182,6 +185,8 @@ protected:
     }
 
     [[nodiscard]] scripts_operation_result shutdown() override {
+        m_script_runners.clear();
+        m_scripts_info.clear();
         m_state.reset();
         return {.is_ok = true};
     }
@@ -189,7 +194,8 @@ protected:
     [[nodiscard]] script_validation_result load_script(const path &filepath, script_id script_id) override {
         try {
             CScriptBuilder sbuilder;
-            if(!check_call(sbuilder.StartNewModule(state().engine.get(), "New script"))) {
+            const auto &module_name = get_module_name(script_id);
+            if(!check_call(sbuilder.StartNewModule(state().engine.get(), module_name.c_str()))) {
                 return {
                     .error_message = "Unrecoverable error while starting a new module.",
                     .is_valid = false,
@@ -235,9 +241,39 @@ protected:
                     };
                 }
                 assert(component_derives_ti != nullptr);
+                const auto *name = component_derives_ti->GetName();
+                {
+                    // Cache type info
+                    auto &saved_info = m_scripts_info.at(script_id);
+                    const auto ctor_count = component_derives_ti->GetFactoryCount();
+                    if(ctor_count <= 0) {
+                        return {
+                            .error_message = std::format("No factory method found on type \"{}\"", name),
+                            .is_valid = false,
+                        };
+                    }
+                    saved_info.factory.acquire(component_derives_ti->GetFactoryByIndex(0));
+
+#define ACQUIRE_METHOD(var_name, script_name) \
+    { \
+        auto *(var_name) = component_derives_ti->GetMethodByName(#script_name); \
+        if((var_name) == nullptr) { \
+            return { \
+                .error_message = "Missing " #script_name " method", \
+                .is_valid = false, \
+            }; \
+        } \
+        saved_info.var_name.acquire(component_derives_ti->GetMethodByName(#script_name)); \
+    }
+
+                    ACQUIRE_METHOD(on_attached, onAttached);
+                    ACQUIRE_METHOD(on_detached, onDetached);
+
+#undef ACQUIRE_METHOD
+                }
                 return {
                     .is_valid = true,
-                    .name = component_derives_ti->GetName(),
+                    .name = name,
                 };
             }
         } catch(std::exception &e) {
@@ -248,22 +284,10 @@ protected:
         }
     }
     [[nodiscard]] scripts_operation_result update_all_scripts(float dt) override {
-        const auto *mod = state().engine->GetModule("New script");
-        assert(mod != nullptr && "Module has not been built (successfully)");
-        auto *func = mod->GetFunctionByName("main");
-        assert(func != nullptr && "No function named main found");
-        auto *ctx = state().engine.context();
-        if(!check_call(ctx->Prepare(func))) {
-            return {
-                .error_message = "Failed to prepare context for function",
-                .is_ok = false,
-            };
-        }
-        const auto exec_result = ctx->Execute();
-        if(const auto check = check_exec(ctx, exec_result); !check.is_ok) {
-            return check;
-        }
-        return {.is_ok = true};
+        return {
+            .error_message = "Unimplemented",
+            .is_ok = false,
+        };
     }
     [[nodiscard]] scripts_operation_result post_update_all_scripts(float dt) override {
         return {
@@ -278,11 +302,15 @@ protected:
         };
     }
     [[nodiscard]] scripts_operation_result attach_script(entity en, script_id script_id) override {
-        return {
-            .error_message = "Unimplemented",
-            .is_ok = false,
-        };
+        if(!m_script_runners.contains(en)) {
+            m_script_runners.emplace(en, en);
+        }
+        auto &runner = m_script_runners.at(en);
+        auto &script_info = m_scripts_info.at(script_id);
+        auto &context = state().engine.context();
+        return runner.attach_component_type(script_id, script_info.factory, script_info.on_attached, context);
     }
+
     [[nodiscard]] scripts_operation_result detach_script(entity en, script_id script_id) override {
         return {
             .error_message = "Unimplemented",
