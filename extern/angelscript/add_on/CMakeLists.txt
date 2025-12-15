@@ -7,8 +7,14 @@ set(SOURCE_FILES
     ../angelscript/sdk/add_on/scriptstdstring/scriptstdstring_utils.cpp
     ../angelscript/sdk/add_on/scriptstdstring/scriptstdstring.cpp
 
+    ../angelscript/sdk/add_on/scriptarray/scriptarray.h
+    ../angelscript/sdk/add_on/scriptarray/scriptarray.cpp
+
     ../angelscript/sdk/add_on/scriptbuilder/scriptbuilder.h
     ../angelscript/sdk/add_on/scriptbuilder/scriptbuilder.cpp
+
+    ../angelscript/sdk/add_on/scriptdictionary/scriptdictionary.h
+    ../angelscript/sdk/add_on/scriptdictionary/scriptdictionary.cpp
 )
 
 cmake_path(APPEND INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" ../angelscript/sdk/add_on)

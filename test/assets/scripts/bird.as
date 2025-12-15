@@ -1,5 +1,7 @@
-void main() {
-    int a = 0;
-    a /= a;
-    auto x = 1;
+external shared abstract class Component;
+
+class Bird : Component {
+    void start() {
+        print('Hello brother!');
+    }
 }

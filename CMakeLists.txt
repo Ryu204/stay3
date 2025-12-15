@@ -123,6 +123,10 @@ target_sources(stay3
 
     src/systems/scripts/angelscript/angelscript_system.cppm
     src/systems/scripts/angelscript/engine.cppm
+    src/systems/scripts/angelscript/object.cppm
+    src/systems/scripts/angelscript/register/entity.cppm
+    src/systems/scripts/angelscript/register/logger.cppm
+    src/systems/scripts/angelscript/register/all.cppm
 
     PRIVATE
 
