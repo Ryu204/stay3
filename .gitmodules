@@ -13,7 +13,7 @@
 [submodule "extern/entt"]
 	path = extern/entt
 	url = https://github.com/skypjack/entt
-	branch = master
+	branch = main
 [submodule "extern/stb/stb"]
 	path = extern/stb/stb
 	url = https://github.com/nothings/stb.git
