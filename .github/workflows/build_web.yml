@@ -53,6 +53,7 @@ jobs:
       - name: Configure CMake with Emscripten
         run: |
           git submodule update --init --remote
+          source $EMSDK/emsdk_env.sh
           emcmake cmake -S . -B build -DEMSCRIPTEN_FORCE_COMPILERS=OFF -DCMAKE_BUILD_TYPE=Release -Dstay3_BUILD_TESTS=ON -Dstay3_BUILD_EXAMPLES=ON -GNinja
 
       - name: Build web targets
