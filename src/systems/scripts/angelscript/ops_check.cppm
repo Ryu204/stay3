@@ -7,7 +7,9 @@ export module stay3.system.script.angelscript:ops_check;
 
 import stay3.system.script;
 
-namespace st {
+import :objects;
+
+namespace st::ags {
 
 export bool check_call(int result) {
     return result >= 0;
@@ -29,8 +31,9 @@ export scripts_operation_result check_exec(asIScriptContext &ctx, int exec_resul
     return {.is_ok = true};
 }
 
-export scripts_operation_result exec(asIScriptContext &ctx, asIScriptFunction &free_func) {
-    if(!check_call(ctx.Prepare(&free_func))) {
+export scripts_operation_result exec(asIScriptContext &ctx, function &free_func) {
+    auto *raw_func = free_func.get();
+    if(!check_call(ctx.Prepare(raw_func))) {
         return {
             .error_message = "Failed to prepare context",
             .is_ok = false,
@@ -44,14 +47,16 @@ export scripts_operation_result exec(asIScriptContext &ctx, asIScriptFunction &f
 }
 
 export template<typename... args>
-scripts_operation_result exec(asIScriptContext &ctx, asIScriptFunction &method, asIScriptObject &instance, args &&...arguments) {
-    if(!check_call(ctx.Prepare(&method))) {
+scripts_operation_result exec(asIScriptContext &ctx, function &method, object &instance, args &&...arguments) {
+    auto *raw_method = method.get();
+    auto *raw_instance = instance.get();
+    if(!check_call(ctx.Prepare(raw_method))) {
         return {
             .error_message = "Failed to prepare context",
             .is_ok = false,
         };
     }
-    if(!check_call(ctx.SetObject(&instance))) {
+    if(!check_call(ctx.SetObject(raw_instance))) {
         return {
             .error_message = "Failed to set \"this\" (? idk if in Angelscript it's also called this) object",
             .is_ok = false,
@@ -74,4 +79,4 @@ scripts_operation_result exec(asIScriptContext &ctx, asIScriptFunction &method, 
     return {.is_ok = true};
 }
 
-} // namespace st
+} // namespace st::ags

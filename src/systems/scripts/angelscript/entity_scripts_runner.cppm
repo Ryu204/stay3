@@ -15,15 +15,12 @@ import :ops_check;
 namespace st::ags {
 export class entity_scripts_runner {
 private:
-    entity en;
     std::unordered_map<script_id, object> instances;
 
 public:
-    entity_scripts_runner(entity en): en{en} {}
-
-    scripts_operation_result attach_component_type(script_id id, function &factory, function &on_attached, asIScriptContext &context) {
+    scripts_operation_result attach_component_type(entity en, script_id id, function &factory, function &on_attached, asIScriptContext &context) {
         assert(!instances.contains(id) && "This component type was already added");
-        if(const auto check_result = exec(context, *factory.get()); !check_result.is_ok) {
+        if(const auto check_result = exec(context, factory); !check_result.is_ok) {
             return check_result;
         }
         auto *raw_instance = *(static_cast<asIScriptObject **>(context.GetAddressOfReturnValue()));
@@ -34,7 +31,7 @@ public:
             };
         }
         object instance{raw_instance};
-        if(const auto check_result = exec(context, *on_attached.get(), *raw_instance, en); !check_result.is_ok) {
+        if(const auto check_result = exec(context, on_attached, instance, en); !check_result.is_ok) {
             return check_result;
         }
         auto &&[iter, ok] = instances.emplace(id, std::move(instance));
@@ -43,11 +40,14 @@ public:
         return {.is_ok = true};
     }
 
-    scripts_operation_result detach_componnet_type(int type) {
-        return {
-            .error_message = "unimplemented",
-            .is_ok = false,
-        };
+    scripts_operation_result detach_componnet_type(script_id id, function &on_detached, asIScriptContext &context) {
+        assert(instances.contains(id) && "This entity does not have script with this id");
+        auto &instance = instances.at(id);
+        if(const auto check_result = exec(context, on_detached, instance); !check_result.is_ok) {
+            return check_result;
+        }
+        instances.erase(id);
+        return {.is_ok = true};
     }
 
     [[nodiscard]] std::uint32_t size() const {

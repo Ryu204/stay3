@@ -48,7 +48,7 @@ struct system_state {
 };
 
 script_validation_result build_module(const char *name, CScriptBuilder &builder, const std::filesystem::path &path, ags_engine &engine) {
-    if(!check_call(builder.StartNewModule(engine.get(), name))) {
+    if(!ags::check_call(builder.StartNewModule(engine.get(), name))) {
         return {
             .error_message = "Unrecoverable error while starting a new module.",
             .is_valid = false,
@@ -57,14 +57,14 @@ script_validation_result build_module(const char *name, CScriptBuilder &builder,
     {
         std::string filename = path.string();
         const char *c_filename = filename.c_str();
-        if(!check_call(builder.AddSectionFromFile(c_filename))) {
+        if(!ags::check_call(builder.AddSectionFromFile(c_filename))) {
             return {
                 .error_message = "Invalid filename or invalid preprocessor in script",
                 .is_valid = false,
             };
         }
     };
-    if(!check_call(builder.BuildModule())) {
+    if(!ags::check_call(builder.BuildModule())) {
         return {
             .error_message = "Script contains error(s)",
             .is_valid = false,
@@ -152,7 +152,7 @@ protected:
                 };
             };
             auto &engine = state().engine;
-            if(!check_call(
+            if(!ags::check_call(
                    engine->SetMessageCallback(asFUNCTION(error_callback), nullptr, asCALL_CDECL))) {
                 return {
                     .error_message = "Failed to set engine error callback",
@@ -195,7 +195,7 @@ protected:
         try {
             CScriptBuilder sbuilder;
             const auto &module_name = get_module_name(script_id);
-            if(!check_call(sbuilder.StartNewModule(state().engine.get(), module_name.c_str()))) {
+            if(!ags::check_call(sbuilder.StartNewModule(state().engine.get(), module_name.c_str()))) {
                 return {
                     .error_message = "Unrecoverable error while starting a new module.",
                     .is_valid = false,
@@ -204,14 +204,14 @@ protected:
             {
                 std::string filename = filepath.string();
                 const char *c_filename = filename.c_str();
-                if(!check_call(sbuilder.AddSectionFromFile(c_filename))) {
+                if(!ags::check_call(sbuilder.AddSectionFromFile(c_filename))) {
                     return {
                         .error_message = "Invalid filename or invalid preprocessor in script",
                         .is_valid = false,
                     };
                 }
             };
-            if(!check_call(sbuilder.BuildModule())) {
+            if(!ags::check_call(sbuilder.BuildModule())) {
                 return {
                     .error_message = "Script contains error(s). Check log for more info.",
                     .is_valid = false,
@@ -303,19 +303,23 @@ protected:
     }
     [[nodiscard]] scripts_operation_result attach_script(entity en, script_id script_id) override {
         if(!m_script_runners.contains(en)) {
-            m_script_runners.emplace(en, en);
+            m_script_runners.try_emplace(en);
         }
         auto &runner = m_script_runners.at(en);
         auto &script_info = m_scripts_info.at(script_id);
         auto &context = state().engine.context();
-        return runner.attach_component_type(script_id, script_info.factory, script_info.on_attached, context);
+        return runner.attach_component_type(en, script_id, script_info.factory, script_info.on_attached, context);
     }
 
     [[nodiscard]] scripts_operation_result detach_script(entity en, script_id script_id) override {
-        return {
-            .error_message = "Unimplemented",
-            .is_ok = false,
-        };
+        auto &runner = m_script_runners.at(en);
+        auto &script_info = m_scripts_info.at(script_id);
+        auto &context = state().engine.context();
+        auto &&result = runner.detach_componnet_type(script_id, script_info.on_detached, context);
+        if(result.is_ok && runner.size() <= 0) {
+            m_script_runners.erase(en);
+        }
+        return result;
     }
 };
 } // namespace st
