@@ -14,7 +14,7 @@ private:
 
 public:
     wrapper(const wrapper &) = delete;
-    wrapper(wrapper &&other) noexcept: wrapper{other.raw} {
+    wrapper(wrapper &&other) noexcept: raw{other.raw} {
         other.raw = nullptr;
     }
     wrapper &operator=(const wrapper &) = delete;
