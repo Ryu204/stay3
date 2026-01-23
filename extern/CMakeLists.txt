@@ -39,6 +39,13 @@ add_subdirectory(stb)
 add_subdirectory(freetype)
 
 set(CPP_RTTI_ENABLED ON)
+# If JPH needs to be built with GPU compute shader for more performance,
+# consider exposing these options through a library CMake option
+set(JPH_USE_VK OFF)
+set(JPH_USE_MTL OFF)
+set(JPH_USE_CPU_COMPUTE OFF)
+set(JPH_USE_DXC OFF)
+set(JPH_USE_DX12 OFF)
 add_subdirectory(JoltPhysics/Build)
 
 if(EMSCRIPTEN)
