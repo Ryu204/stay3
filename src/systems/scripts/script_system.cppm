@@ -1,6 +1,7 @@
 module;
 
 #include <cassert>
+#include <format>
 #include <functional>
 #include <optional>
 #include <string>
@@ -29,6 +30,17 @@ export struct script_validation_result {
 export struct scripts_operation_result {
     std::optional<std::string> error_message{std::nullopt};
     bool is_ok{false};
+
+    void merge(const scripts_operation_result &other) {
+        if(is_ok && other.is_ok) { return; }
+        if(other.error_message) {
+            if(!error_message) {
+                error_message = other.error_message;
+            } else {
+                error_message = std::format("{}\n\n----Next error:\n{}", error_message.value(), other.error_message.value());
+            }
+        }
+    }
 };
 
 export template<script_lang lang>

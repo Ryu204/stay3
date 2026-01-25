@@ -1,21 +1,23 @@
 module;
-
 #include <cassert>
 #include <cstring>
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <angelscript.h>
 #include <scriptarray/scriptarray.h>
 #include <scriptbuilder/scriptbuilder.h>
 #include <scriptdictionary/scriptdictionary.h>
 #include <scriptstdstring/scriptstdstring.h>
+
 export module stay3.system.script.angelscript;
 
 import stay3.system.script;
@@ -26,8 +28,33 @@ import :objects;
 import :entity_scripts_runner;
 import :register_all;
 import :ops_check;
+import :lifecycle_method;
+import :script_info;
 
 namespace st {
+
+void inspect_ags_type(const asITypeInfo *type) {
+    const auto meth_count = type->GetMethodCount();
+    std::cout << type->GetName() << '(' << meth_count << " methods)\n";
+    for(auto i = 0; i < meth_count; ++i) {
+        for(auto virt = 0; virt <= 1; ++virt) {
+            const auto *meth = type->GetMethodByIndex(i, virt);
+            std::cout << "Virtual: " << virt << '\n';
+            std::cout << "\tName:" << meth->GetName() << "; Object name: " << meth->GetObjectName() << '\n';
+            std::cout << "\tDeclaration: " << meth->GetDeclaration() << '\n';
+            std::cout << "\tIs override: " << meth->IsOverride() << '\n';
+        }
+    }
+
+    const auto *pu = type->GetMethodByDecl("void Bird::post_update()");
+    if(pu == nullptr) {
+        std::cout << "Bird::post_update is null\n";
+    } else {
+        std::cout << "\tName:" << pu->GetName() << "; Object name: " << pu->GetObjectName() << '\n';
+        std::cout << "\tDeclaration: " << pu->GetDeclaration() << '\n';
+        std::cout << "\tIs override: " << pu->IsOverride() << '\n';
+    }
+}
 
 export using ags_script_manager = script_manager<script_lang::angelscript>;
 export using ags_scripts = scripts<script_lang::angelscript>;
@@ -39,6 +66,16 @@ struct system_state {
     ags_engine engine;
     CScriptBuilder scripts_builder;
     std::optional<int> base_component_typeid{std::nullopt};
+    // We have not been able to retrieve the correct function pointers of lifecycle methods
+    // of each component
+    // We need to retrieve the pointer via `GetMethodByName` with `virtual = false`
+    // Then, check if the returned pointer is the same as the one in base component
+    // If it is, this component does not have a custom method of that lifecycle method,
+    // And can be skipped
+    //
+    // However, we need to test with the case where there are at least 3 classes in
+    // inheritance chain, because I am not sure how the virtual parameter affect the returned
+    // result from `GetMethodByName`
     [[nodiscard]] const auto *base_component_type_info() const {
         assert(base_component_typeid.has_value() && "Set base component id first");
         const auto *res = engine->GetTypeInfoById(*base_component_typeid);
@@ -99,24 +136,19 @@ load_base_component_result load_base_component(const std::filesystem::path &path
     return {.error_message = "No type named \"Component\" found in base script"};
 }
 
-struct component_script_info {
-    std::string name;
-    ags::function factory;
-    ags::function on_attached;
-    ags::function on_detached;
-};
-
 export class angelscript_system: public script_system<script_lang::angelscript> {
 private:
     std::unique_ptr<system_state> m_state;
     angelscript_system_config m_config;
     std::unordered_map<script_id, component_script_info> m_scripts_info;
     std::unordered_map<entity, ags::entity_scripts_runner, entity_hasher, entity_equal> m_script_runners;
+    std::unordered_set<entity, entity_hasher, entity_equal> m_marked_commits;
 
     system_state &state() {
         assert(m_state && "Uninitialized or failed initialization");
         return *m_state;
     }
+
     [[nodiscard]] const std::string &get_module_name(script_id id) {
         auto iter = m_scripts_info.find(id);
         if(iter == m_scripts_info.end()) {
@@ -125,6 +157,17 @@ private:
             iter = new_iter;
         }
         return iter->second.name;
+    }
+
+    void flush_commits() {
+        auto &&context = state().engine.context();
+        for(auto en: m_marked_commits) {
+            auto &runner = m_script_runners.at(en);
+            runner.commit_changes(context, m_scripts_info);
+            if(runner.size() == 0) {
+                m_script_runners.erase(en);
+            }
+        }
     }
 
 public:
@@ -240,6 +283,7 @@ protected:
                         .is_valid = false,
                     };
                 }
+                inspect_ags_type(component_derives_ti);
                 assert(component_derives_ti != nullptr);
                 const auto *name = component_derives_ti->GetName();
                 {
@@ -259,17 +303,29 @@ protected:
         auto *(var_name) = component_derives_ti->GetMethodByName(#script_name); \
         if((var_name) == nullptr) { \
             return { \
-                .error_message = "Missing " #script_name " method", \
+                .error_message = "Missing \"" #script_name "\" method", \
                 .is_valid = false, \
             }; \
         } \
-        saved_info.var_name.acquire(component_derives_ti->GetMethodByName(#script_name)); \
+        saved_info.var_name.acquire(var_name); \
+    }
+
+#define ACQUIRE_METHOD_IF_OVERRIDE(var_name, script_name) \
+    { \
+        auto *(var_name) = component_derives_ti->GetMethodByName(#script_name, false); \
+        if((var_name) != nullptr && (var_name)->IsOverride()) { \
+            saved_info.var_name = ags::function{var_name}; \
+        } \
     }
 
                     ACQUIRE_METHOD(on_attached, onAttached);
                     ACQUIRE_METHOD(on_detached, onDetached);
+                    ACQUIRE_METHOD_IF_OVERRIDE(maybe_update, update);
+                    ACQUIRE_METHOD_IF_OVERRIDE(maybe_post_update, postUpdate);
+                    ACQUIRE_METHOD_IF_OVERRIDE(maybe_input, input);
 
 #undef ACQUIRE_METHOD
+#undef ACQUIRE_METHOD_IF_OVERRIDE
                 }
                 return {
                     .is_valid = true,
@@ -282,24 +338,39 @@ protected:
                 .is_valid = false,
             };
         }
-    }
+    } // namespace st
     [[nodiscard]] scripts_operation_result update_all_scripts(float dt) override {
-        return {
-            .error_message = "Unimplemented",
-            .is_ok = false,
-        };
+        flush_commits();
+        auto &context = state().engine.context();
+        scripts_operation_result result{.is_ok = true};
+        for(auto &&[en, runner]: m_script_runners) {
+            auto &&this_entity_result = runner.run<ags::lifecycle_method::update>(m_scripts_info, context, dt);
+            result.merge(this_entity_result);
+        }
+        flush_commits();
+        return result;
     }
     [[nodiscard]] scripts_operation_result post_update_all_scripts(float dt) override {
-        return {
-            .error_message = "Unimplemented",
-            .is_ok = false,
-        };
+        flush_commits();
+        auto &context = state().engine.context();
+        scripts_operation_result result{.is_ok = true};
+        for(auto &&[en, runner]: m_script_runners) {
+            auto &&this_entity_result = runner.run<ags::lifecycle_method::post_update>(m_scripts_info, context, dt);
+            result.merge(this_entity_result);
+        }
+        flush_commits();
+        return result;
     }
     [[nodiscard]] scripts_operation_result input_all_scripts() override {
-        return {
-            .error_message = "Unimplemented",
-            .is_ok = false,
-        };
+        flush_commits();
+        auto &context = state().engine.context();
+        scripts_operation_result result{.is_ok = true};
+        for(auto &&[en, runner]: m_script_runners) {
+            auto &&this_entity_result = runner.run<ags::lifecycle_method::input>(m_scripts_info, context);
+            result.merge(this_entity_result);
+        }
+        flush_commits();
+        return result;
     }
     [[nodiscard]] scripts_operation_result attach_script(entity en, script_id script_id) override {
         if(!m_script_runners.contains(en)) {
@@ -308,16 +379,20 @@ protected:
         auto &runner = m_script_runners.at(en);
         auto &script_info = m_scripts_info.at(script_id);
         auto &context = state().engine.context();
-        return runner.attach_component_type(en, script_id, script_info.factory, script_info.on_attached, context);
+        auto result = runner.attach_component_type(en, script_id, script_info, context);
+        if(result.is_ok) {
+            m_marked_commits.insert(en);
+        }
+        return result;
     }
 
     [[nodiscard]] scripts_operation_result detach_script(entity en, script_id script_id) override {
         auto &runner = m_script_runners.at(en);
         auto &script_info = m_scripts_info.at(script_id);
         auto &context = state().engine.context();
-        auto &&result = runner.detach_componnet_type(script_id, script_info.on_detached, context);
-        if(result.is_ok && runner.size() <= 0) {
-            m_script_runners.erase(en);
+        auto &&result = runner.detach_component_type(script_id);
+        if(result.is_ok) {
+            m_marked_commits.insert(en);
         }
         return result;
     }

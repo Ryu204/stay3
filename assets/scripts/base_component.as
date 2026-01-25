@@ -13,4 +13,5 @@ abstract shared class Component {
     void start() { }
     void update(float dt) { }
     void postUpdate() { }
+    void input() { }
 }

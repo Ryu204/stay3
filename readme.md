@@ -276,6 +276,14 @@ Apart from read proxy, write proxy also has a problem. In C++ they notify change
 
 The first reason is why I steered away and decided to use angelscript for this framework.
 
+19. **IMPORTANT.** Altering the component pool in lifecycle methods
+
+Each game tick, every system iterates over entities and components they are interested in, and modify the game state via the registry. Modifications can include addition and removal. Normally, these operations will invalidate the iterators currently being used and can lead to UB. However, the view and group returned from EnTT is very relaxed about adding and removing certain component types during iteration. Since result provided from `st::ecs_registry::each` is just a wrapper of `entt::basic_view`, user should consult their library documentations about this topic.
+
+The registry does not directly manage script component, however. Every script components of an entity is managed by a special C++ component. Because I don't think allowing adding/removing components while iterating over components to update them is a good idea, I implemented the following approach: When a script component is updated inside a for loop and it wants to add another script component, the affected component immediately calls its `on_attch` methods; in case the current script component wants to delete another component script, the deletion is deferred until the for loop finishes. In the addition case, the affected component is not added to the entity's internal script manager just yet (note that there is currently 2 script manager: one acts as a to-be-bind interface and is used by user, one actually create/destroy object and update the entity's component list in a deferred manner). The component is in a valid state, but it will not be added/removed from the entity's component list immediately. After the for loop returns and all components finish their lifecycle methods (they existed before the for loop is invoked), the new additions and removals take effect.
+
+This leads to some pitfall if a game logic depends on a component's lifecycle methods must be called in the tick it was added, or must not be called in the tick it was removed. That to be said, I personally don't think it is a common use case.
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to (May 30th 2025):

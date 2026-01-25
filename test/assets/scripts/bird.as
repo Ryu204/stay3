@@ -4,4 +4,6 @@ class Bird : Component {
     void start() {
         print('Hello brother!');
     }
+
+    void update(float lol) {}
 }
