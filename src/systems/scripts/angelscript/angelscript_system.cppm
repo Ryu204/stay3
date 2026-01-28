@@ -1,4 +1,5 @@
 module;
+
 #include <cassert>
 #include <cstring>
 #include <exception>
@@ -12,6 +13,7 @@ module;
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <angelscript.h>
 #include <scriptarray/scriptarray.h>
 #include <scriptbuilder/scriptbuilder.h>
@@ -33,29 +35,6 @@ import :script_info;
 
 namespace st {
 
-void inspect_ags_type(const asITypeInfo *type) {
-    const auto meth_count = type->GetMethodCount();
-    std::cout << type->GetName() << '(' << meth_count << " methods)\n";
-    for(auto i = 0; i < meth_count; ++i) {
-        for(auto virt = 0; virt <= 1; ++virt) {
-            const auto *meth = type->GetMethodByIndex(i, virt);
-            std::cout << "Virtual: " << virt << '\n';
-            std::cout << "\tName:" << meth->GetName() << "; Object name: " << meth->GetObjectName() << '\n';
-            std::cout << "\tDeclaration: " << meth->GetDeclaration() << '\n';
-            std::cout << "\tIs override: " << meth->IsOverride() << '\n';
-        }
-    }
-
-    const auto *pu = type->GetMethodByDecl("void Bird::post_update()");
-    if(pu == nullptr) {
-        std::cout << "Bird::post_update is null\n";
-    } else {
-        std::cout << "\tName:" << pu->GetName() << "; Object name: " << pu->GetObjectName() << '\n';
-        std::cout << "\tDeclaration: " << pu->GetDeclaration() << '\n';
-        std::cout << "\tIs override: " << pu->IsOverride() << '\n';
-    }
-}
-
 export using ags_script_manager = script_manager<script_lang::angelscript>;
 export using ags_scripts = scripts<script_lang::angelscript>;
 export struct angelscript_system_config {
@@ -66,16 +45,9 @@ struct system_state {
     ags_engine engine;
     CScriptBuilder scripts_builder;
     std::optional<int> base_component_typeid{std::nullopt};
-    // We have not been able to retrieve the correct function pointers of lifecycle methods
-    // of each component
-    // We need to retrieve the pointer via `GetMethodByName` with `virtual = false`
-    // Then, check if the returned pointer is the same as the one in base component
-    // If it is, this component does not have a custom method of that lifecycle method,
-    // And can be skipped
-    //
-    // However, we need to test with the case where there are at least 3 classes in
-    // inheritance chain, because I am not sure how the virtual parameter affect the returned
-    // result from `GetMethodByName`
+    // So it turns out, `GetMethodByName` with `virtual = false` will return the method if it
+    // does not override/is not overriden; and return the one that both overrides others and isn't
+    // overriden otherwise.
     [[nodiscard]] const auto *base_component_type_info() const {
         assert(base_component_typeid.has_value() && "Set base component id first");
         const auto *res = engine->GetTypeInfoById(*base_component_typeid);
@@ -149,14 +121,8 @@ private:
         return *m_state;
     }
 
-    [[nodiscard]] const std::string &get_module_name(script_id id) {
-        auto iter = m_scripts_info.find(id);
-        if(iter == m_scripts_info.end()) {
-            auto &&[new_iter, ok] = m_scripts_info.emplace(id, std::format("Module{}", id));
-            assert(ok && "Failed to emplace new module name");
-            iter = new_iter;
-        }
-        return iter->second.name;
+    [[nodiscard]] static std::string build_module_name(script_id id) {
+        return std::format("Module_{}", id);
     }
 
     void flush_commits() {
@@ -237,7 +203,7 @@ protected:
     [[nodiscard]] script_validation_result load_script(const path &filepath, script_id script_id) override {
         try {
             CScriptBuilder sbuilder;
-            const auto &module_name = get_module_name(script_id);
+            const auto &module_name = build_module_name(script_id);
             if(!ags::check_call(sbuilder.StartNewModule(state().engine.get(), module_name.c_str()))) {
                 return {
                     .error_message = "Unrecoverable error while starting a new module.",
@@ -283,12 +249,11 @@ protected:
                         .is_valid = false,
                     };
                 }
-                inspect_ags_type(component_derives_ti);
                 assert(component_derives_ti != nullptr);
                 const auto *name = component_derives_ti->GetName();
                 {
                     // Cache type info
-                    auto &saved_info = m_scripts_info.at(script_id);
+                    component_script_info script_info{.name = name};
                     const auto ctor_count = component_derives_ti->GetFactoryCount();
                     if(ctor_count <= 0) {
                         return {
@@ -296,36 +261,46 @@ protected:
                             .is_valid = false,
                         };
                     }
-                    saved_info.factory.acquire(component_derives_ti->GetFactoryByIndex(0));
+                    script_info.factory.acquire(component_derives_ti->GetFactoryByIndex(0));
 
-#define ACQUIRE_METHOD(var_name, script_name) \
+                    static constexpr auto acquire_script_func_ptr_visitor = +[](asIScriptFunction *func) {
+                        return visit_helper{
+                            [func](std::optional<ags::function> *op) {
+                                op->operator=(func);
+                            },
+                            [func](ags::function *fw) {
+                                fw->acquire(func);
+                            }};
+                    };
+                    // So it turns out, `GetMethodByName` with `virtual = false` will return the method
+                    //  if it does not override and is not overriden; and otherwise return the one that
+                    // both overrides others and isn't overriden.
+#define ACQUIRE_METHOD(var_name, script_name, will_use_base_fallback) \
     { \
-        auto *(var_name) = component_derives_ti->GetMethodByName(#script_name); \
+        asIScriptFunction *(var_name) = component_derives_ti->GetMethodByName(#script_name, false); \
         if((var_name) == nullptr) { \
             return { \
-                .error_message = "Missing \"" #script_name "\" method", \
+                .error_message = "Missing \"" #script_name "\" method, this can happen if it is overloaded", \
                 .is_valid = false, \
             }; \
         } \
-        saved_info.var_name.acquire(var_name); \
-    }
-
-#define ACQUIRE_METHOD_IF_OVERRIDE(var_name, script_name) \
-    { \
-        auto *(var_name) = component_derives_ti->GetMethodByName(#script_name, false); \
-        if((var_name) != nullptr && (var_name)->IsOverride()) { \
-            saved_info.var_name = ags::function{var_name}; \
+        const auto is_base_method = (var_name)->GetObjectType()->GetTypeId() == base_component_type_info->GetTypeId(); \
+        if((will_use_base_fallback) || !is_base_method) { \
+            std::visit( \
+                acquire_script_func_ptr_visitor(var_name), \
+                std::variant<ags::function *, std::optional<ags::function> *>{&script_info.var_name}); \
         } \
     }
-
-                    ACQUIRE_METHOD(on_attached, onAttached);
-                    ACQUIRE_METHOD(on_detached, onDetached);
-                    ACQUIRE_METHOD_IF_OVERRIDE(maybe_update, update);
-                    ACQUIRE_METHOD_IF_OVERRIDE(maybe_post_update, postUpdate);
-                    ACQUIRE_METHOD_IF_OVERRIDE(maybe_input, input);
+                    ACQUIRE_METHOD(on_attached, onAttached, true);
+                    ACQUIRE_METHOD(on_detached, onDetached, true);
+                    ACQUIRE_METHOD(maybe_update, update, false);
+                    ACQUIRE_METHOD(maybe_post_update, postUpdate, false);
+                    ACQUIRE_METHOD(maybe_input, input, false);
 
 #undef ACQUIRE_METHOD
-#undef ACQUIRE_METHOD_IF_OVERRIDE
+
+                    auto &&[it, ok] = m_scripts_info.emplace(script_id, std::move(script_info));
+                    assert(ok && "Failed to emplace new script info");
                 }
                 return {
                     .is_valid = true,
@@ -338,7 +313,8 @@ protected:
                 .is_valid = false,
             };
         }
-    } // namespace st
+    }
+
     [[nodiscard]] scripts_operation_result update_all_scripts(float dt) override {
         flush_commits();
         auto &context = state().engine.context();
@@ -350,6 +326,7 @@ protected:
         flush_commits();
         return result;
     }
+
     [[nodiscard]] scripts_operation_result post_update_all_scripts(float dt) override {
         flush_commits();
         auto &context = state().engine.context();
@@ -382,6 +359,8 @@ protected:
         auto result = runner.attach_component_type(en, script_id, script_info, context);
         if(result.is_ok) {
             m_marked_commits.insert(en);
+        } else {
+            result.error_message = std::format("Script: {}: {}.", script_info.name, result.error_message.value_or("No detail"));
         }
         return result;
     }

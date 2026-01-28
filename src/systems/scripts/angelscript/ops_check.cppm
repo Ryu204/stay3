@@ -1,5 +1,6 @@
 module;
 
+#include <array>
 #include <format>
 #include <angelscript.h>
 
@@ -8,6 +9,7 @@ export module stay3.system.script.angelscript:ops_check;
 import stay3.system.script;
 
 import :objects;
+import :register_all;
 
 namespace st::ags {
 
@@ -62,12 +64,25 @@ scripts_operation_result exec(asIScriptContext &ctx, function &method, object &i
             .is_ok = false,
         };
     }
-    {
-        std::size_t arg_order = 0;
-        const auto ok = (check_call(ctx.SetArgObject(arg_order++, std::addressof(std::forward<args>(arguments)))) && ...);
-        if(!ok) {
+    constexpr auto argc = sizeof...(args);
+    if(argc > 0) {
+        using storage_t = std::tuple<
+            std::conditional_t<std::is_lvalue_reference_v<args>, args, std::decay_t<args>>...>;
+        storage_t storage{std::forward<args>(arguments)...};
+        const auto has_error = std::apply(
+            [&ctx](auto &...tup_elem) -> std::optional<std::size_t> {
+                std::size_t idx = 0;
+                std::array<bool, argc> ok = {check_call(
+                    register_type<std::decay_t<args>>::set_func_arg(ctx, idx++, tup_elem))...};
+                for(std::size_t i = 0; i < argc; ++i) {
+                    if(!ok[i]) { return i; };
+                }
+                return std::nullopt;
+            },
+            storage);
+        if(has_error) {
             return {
-                .error_message = std::format("Failed to set {}-th argument (0-based)", arg_order - 1),
+                .error_message = std::format("Failed to set {}-th argument (0-based)", has_error.value()),
                 .is_ok = false,
             };
         }

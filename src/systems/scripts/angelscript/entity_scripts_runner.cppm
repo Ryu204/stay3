@@ -3,6 +3,7 @@ module;
 #include <bit>
 #include <cassert>
 #include <cstdint>
+#include <format>
 #include <optional>
 #include <ranges>
 #include <type_traits>
@@ -114,7 +115,10 @@ public:
     scripts_operation_result attach_component_type(entity en, script_id id, component_script_info &info, asIScriptContext &context) {
         assert(get_comp(id).first == comp_loc::not_added && "Component was already added");
         if(const auto check_result = exec(context, info.factory); !check_result.is_ok) {
-            return check_result;
+            return {
+                .error_message = std::format("factory failed: {}", check_result.error_message.value_or("No details")),
+                .is_ok = false,
+            };
         }
         auto *raw_instance = *(static_cast<asIScriptObject **>(context.GetAddressOfReturnValue()));
         if(raw_instance == nullptr) {
@@ -125,7 +129,10 @@ public:
         }
         object instance{raw_instance};
         if(const auto check_result = exec(context, info.on_attached, instance, en); !check_result.is_ok) {
-            return check_result;
+            return {
+                .error_message = std::format("on_attached failed: {}", check_result.error_message.value_or("No details")),
+                .is_ok = false,
+            };
         }
         this->changes.emplace_back(add{.id = id, .instance = std::move(instance), .lifecycle_methods = info.get_bitmask()});
         return {.is_ok = true};

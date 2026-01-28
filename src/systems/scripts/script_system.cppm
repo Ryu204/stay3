@@ -32,12 +32,16 @@ export struct scripts_operation_result {
     bool is_ok{false};
 
     void merge(const scripts_operation_result &other) {
-        if(is_ok && other.is_ok) { return; }
+        if(other.is_ok) { return; }
+        is_ok = false;
         if(other.error_message) {
             if(!error_message) {
                 error_message = other.error_message;
             } else {
-                error_message = std::format("{}\n\n----Next error:\n{}", error_message.value(), other.error_message.value());
+                error_message = std::format(
+                    "{}\n\n----Next error:\n{}",
+                    error_message.value(),
+                    other.error_message.value());
             }
         }
     }
@@ -162,13 +166,13 @@ private:
             [en, this](const script_manager<lang>::add &ch) {
                 const auto res = attach_script(en, ch.id);
                 if(!res.is_ok) {
-                    log::error("[Script, LANG ID: ", script_lang_name(lang), "] Errors adding script component: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
+                    log::error("[Script, LANG ID: ", script_lang_name(lang), "] Errors adding script component:\n\t", res.error_message ? *res.error_message : "There are no other diagnostics.");
                 }
             },
             [en, this](const script_manager<lang>::remove &ch) {
                 const auto res = detach_script(en, ch.id);
                 if(!res.is_ok) {
-                    log::error("[Script, LANG ID: ", script_lang_name(lang), "] Errors removing script component: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
+                    log::error("[Script, LANG ID: ", script_lang_name(lang), "] Errors removing script component:\n\t", res.error_message ? *res.error_message : "There are no other diagnostics.");
                 }
             }};
         for(auto &&change: manager->unsaved_changes()) {

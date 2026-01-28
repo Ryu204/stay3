@@ -6,8 +6,9 @@ export module stay3.system.script.angelscript:register_all;
 
 import stay3.ecs;
 import :engine;
-import :register_entity;
-import :register_logger;
+export import :register_entity;
+export import :register_logger;
+export import :register_primitives;
 
 namespace st::ags {
 void register_all_types(ags_engine &engine) {
