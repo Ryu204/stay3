@@ -14,6 +14,7 @@ struct component_script_info {
     ags::function factory;
     ags::function on_attached;
     ags::function on_detached;
+    std::optional<ags::function> maybe_start{std::nullopt};
     std::optional<ags::function> maybe_update{std::nullopt};
     std::optional<ags::function> maybe_post_update{std::nullopt};
     std::optional<ags::function> maybe_input{std::nullopt};
@@ -25,6 +26,9 @@ struct component_script_info {
         }
         if(on_detached.get() != nullptr) {
             result |= static_cast<ags::lifecycle_method_bitmask>(ags::lifecycle_method::on_detached);
+        }
+        if(maybe_start && maybe_start.value().get() != nullptr) {
+            result |= static_cast<ags::lifecycle_method_bitmask>(ags::lifecycle_method::start);
         }
         if(maybe_update && maybe_update.value().get() != nullptr) {
             result |= static_cast<ags::lifecycle_method_bitmask>(ags::lifecycle_method::update);

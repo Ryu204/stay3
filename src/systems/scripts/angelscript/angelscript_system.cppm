@@ -5,7 +5,6 @@ module;
 #include <exception>
 #include <filesystem>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -128,7 +127,7 @@ private:
     void flush_commits() {
         auto &&context = state().engine.context();
         for(auto en: m_marked_commits) {
-            auto &runner = m_script_runners.at(en);
+            auto &runner = m_script_runners[en];
             runner.commit_changes(context, m_scripts_info);
             if(runner.size() == 0) {
                 m_script_runners.erase(en);
@@ -296,6 +295,7 @@ protected:
                     ACQUIRE_METHOD(maybe_update, update, false);
                     ACQUIRE_METHOD(maybe_post_update, postUpdate, false);
                     ACQUIRE_METHOD(maybe_input, input, false);
+                    ACQUIRE_METHOD(maybe_start, start, false);
 
 #undef ACQUIRE_METHOD
 
@@ -350,10 +350,7 @@ protected:
         return result;
     }
     [[nodiscard]] scripts_operation_result attach_script(entity en, script_id script_id) override {
-        if(!m_script_runners.contains(en)) {
-            m_script_runners.try_emplace(en);
-        }
-        auto &runner = m_script_runners.at(en);
+        auto &runner = m_script_runners[en];
         auto &script_info = m_scripts_info.at(script_id);
         auto &context = state().engine.context();
         auto result = runner.attach_component_type(en, script_id, script_info, context);
