@@ -124,12 +124,12 @@ private:
         return std::format("Module_{}", id);
     }
 
-    void flush_commits() {
+    void flush_commits(tree_context &tree_ctx) {
         auto &&context = state().engine.context();
         for(auto en: m_marked_commits) {
             auto &runner = m_script_runners[en];
-            runner.commit_changes(context, m_scripts_info);
-            if(runner.size() == 0) {
+            runner.commit_changes(tree_ctx, context, m_scripts_info);
+            if(runner.is_empty()) {
                 m_script_runners.erase(en);
             }
         }
@@ -317,19 +317,19 @@ protected:
     }
 
     [[nodiscard]] scripts_operation_result update_all_scripts(tree_context &tree_ctx, float dt) override {
-        flush_commits();
+        flush_commits(tree_ctx);
         auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
         for(auto &&[en, runner]: m_script_runners) {
             auto &&this_entity_result = runner.run<ags::lifecycle_method::update>(tree_ctx, m_scripts_info, context, dt);
             result.merge(this_entity_result);
         }
-        flush_commits();
+        flush_commits(tree_ctx);
         return result;
     }
 
     [[nodiscard]] scripts_operation_result post_update_all_scripts(tree_context &tree_ctx, float dt) override {
-        flush_commits();
+        flush_commits(tree_ctx);
         auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
         for(auto &&[en, runner]: m_script_runners) {
@@ -337,11 +337,11 @@ protected:
                 tree_ctx, m_scripts_info, context, dt);
             result.merge(this_entity_result);
         }
-        flush_commits();
+        flush_commits(tree_ctx);
         return result;
     }
     [[nodiscard]] scripts_operation_result input_all_scripts(tree_context &tree_ctx) override {
-        flush_commits();
+        flush_commits(tree_ctx);
         auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
         for(auto &&[en, runner]: m_script_runners) {
@@ -349,7 +349,7 @@ protected:
                 tree_ctx, m_scripts_info, context);
             result.merge(this_entity_result);
         }
-        flush_commits();
+        flush_commits(tree_ctx);
         return result;
     }
     [[nodiscard]] scripts_operation_result attach_script(entity en, script_id script_id) override {

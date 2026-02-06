@@ -44,6 +44,8 @@ private:
     entt::entity m_raw;
 };
 
+static_assert(std::is_enum_v<entt::entity>, "st::entity is assumed to be composed of integers (in Angelscript binding)");
+
 struct entity_hasher: std::hash<entt::entity> {
     std::size_t operator()(const entity &en) const noexcept {
         return std::hash<entt::entity>::operator()(en.m_raw);

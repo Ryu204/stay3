@@ -146,29 +146,34 @@ public:
         return {.is_ok = true};
     }
 
-    [[nodiscard]] std::uint32_t size() const {
-        return instances.size();
+    [[nodiscard]] bool is_empty() const {
+        return instances.empty() && changes.empty();
     }
 
     template<script_info_list T>
-    void commit_changes(asIScriptContext &context, T &infos) {
+    void commit_changes(tree_context &tree_ctx, asIScriptContext &script_ctx, T &infos) {
         std::vector<change> snapshot;
         snapshot.swap(changes);
         const auto visitor = visit_helper{
-            [&is = this->instances, this, &context, &infos](add &ch) {
+            [&is = this->instances, this, &script_ctx, &infos, &tree_ctx](add &ch) {
                 assert(!is.contains(ch.id) && "Component was added");
-                this->add_instance_to_map(ch.id, std::move(ch.instance), ch.lifecycle_methods);
                 auto &info = infos.at(ch.id);
-                if(!info.maybe_start.has_value()) { return; }
-                if(const auto check_result = exec(context, infos.at(ch.id).maybe_start.value(), ch.instance);
-                   !check_result.is_ok) {
-                    log::error("Error on script \"start\" method: {}", check_result.error_message.value_or("No details"));
+                if(info.maybe_start.has_value()) {
+                    if(const auto check_result = exec(script_ctx, info.pre_lifecycle_setup, ch.instance, tree_ctx);
+                       !check_result.is_ok) {
+                        assert(false && "Failed to setup pre lifecycle");
+                    }
+                    if(const auto check_result = exec(script_ctx, info.maybe_start.value(), ch.instance);
+                       !check_result.is_ok) {
+                        log::error("Error on script \"start\" method: {}", check_result.error_message.value_or("No details"));
+                    }
                 }
+                this->add_instance_to_map(ch.id, std::move(ch.instance), ch.lifecycle_methods);
             },
-            [&is = this->instances, &context, &infos, this](const remove &ch) {
+            [&is = this->instances, &script_ctx, &infos, this](const remove &ch) {
                 const auto it = is.find(ch.id);
                 assert(it != is.end() && "Component must be added before removed");
-                if(const auto check_result = exec(context, infos.at(ch.id).on_detached, it->second); !check_result.is_ok) {
+                if(const auto check_result = exec(script_ctx, infos.at(ch.id).on_detached, it->second); !check_result.is_ok) {
                     log::error("Error on script \"onDetached\" method: {}", check_result.error_message.value_or("No details"));
                 }
                 this->delete_instance_from_map(ch.id);
