@@ -8,11 +8,13 @@ import stay3.ecs;
 import :engine;
 export import :register_entity;
 export import :register_logger;
+export import :register_tree_context;
 export import :register_primitives;
 
 namespace st::ags {
 void register_all_types(ags_engine &engine) {
     register_entity(engine);
     register_logger(engine);
+    register_tree_context(engine);
 }
 } // namespace st::ags

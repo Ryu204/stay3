@@ -118,8 +118,8 @@ target_sources(stay3
     src/systems/scripts/script_langs.cppm
     src/systems/scripts/script_manager.cppm
 
-    src/systems/scripts/lua/lua_system.cppm
-    src/systems/scripts/lua/global_fields.cppm
+    # src/systems/scripts/lua/lua_system.cppm
+    # src/systems/scripts/lua/global_fields.cppm
 
     src/systems/scripts/angelscript/angelscript_system.cppm
     src/systems/scripts/angelscript/ops_check.cppm
@@ -128,9 +128,10 @@ target_sources(stay3
     src/systems/scripts/angelscript/entity_scripts_runner.cppm
     src/systems/scripts/angelscript/lifecycle_method.cppm
     src/systems/scripts/angelscript/script_info.cppm
-    src/systems/scripts/angelscript/register/entity.cppm
-    src/systems/scripts/angelscript/register/logger.cppm
+    src/systems/scripts/angelscript/register/entity.as.cppm
+    src/systems/scripts/angelscript/register/logger.as.cppm
     src/systems/scripts/angelscript/register/all.cppm
+    src/systems/scripts/angelscript/register/tree_context.as.cppm
     src/systems/scripts/angelscript/register/register_type.cppm
     src/systems/scripts/angelscript/register/primitives.cppm
 

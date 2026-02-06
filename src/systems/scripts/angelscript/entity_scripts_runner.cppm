@@ -178,15 +178,27 @@ public:
         }
     }
 
-    template<lifecycle_method type, typename method_holder, typename... args>
-    scripts_operation_result run(method_holder &methods, asIScriptContext &context, args &&...arguments) {
+    template<lifecycle_method type, script_info_list method_holder, typename... args>
+    scripts_operation_result run(tree_context &tree_ctx, method_holder &methods, asIScriptContext &context, args &&...arguments) {
         auto &matching_instances = instances_by_method[type];
         scripts_operation_result result{.is_ok = true};
         for(auto &&[script_id, object]: matching_instances) {
-            auto &maybe_method = method_list<type>::get(methods, script_id);
-            assert(maybe_method.has_value() && "Instances by method was incorrectly modified");
-            auto &&this_script_result = exec(context, maybe_method.value(), *object, std::forward<args>(arguments)...);
-            result.merge(this_script_result);
+            {
+                // Assign neccessary variables
+                auto &pre_lifecycle_setup = methods.at(script_id).pre_lifecycle_setup;
+                auto &&setup_result = exec(context, pre_lifecycle_setup, *object, tree_ctx);
+                result.merge(setup_result);
+                if(!setup_result.is_ok) {
+                    continue;
+                }
+            }
+            {
+                // Actually executing the method
+                auto &maybe_method = method_list<type>::get(methods, script_id);
+                assert(maybe_method.has_value() && "Instances by method was incorrectly modified");
+                auto &&this_script_result = exec(context, maybe_method.value(), *object, std::forward<args>(arguments)...);
+                result.merge(this_script_result);
+            }
         }
         return result;
     }

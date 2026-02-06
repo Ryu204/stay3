@@ -14,6 +14,7 @@ struct component_script_info {
     ags::function factory;
     ags::function on_attached;
     ags::function on_detached;
+    ags::function pre_lifecycle_setup;
     std::optional<ags::function> maybe_start{std::nullopt};
     std::optional<ags::function> maybe_update{std::nullopt};
     std::optional<ags::function> maybe_post_update{std::nullopt};

@@ -292,6 +292,7 @@ protected:
     }
                     ACQUIRE_METHOD(on_attached, onAttached, true);
                     ACQUIRE_METHOD(on_detached, onDetached, true);
+                    ACQUIRE_METHOD(pre_lifecycle_setup, preLifecycleSetup, true);
                     ACQUIRE_METHOD(maybe_update, update, false);
                     ACQUIRE_METHOD(maybe_post_update, postUpdate, false);
                     ACQUIRE_METHOD(maybe_input, input, false);
@@ -315,35 +316,37 @@ protected:
         }
     }
 
-    [[nodiscard]] scripts_operation_result update_all_scripts(float dt) override {
+    [[nodiscard]] scripts_operation_result update_all_scripts(tree_context &tree_ctx, float dt) override {
         flush_commits();
         auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
         for(auto &&[en, runner]: m_script_runners) {
-            auto &&this_entity_result = runner.run<ags::lifecycle_method::update>(m_scripts_info, context, dt);
+            auto &&this_entity_result = runner.run<ags::lifecycle_method::update>(tree_ctx, m_scripts_info, context, dt);
             result.merge(this_entity_result);
         }
         flush_commits();
         return result;
     }
 
-    [[nodiscard]] scripts_operation_result post_update_all_scripts(float dt) override {
+    [[nodiscard]] scripts_operation_result post_update_all_scripts(tree_context &tree_ctx, float dt) override {
         flush_commits();
         auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
         for(auto &&[en, runner]: m_script_runners) {
-            auto &&this_entity_result = runner.run<ags::lifecycle_method::post_update>(m_scripts_info, context, dt);
+            auto &&this_entity_result = runner.run<ags::lifecycle_method::post_update>(
+                tree_ctx, m_scripts_info, context, dt);
             result.merge(this_entity_result);
         }
         flush_commits();
         return result;
     }
-    [[nodiscard]] scripts_operation_result input_all_scripts() override {
+    [[nodiscard]] scripts_operation_result input_all_scripts(tree_context &tree_ctx) override {
         flush_commits();
         auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
         for(auto &&[en, runner]: m_script_runners) {
-            auto &&this_entity_result = runner.run<ags::lifecycle_method::input>(m_scripts_info, context);
+            auto &&this_entity_result = runner.run<ags::lifecycle_method::input>(
+                tree_ctx, m_scripts_info, context);
             result.merge(this_entity_result);
         }
         flush_commits();

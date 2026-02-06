@@ -16,6 +16,13 @@ struct set_func_arg_object_mixin {
 };
 
 export template<typename T>
+struct set_func_arg_address_mixin {
+    static int set_func_arg(asIScriptContext &ctx, std::size_t index, T &value) {
+        return ctx.SetArgAddress(index, &value);
+    }
+};
+
+export template<typename T>
 struct register_type {};
 
 template<typename T>
