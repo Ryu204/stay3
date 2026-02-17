@@ -134,6 +134,8 @@ target_sources(stay3
     src/systems/scripts/angelscript/register/tree_context.as.cppm
     src/systems/scripts/angelscript/register/register_type.cppm
     src/systems/scripts/angelscript/register/primitives.cppm
+    src/systems/scripts/angelscript/register/transform.as.cppm
+    src/systems/scripts/angelscript/register/vector.as.cppm
 
     PRIVATE
 
