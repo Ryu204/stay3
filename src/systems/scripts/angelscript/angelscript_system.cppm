@@ -135,6 +135,98 @@ private:
         }
     }
 
+    [[nodiscard]] script_validation_result load_script_impl(script_id script_id, CScriptBuilder &loaded_builder) {
+        if(!ags::check_call(loaded_builder.BuildModule())) {
+            return {
+                .error_message = "Script contains error(s). Check log for more info.",
+                .is_valid = false,
+            };
+        }
+        {
+            // Inspect the module
+            auto *mod = loaded_builder.GetModule();
+            const asUINT type_count = mod->GetObjectTypeCount();
+            const auto *base_component_type_info = state().base_component_type_info();
+            const asITypeInfo *component_derives_ti{nullptr};
+            unsigned int component_derives_count = 0;
+            for(asUINT i = 0; i < type_count; ++i) {
+                const auto *type_info = mod->GetObjectTypeByIndex(i);
+                if(type_info->GetTypeId() == base_component_type_info->GetTypeId()) {
+                    continue;
+                }
+                if(type_info->DerivesFrom(base_component_type_info)) {
+                    ++component_derives_count;
+                    component_derives_ti = type_info;
+                }
+            }
+            if(component_derives_count != 1) {
+                return {
+                    .error_message = std::format("More or less than 1 type ({} types) derive from Component in script", component_derives_count),
+                    .is_valid = false,
+                };
+            }
+            assert(component_derives_ti != nullptr);
+            const auto *name = component_derives_ti->GetName();
+            {
+                // Cache type info
+                component_script_info script_info{.name = name};
+                const auto ctor_count = component_derives_ti->GetFactoryCount();
+                if(ctor_count <= 0) {
+                    return {
+                        .error_message = std::format("No factory method found on type \"{}\"", name),
+                        .is_valid = false,
+                    };
+                }
+                script_info.factory.acquire(component_derives_ti->GetFactoryByIndex(0));
+
+                static constexpr auto acquire_script_func_ptr_visitor = +[](asIScriptFunction *func) {
+                    return visit_helper{
+                        [func](std::optional<ags::function> *op) {
+                            op->operator=(func);
+                        },
+                        [func](ags::function *fw) {
+                            fw->acquire(func);
+                        }};
+                };
+                // So it turns out, `GetMethodByName` with `virtual = false` will return the method
+                //  if it does not override and is not overriden; and otherwise return the one that
+                // both overrides others and isn't overriden.
+#define ACQUIRE_METHOD(var_name, script_name, will_use_base_fallback) \
+    { \
+        asIScriptFunction *(var_name) = component_derives_ti->GetMethodByName(#script_name, false); \
+        if((var_name) == nullptr) { \
+            return { \
+                .error_message = "Missing \"" #script_name "\" method, this can happen if it is overloaded", \
+                .is_valid = false, \
+            }; \
+        } \
+        const auto is_base_method = (var_name)->GetObjectType()->GetTypeId() == base_component_type_info->GetTypeId(); \
+        if((will_use_base_fallback) || !is_base_method) { \
+            std::visit( \
+                acquire_script_func_ptr_visitor(var_name), \
+                std::variant<ags::function *, std::optional<ags::function> *>{&script_info.var_name}); \
+        } \
+    }
+                ACQUIRE_METHOD(on_attached, onAttached, true);
+                ACQUIRE_METHOD(on_detached, onDetached, true);
+                ACQUIRE_METHOD(pre_lifecycle_setup, preLifecycleSetup, true);
+                ACQUIRE_METHOD(maybe_update, update, false);
+                ACQUIRE_METHOD(maybe_post_update, postUpdate, false);
+                ACQUIRE_METHOD(maybe_input, input, false);
+                ACQUIRE_METHOD(maybe_start, start, false);
+
+#undef ACQUIRE_METHOD
+
+                auto &&[it, ok] = m_scripts_info.emplace(script_id, std::move(script_info));
+                assert(ok && "Failed to emplace new script info");
+            }
+            return {
+                .is_valid = true,
+                .name = name,
+            };
+        }
+    }
+
 public:
     angelscript_system(std::filesystem::path container_script_path): m_config{std::move(container_script_path)} {}
 
@@ -199,6 +291,33 @@ protected:
         return {.is_ok = true};
     }
 
+    [[nodiscard]] script_validation_result load_script(const char *identifier, const char *content, script_id script_id) override {
+        try {
+            CScriptBuilder sbuilder;
+            const auto &module_name = build_module_name(script_id);
+            if(!ags::check_call(sbuilder.StartNewModule(state().engine.get(), module_name.c_str()))) {
+                return {
+                    .error_message = "Unrecoverable error while starting a new module.",
+                    .is_valid = false,
+                };
+            }
+            {
+                if(!ags::check_call(sbuilder.AddSectionFromMemory(identifier, content))) {
+                    return {
+                        .error_message = "Invalid filename or invalid preprocessor in script",
+                        .is_valid = false,
+                    };
+                }
+            }
+            return load_script_impl(script_id, sbuilder);
+        } catch(std::exception &e) {
+            return {
+                .error_message = e.what(),
+                .is_valid = false,
+            };
+        }
+    }
+
     [[nodiscard]] script_validation_result load_script(const path &filepath, script_id script_id) override {
         try {
             CScriptBuilder sbuilder;
@@ -218,96 +337,8 @@ protected:
                         .is_valid = false,
                     };
                 }
-            };
-            if(!ags::check_call(sbuilder.BuildModule())) {
-                return {
-                    .error_message = "Script contains error(s). Check log for more info.",
-                    .is_valid = false,
-                };
             }
-            {
-                // Inspect the module
-                auto *mod = sbuilder.GetModule();
-                const asUINT type_count = mod->GetObjectTypeCount();
-                const auto *base_component_type_info = state().base_component_type_info();
-                const asITypeInfo *component_derives_ti{nullptr};
-                unsigned int component_derives_count = 0;
-                for(asUINT i = 0; i < type_count; ++i) {
-                    const auto *type_info = mod->GetObjectTypeByIndex(i);
-                    if(type_info->GetTypeId() == base_component_type_info->GetTypeId()) {
-                        continue;
-                    }
-                    if(type_info->DerivesFrom(base_component_type_info)) {
-                        ++component_derives_count;
-                        component_derives_ti = type_info;
-                    }
-                }
-                if(component_derives_count != 1) {
-                    return {
-                        .error_message = std::format("More or less than 1 type ({} types) derive from Component in script", component_derives_count),
-                        .is_valid = false,
-                    };
-                }
-                assert(component_derives_ti != nullptr);
-                const auto *name = component_derives_ti->GetName();
-                {
-                    // Cache type info
-                    component_script_info script_info{.name = name};
-                    const auto ctor_count = component_derives_ti->GetFactoryCount();
-                    if(ctor_count <= 0) {
-                        return {
-                            .error_message = std::format("No factory method found on type \"{}\"", name),
-                            .is_valid = false,
-                        };
-                    }
-                    script_info.factory.acquire(component_derives_ti->GetFactoryByIndex(0));
-
-                    static constexpr auto acquire_script_func_ptr_visitor = +[](asIScriptFunction *func) {
-                        return visit_helper{
-                            [func](std::optional<ags::function> *op) {
-                                op->operator=(func);
-                            },
-                            [func](ags::function *fw) {
-                                fw->acquire(func);
-                            }};
-                    };
-                    // So it turns out, `GetMethodByName` with `virtual = false` will return the method
-                    //  if it does not override and is not overriden; and otherwise return the one that
-                    // both overrides others and isn't overriden.
-#define ACQUIRE_METHOD(var_name, script_name, will_use_base_fallback) \
-    { \
-        asIScriptFunction *(var_name) = component_derives_ti->GetMethodByName(#script_name, false); \
-        if((var_name) == nullptr) { \
-            return { \
-                .error_message = "Missing \"" #script_name "\" method, this can happen if it is overloaded", \
-                .is_valid = false, \
-            }; \
-        } \
-        const auto is_base_method = (var_name)->GetObjectType()->GetTypeId() == base_component_type_info->GetTypeId(); \
-        if((will_use_base_fallback) || !is_base_method) { \
-            std::visit( \
-                acquire_script_func_ptr_visitor(var_name), \
-                std::variant<ags::function *, std::optional<ags::function> *>{&script_info.var_name}); \
-        } \
-    }
-                    ACQUIRE_METHOD(on_attached, onAttached, true);
-                    ACQUIRE_METHOD(on_detached, onDetached, true);
-                    ACQUIRE_METHOD(pre_lifecycle_setup, preLifecycleSetup, true);
-                    ACQUIRE_METHOD(maybe_update, update, false);
-                    ACQUIRE_METHOD(maybe_post_update, postUpdate, false);
-                    ACQUIRE_METHOD(maybe_input, input, false);
-                    ACQUIRE_METHOD(maybe_start, start, false);
-
-#undef ACQUIRE_METHOD
-
-                    auto &&[it, ok] = m_scripts_info.emplace(script_id, std::move(script_info));
-                    assert(ok && "Failed to emplace new script info");
-                }
-                return {
-                    .is_valid = true,
-                    .name = name,
-                };
-            }
+            return load_script_impl(script_id, sbuilder);
         } catch(std::exception &e) {
             return {
                 .error_message = e.what(),

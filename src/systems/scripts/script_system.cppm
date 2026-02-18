@@ -65,6 +65,10 @@ public:
             }
         };
 
+        script_id register_script_from_memory(const char *identifier, const char *content) {
+            return system.get().register_script(identifier, content).value();
+        }
+
         template<typename filepath>
         script_id register_script(const filepath &path) {
             return system.get().register_script(path).value();
@@ -121,6 +125,7 @@ protected:
         return {.is_ok = true};
     }
     [[nodiscard]] virtual script_validation_result load_script(const path &filepath, script_id script_id) = 0;
+    [[nodiscard]] virtual script_validation_result load_script(const char *identifier, const char *content, script_id script_id) = 0;
     [[nodiscard]] virtual scripts_operation_result update_all_scripts(tree_context &ctx, float dt) = 0;
     [[nodiscard]] virtual scripts_operation_result post_update_all_scripts(tree_context &ctx, float dt) = 0;
     [[nodiscard]] virtual scripts_operation_result input_all_scripts(tree_context &ctx) = 0;
@@ -150,6 +155,22 @@ private:
         assert(name.has_value() && "Valid script must have a name");
         database.register_script(maybe_id, path, name.value());
         log::info("[Script, LANG ID: ", script_lang_name(lang), "] Loaded \"", name.value(), "\" from ", path.string());
+        return maybe_id;
+    }
+
+    std::optional<script_id> register_script(const char *identifier, const char *content) {
+        const auto maybe_id = database.create_script_id();
+        auto &&[error_message, is_valid, name] = load_script(identifier, content, maybe_id);
+        if(!is_valid) {
+            log::warn(
+                "[Script, LANG ID::", script_lang_name(lang), "] Failed to load script from memory : ", identifier,
+                ".\n\tDetails: ", error_message ? *error_message : "There are no other diagnostics.");
+            database.delete_unused_script_id(maybe_id);
+            return std::nullopt;
+        }
+        assert(name.has_value() && "Valid script must have a name");
+        database.register_script(maybe_id, identifier, name.value());
+        log::info("Script, LANG ID: ", script_lang_name(lang), "] Loaded \"", name.value(), "\" from memory, identifier \"", identifier, "\"");
         return maybe_id;
     }
 

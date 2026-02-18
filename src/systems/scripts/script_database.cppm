@@ -3,7 +3,6 @@ module;
 #include <cassert>
 #include <filesystem>
 #include <format>
-#include <string>
 #include <unordered_map>
 
 export module stay3.system.script:script_database;
@@ -17,17 +16,30 @@ public:
     script_component::id_type create_script_id() {
         return id_gen.create();
     }
+
+    const script_component &register_script(script_component::id_type created_id, const char *identifier, const script_component::script_name &name) {
+        assert(id_gen.is_id_active(created_id) && "Id is not valid");
+        assert(!components.contains(created_id) && "Id was registered for other script");
+        for(auto &&[id, comp]: components) {
+            if(name_to_id.contains(name)) {
+                const auto existing_location = components.at(name_to_id[name]).location();
+                throw st::script_error{
+                    std::format("Same script name is used more than once:\n{}\n{}\n{}", name, identifier, existing_location)};
+            }
+        }
+        auto &&[iter, isOk] = components.try_emplace(created_id, created_id, identifier, name);
+        assert(isOk && "Failed to emplace new script");
+        return iter->second;
+    }
+
     const script_component &register_script(script_component::id_type created_id, const script_component::path &path, const script_component::script_name &name) {
         assert(id_gen.is_id_active(created_id) && "Id is not valid");
         assert(!components.contains(created_id) && "Id was registered for other script");
         for(auto &&[id, comp]: components) {
-            if(std::filesystem::equivalent(path, comp.filepath())) {
-                throw st::script_error{"Same script file is registered twice"};
-            }
             if(name_to_id.contains(name)) {
-                const auto &existing_path = components.at(name_to_id[name]).filepath();
+                const auto existing_location = components.at(name_to_id[name]).location();
                 throw st::script_error{
-                    std::format("Same script name is used accross files:\n{}\n{}\n{}", name, path.string(), existing_path.string())};
+                    std::format("Same script name is used more than once:\n{}\n{}\n{}", name, path.string(), existing_location)};
             }
         }
         auto &&[iter, isOk] = components.try_emplace(created_id, created_id, path, name);

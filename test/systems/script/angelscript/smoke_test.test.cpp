@@ -2,9 +2,9 @@
 import stay3;
 using namespace st;
 
-namespace scripts_name {
-st::script_id bird{};
-}
+struct scripts_name {
+    static inline st::script_id bird{};
+};
 
 struct sys {
     static void start(tree_context &ctx) {
