@@ -128,6 +128,7 @@ target_sources(stay3
     src/systems/scripts/angelscript/entity_scripts_runner.cppm
     src/systems/scripts/angelscript/lifecycle_method.cppm
     src/systems/scripts/angelscript/script_info.cppm
+    src/systems/scripts/angelscript/assertion.cppm
     src/systems/scripts/angelscript/register/entity.as.cppm
     src/systems/scripts/angelscript/register/logger.as.cppm
     src/systems/scripts/angelscript/register/all.cppm

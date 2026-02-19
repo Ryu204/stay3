@@ -20,6 +20,7 @@ module;
 #include <scriptstdstring/scriptstdstring.h>
 
 export module stay3.system.script.angelscript;
+export import :assertion;
 
 import stay3.system.script;
 import stay3.ecs;
