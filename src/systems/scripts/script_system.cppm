@@ -54,9 +54,9 @@ public:
     using path = script_component::path;
     using script_name = script_component::script_name;
 
-    class script_register {
+    class script_public_interface {
     public:
-        script_register(script_system &system): system{system} {}
+        script_public_interface(script_system &system): system{system} {}
 
         template<std::ranges::range cont>
         void register_scripts(const cont &filepaths) {
@@ -78,13 +78,17 @@ public:
             return system.get().database.id_from_name(name);
         }
 
+        [[nodiscard]] bool was_error_occured() const {
+            return system.get().was_error_occured;
+        }
+
     private:
         std::reference_wrapper<script_system> system;
     };
 
     void start(tree_context &ctx) {
         setup_signals(ctx.ecs());
-        ctx.vars().emplace<script_register>(*this);
+        ctx.vars().emplace<script_public_interface>(*this);
         const auto init_result = initialize();
         check_scripts_operations(init_result, sys_type::start);
     }
@@ -103,7 +107,7 @@ public:
     void cleanup(tree_context &ctx) {
         const auto result = shutdown();
         check_scripts_operations(result, sys_type::cleanup);
-        ctx.vars().erase<script_register>();
+        ctx.vars().erase<script_public_interface>();
     }
 
     script_system() = default;
@@ -174,8 +178,9 @@ private:
         return maybe_id;
     }
 
-    static void check_scripts_operations(const scripts_operation_result &res, sys_type ops) {
+    void check_scripts_operations(const scripts_operation_result &res, sys_type ops) {
         if(res.is_ok) { return; }
+        was_error_occured = true;
         log::error("[Script, LANG ID: ", script_lang_name(lang), "] Failed at operation: \"", sys_type_name(ops), '"',
                    "\n\tDetails: ", res.error_message ? *res.error_message : "There are no other diagnostics.");
     }
@@ -214,10 +219,11 @@ private:
     }
 
     script_database database;
+    bool was_error_occured{false};
 };
 
 export template<script_lang lang>
-using scripts = script_system<lang>::script_register;
+using scripts = script_system<lang>::script_public_interface;
 
 export using script_id = script_component::id_type;
 

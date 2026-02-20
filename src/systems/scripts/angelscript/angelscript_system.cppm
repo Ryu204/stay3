@@ -39,6 +39,7 @@ export using ags_script_manager = script_manager<script_lang::angelscript>;
 export using ags_scripts = scripts<script_lang::angelscript>;
 export struct angelscript_system_config {
     std::filesystem::path base_script_path;
+    bool strip_assertion{false};
 };
 
 struct system_state {
@@ -125,15 +126,18 @@ private:
         return std::format("Module_{}", id);
     }
 
-    void flush_commits(tree_context &tree_ctx) {
+    scripts_operation_result flush_commits(tree_context &tree_ctx) {
+        scripts_operation_result res{.is_ok = true};
         auto &&context = state().engine.context();
         for(auto en: m_marked_commits) {
             auto &runner = m_script_runners[en];
-            runner.commit_changes(tree_ctx, context, m_scripts_info);
+            const auto en_op_result = runner.commit_changes(tree_ctx, context, m_scripts_info);
+            res.merge(en_op_result);
             if(runner.is_empty()) {
                 m_script_runners.erase(en);
             }
         }
+        return res;
     }
 
     [[nodiscard]] script_validation_result load_script_impl(script_id script_id, CScriptBuilder &loaded_builder) {
@@ -229,7 +233,7 @@ private:
     }
 
 public:
-    angelscript_system(std::filesystem::path container_script_path): m_config{std::move(container_script_path)} {}
+    angelscript_system(angelscript_system_config config): m_config{std::move(config)} {}
 
 protected:
     [[nodiscard]] scripts_operation_result initialize() override {
@@ -263,7 +267,7 @@ protected:
             RegisterStdString(engine.get());
             RegisterScriptArray(engine.get(), true);
             RegisterScriptDictionary(engine.get());
-            ags::register_all_types(engine);
+            ags::register_all_types(engine, !m_config.strip_assertion);
 
             {
                 const auto component_load_result = load_base_component(m_config.base_script_path, state().scripts_builder, engine);
@@ -294,7 +298,7 @@ protected:
 
     [[nodiscard]] script_validation_result load_script(const char *identifier, const char *content, script_id script_id) override {
         try {
-            CScriptBuilder sbuilder;
+            CScriptBuilder &sbuilder = state().scripts_builder;
             const auto &module_name = build_module_name(script_id);
             if(!ags::check_call(sbuilder.StartNewModule(state().engine.get(), module_name.c_str()))) {
                 return {
@@ -303,7 +307,21 @@ protected:
                 };
             }
             {
-                if(!ags::check_call(sbuilder.AddSectionFromMemory(identifier, content))) {
+                std::string source{content};
+                if(m_config.strip_assertion) {
+                    auto stripped = ags::strip_assert_statements({
+                        .source = source,
+                    });
+                    if(!stripped.is_ok) {
+                        return {
+                            .error_message = std::format("Failed to strip assertions: {}.",
+                                                         stripped.error_message.value_or("No details")),
+                            .is_valid = false,
+                        };
+                    }
+                    source.swap(stripped.content.value());
+                }
+                if(!ags::check_call(sbuilder.AddSectionFromMemory(identifier, source.c_str()))) {
                     return {
                         .error_message = "Invalid filename or invalid preprocessor in script",
                         .is_valid = false,
@@ -321,25 +339,9 @@ protected:
 
     [[nodiscard]] script_validation_result load_script(const path &filepath, script_id script_id) override {
         try {
-            CScriptBuilder sbuilder;
-            const auto &module_name = build_module_name(script_id);
-            if(!ags::check_call(sbuilder.StartNewModule(state().engine.get(), module_name.c_str()))) {
-                return {
-                    .error_message = "Unrecoverable error while starting a new module.",
-                    .is_valid = false,
-                };
-            }
-            {
-                std::string filename = filepath.string();
-                const char *c_filename = filename.c_str();
-                if(!ags::check_call(sbuilder.AddSectionFromFile(c_filename))) {
-                    return {
-                        .error_message = "Invalid filename or invalid preprocessor in script",
-                        .is_valid = false,
-                    };
-                }
-            }
-            return load_script_impl(script_id, sbuilder);
+            const auto content = read_file_as_str(filepath);
+            const auto filepath_str = filepath.string();
+            return load_script(filepath_str.c_str(), content.c_str(), script_id);
         } catch(std::exception &e) {
             return {
                 .error_message = e.what(),
@@ -349,39 +351,39 @@ protected:
     }
 
     [[nodiscard]] scripts_operation_result update_all_scripts(tree_context &tree_ctx, float dt) override {
-        flush_commits(tree_ctx);
-        auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
+        result.merge(flush_commits(tree_ctx));
+        auto &context = state().engine.context();
         for(auto &&[en, runner]: m_script_runners) {
             auto &&this_entity_result = runner.run<ags::lifecycle_method::update>(tree_ctx, m_scripts_info, context, dt);
             result.merge(this_entity_result);
         }
-        flush_commits(tree_ctx);
+        result.merge(flush_commits(tree_ctx));
         return result;
     }
 
     [[nodiscard]] scripts_operation_result post_update_all_scripts(tree_context &tree_ctx, float dt) override {
-        flush_commits(tree_ctx);
-        auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
+        result.merge(flush_commits(tree_ctx));
+        auto &context = state().engine.context();
         for(auto &&[en, runner]: m_script_runners) {
             auto &&this_entity_result = runner.run<ags::lifecycle_method::post_update>(
                 tree_ctx, m_scripts_info, context, dt);
             result.merge(this_entity_result);
         }
-        flush_commits(tree_ctx);
+        result.merge(flush_commits(tree_ctx));
         return result;
     }
     [[nodiscard]] scripts_operation_result input_all_scripts(tree_context &tree_ctx) override {
-        flush_commits(tree_ctx);
-        auto &context = state().engine.context();
         scripts_operation_result result{.is_ok = true};
+        result.merge(flush_commits(tree_ctx));
+        auto &context = state().engine.context();
         for(auto &&[en, runner]: m_script_runners) {
             auto &&this_entity_result = runner.run<ags::lifecycle_method::input>(
                 tree_ctx, m_scripts_info, context);
             result.merge(this_entity_result);
         }
-        flush_commits(tree_ctx);
+        result.merge(flush_commits(tree_ctx));
         return result;
     }
     [[nodiscard]] scripts_operation_result attach_script(entity en, script_id script_id) override {

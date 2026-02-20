@@ -151,36 +151,47 @@ public:
     }
 
     template<script_info_list T>
-    void commit_changes(tree_context &tree_ctx, asIScriptContext &script_ctx, T &infos) {
+    scripts_operation_result commit_changes(tree_context &tree_ctx, asIScriptContext &script_ctx, T &infos) {
         std::vector<change> snapshot;
         snapshot.swap(changes);
+        scripts_operation_result res{.is_ok = true};
         const auto visitor = visit_helper{
-            [&is = this->instances, this, &script_ctx, &infos, &tree_ctx](add &ch) {
+            [&is = this->instances, this, &script_ctx, &infos, &tree_ctx, &res](add &ch) {
                 assert(!is.contains(ch.id) && "Component was added");
                 auto &info = infos.at(ch.id);
                 if(info.maybe_start.has_value()) {
                     if(const auto check_result = exec(script_ctx, info.pre_lifecycle_setup, ch.instance, tree_ctx);
                        !check_result.is_ok) {
-                        assert(false && "Failed to setup pre lifecycle");
+                        res.merge({
+                            .error_message = "Failed to setup pre lifecycle",
+                            .is_ok = false,
+                        });
                     }
                     if(const auto check_result = exec(script_ctx, info.maybe_start.value(), ch.instance);
                        !check_result.is_ok) {
-                        log::error("Error on script \"start\" method: {}", check_result.error_message.value_or("No details"));
+                        res.merge({
+                            .error_message = std::format("Error on script \"start\" method: {}", check_result.error_message.value_or("No details")),
+                            .is_ok = false,
+                        });
                     }
                 }
                 this->add_instance_to_map(ch.id, std::move(ch.instance), ch.lifecycle_methods);
             },
-            [&is = this->instances, &script_ctx, &infos, this](const remove &ch) {
+            [&is = this->instances, &script_ctx, &infos, this, &res](const remove &ch) {
                 const auto it = is.find(ch.id);
                 assert(it != is.end() && "Component must be added before removed");
                 if(const auto check_result = exec(script_ctx, infos.at(ch.id).on_detached, it->second); !check_result.is_ok) {
-                    log::error("Error on script \"onDetached\" method: {}", check_result.error_message.value_or("No details"));
+                    res.merge({
+                        .error_message = std::format("Error on script \"onDetached\" method: {}", check_result.error_message.value_or("No details")),
+                        .is_ok = false,
+                    });
                 }
                 this->delete_instance_from_map(ch.id);
             }};
         for(auto &ch: snapshot) {
             std::visit(visitor, ch);
         }
+        return res;
     }
 
     template<lifecycle_method type, script_info_list method_holder, typename... args>

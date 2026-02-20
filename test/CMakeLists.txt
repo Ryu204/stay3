@@ -87,6 +87,6 @@ add_custom_test(systems-render-system systems/render_system.test.cpp "Catch2::Ca
 
 add_custom_test(physics-world physics/world.test.cpp "Catch2::Catch2WithMain" "")
 
-add_custom_test(systems-script-angelscript-smoke-test systems/script/angelscript/smoke_test.test.cpp "" "")
+add_custom_test(systems-script-angelscript-smoke-test systems/script/angelscript/smoke_test.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-script-angelscript-vector systems/script/angelscript/vector.as.test.cpp "Catch2::Catch2WithMain" "")
 add_custom_test(systems-script-angelscript-assertion systems/script/angelscript/assertion.test.cpp "Catch2::Catch2WithMain" "")

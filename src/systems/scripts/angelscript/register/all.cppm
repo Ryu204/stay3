@@ -12,12 +12,16 @@ export import :register_tree_context;
 export import :register_primitives;
 export import :register_vector;
 export import :register_transform;
+export import :register_assertion;
 
 namespace st::ags {
-void register_all_types(ags_engine &engine) {
+void register_all_types(ags_engine &engine, bool register_assert) {
     register_entity(engine);
     register_logger(engine);
     register_tree_context(engine);
+    if(register_assert) {
+        register_assertion(engine);
+    }
     register_all_vectors(engine);
     // register_transform(engine);
 }

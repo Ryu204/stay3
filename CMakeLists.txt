@@ -137,6 +137,7 @@ target_sources(stay3
     src/systems/scripts/angelscript/register/primitives.cppm
     src/systems/scripts/angelscript/register/transform.as.cppm
     src/systems/scripts/angelscript/register/vector.as.cppm
+    src/systems/scripts/angelscript/register/assertion.as.cppm
 
     PRIVATE
 

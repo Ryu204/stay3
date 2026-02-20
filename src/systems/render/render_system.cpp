@@ -49,7 +49,8 @@ void render_system::render(tree_context &ctx) {
     // Find main camera
     {
         auto cameras = reg.each<camera, main_camera, global_transform>();
-        assert(cameras.begin() != cameras.end() && "No main camera found");
+        const auto has_no_camera = cameras.begin() == cameras.end();
+        if(has_no_camera) { return; }
         auto [unused_en, cam, unused_tag, tf] = *cameras.begin();
         cam_position = tf->get().position();
         assert(cam->ratio.has_value() && "Camera aspect was not set by system");
