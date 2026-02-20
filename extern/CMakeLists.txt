@@ -56,9 +56,5 @@ if(EMSCRIPTEN)
     endforeach()
 endif()
 
-add_subdirectory(lua)
-set(SOL2_LUA_VERSION "5.4")
-add_subdirectory(sol2)
-
 add_subdirectory(angelscript/angelscript/sdk/angelscript/projects/cmake)
 add_subdirectory(angelscript/add_on)
