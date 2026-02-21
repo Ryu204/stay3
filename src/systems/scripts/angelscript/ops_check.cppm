@@ -10,6 +10,7 @@ import stay3.system.script;
 
 import :objects;
 import :register_all;
+import :register_type;
 
 namespace st::ags {
 

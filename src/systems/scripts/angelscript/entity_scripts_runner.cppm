@@ -18,6 +18,7 @@ export module stay3.system.script.angelscript:entity_scripts_runner;
 import stay3.system.script;
 import stay3.ecs;
 import stay3.core;
+import stay3.node;
 
 import :objects;
 import :ops_check;
