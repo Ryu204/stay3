@@ -284,6 +284,10 @@ The registry does not directly manage script component, however. Every script co
 
 This leads to some pitfall if a game logic depends on a component's lifecycle methods must be called in the tick it was added, or must not be called in the tick it was removed. That to be said, I personally don't think it is a common use case.
 
+20. The lack of reflection
+
+Currently, binding engine API to Angelscript is manual. I want to automate that by first describing the class via a type info library like `entt::meta`. The result can be used to aid in the binding process.
+
 # Build instructions
 
 Requirements: C++ toolchains capable of compiling C++23 and CMake version 3.31 or higher. Including but not limited to (May 30th 2025):

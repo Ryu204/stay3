@@ -84,6 +84,10 @@ target_sources(stay3
     src/physics/collider.cppm
     src/physics/convert.cppm
 
+    src/meta/mod.cppm
+    src/meta/type_enum.cppm
+    src/meta/node.meta.cppm
+
     src/systems/mod.cppm
     src/systems/runtime_info.cppm
 
@@ -117,9 +121,6 @@ target_sources(stay3
     src/systems/scripts/error.cppm
     src/systems/scripts/script_langs.cppm
     src/systems/scripts/script_manager.cppm
-
-    # src/systems/scripts/lua/lua_system.cppm
-    # src/systems/scripts/lua/global_fields.cppm
 
     src/systems/scripts/angelscript/angelscript_system.cppm
     src/systems/scripts/angelscript/ops_check.cppm
